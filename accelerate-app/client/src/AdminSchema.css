@@ -1,0 +1,39 @@
+.admin-schema {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+  font-family: system-ui, sans-serif;
+}
+
+.admin-sections h2, .admin-fields h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.admin-sections ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.admin-sections button {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 8px 10px; border: 1px solid #dde3ea; border-radius: 8px;
+  background: #fff; cursor: pointer; font-size: 0.82rem; text-align: left;
+}
+.admin-sections button.on { background: #eef2ff; border-color: #6366f1; font-weight: 700; }
+.admin-sec-ic { flex-shrink: 0; }
+.admin-sec-count { margin-left: auto; font-size: 0.7rem; color: #888; background: #f2f2f2; border-radius: 99px; padding: 1px 7px; }
+.admin-sec-id { font-weight: 400; color: #999; font-size: 0.75rem; margin-left: 8px; }
+
+.admin-note { font-size: 0.78rem; color: #666; margin-bottom: 12px; max-width: 70ch; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: #888; padding: 6px 8px; border-bottom: 1px solid #dde3ea; }
+td { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+td.mono { font-family: ui-monospace, monospace; font-size: 0.75rem; color: #555; }
+td input, td select { width: 100%; padding: 4px 6px; border: 1px solid #dde3ea; border-radius: 5px; font-size: 0.78rem; }
+
+.admin-del { border: none; background: #fdecea; color: #c0392b; border-radius: 5px; width: 22px; height: 22px; cursor: pointer; }
+.admin-add-row td { padding-top: 10px; }
+.admin-add { border: none; background: #1e7a4f; color: #fff; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-weight: 600; font-size: 0.75rem; }
+
+.admin-error { color: #c0392b; padding: 20px; }
+.admin-loading { color: #888; padding: 20px; }

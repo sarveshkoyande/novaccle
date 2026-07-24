@@ -1,0 +1,172 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// Stand-in for a real brand-master feed (TactPlan/MDS) — backs the New
+// Campaign Request modal's Brand/Indication search-and-autofill and the
+// Asset Scope inference (brand+indication already here => not a new launch).
+model BrandIndication {
+  id               Int    @id @default(autoincrement())
+  brand            String
+  indication       String
+  brandedUnbranded String
+
+  @@unique([brand, indication])
+}
+
+// Every field value actually entered in the requirement-gathering form,
+// persisted so the chat agent can answer questions about already-entered
+// data via tool calling (get_entries) instead of only ever proposing new
+// fills. Tagged by phase (preplan/plan/exec) in its own column, per request —
+// callers query/filter by stage directly rather than needing a join.
+model FieldEntry {
+  id         Int      @id @default(autoincrement())
+  tactplanId String
+  sectionId  String
+  sectionName String
+  phase      String   // "preplan" | "plan" | "exec"
+  fieldId    String
+  fieldLabel String
+  value      String
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tactplanId, sectionId, fieldId])
+  @@index([tactplanId, phase])
+}
+
+// A persisted behavioral correction — govex's skill-authoring pattern
+// (lib/skillAuthoring.ts / CustomSkill), scoped to "how the agent should
+// behave" rather than campaign data. The agent itself decides when a
+// message is a correction worth learning (learn_skill tool in server.js),
+// not a hardcoded keyword trigger — the model evaluates intent. Every active
+// skill's rule text gets folded into the system prompt on every subsequent
+// turn, so a correction made once actually sticks going forward.
+model AgentSkill {
+  id        Int      @id @default(autoincrement())
+  title     String
+  rule      String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+// The form's structure itself, finally in the database instead of a
+// hardcoded JS array (BASE_SECTIONS) baked into the frontend. Mirrors that
+// array's shape field-for-field so the migration script is a mechanical
+// port, not a redesign — see prisma/migrate-sections-from-html.js. Per-
+// tactic/touchpoint fan-out (Email #1, Touch Point #2, ...) stays computed
+// in the client at render time; it's inherently dynamic per campaign, not
+// static admin-editable data.
+model FormSection {
+  id           String      @id // e.g. "generic", "email", "mds" — matches the existing section id scheme
+  num          String
+  name         String
+  icon         String
+  parentId     String?     // touchpoint/tactic nesting parent, if any
+  audienceGate Boolean     @default(false)
+  note         String?
+  needsJson    String      // {"preplan":["aor"],"plan":["aor","xm"],"exec":[]}
+  order        Int
+  fields       FormField[]
+}
+
+model FormField {
+  id               String      @id @default(cuid())
+  sectionId        String
+  section          FormSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  fieldKey         String      // "1.1.3" — the existing field id scheme, preserved verbatim
+  phase            String      // "preplan" | "plan" | "exec"
+  label            String
+  type             String      // text | ta | sel | multi | date | file | metasheet
+  owner            String      // aor | xm | mds | cep | ops | dca
+  bucket           String?
+  source           String?
+  optionsJson      String?     // JSON array, for type=sel
+  condJson         String?     // e.g. {"audience":"hcp"}
+  drives           String?
+  cascadeFromField String?
+  locked           Boolean     @default(false)
+  lockedValue      String?
+  wide             Boolean     @default(false)
+  groupsJson       String?     // type=metasheet only — the [{label,fields:[...]}] group structure (e.g. CMA's 10 groups / 45 sub-fields), preserved verbatim so the live form can still render it once sourced from this table instead of BASE_SECTIONS
+  order            Int
+
+  @@index([sectionId])
+}
+
+// CRF #N per-tactic field templates — Email/SMS/MDS Suppression/Automatrix/
+// Touch Point content, one row per template field, previously 100% hardcoded
+// in the client's emailTacticSection()/smsTacticSection()/mdsTacticSection()/
+// automxTacticSection()/touchpointSection() generator functions. `fieldKey`/
+// `cascadeFromField` keep the literal placeholder "{n}" wherever the
+// generator interpolated `${crfGroup}` — the client substitutes the real
+// tactic number in at render time. Not folded into FormField because these
+// rows don't belong to one FormSection; they belong to a tactic *type* that
+// fans out into N real sections (email-t1, email-t2, ...) per campaign.
+model TacticFieldTemplate {
+  id               String  @id @default(cuid())
+  tacticType       String  // "email" | "sms" | "mds" | "automx" | "touchpoint"
+  fieldKey         String  // e.g. "1.6.t{n}.1"
+  phase            String  // preplan | plan | exec
+  label            String
+  type             String
+  owner            String
+  bucket           String?
+  source           String?
+  optionsJson      String?
+  condJson         String? // e.g. {"logic":"and","rules":[{"key":"audience","value":"hcp"}]} — this is where MDS Suppression's real audience gating lives
+  drives           String?
+  cascadeFromField String?
+  locked           Boolean @default(false)
+  lockedValue      String?
+  wide             Boolean @default(false)
+  order            Int
+
+  @@index([tacticType])
+}
+
+// Campaign Ops' planning timeline for one request — an ETA date per
+// milestone, set from the new "Plan" tab (Campaign Ops' own view, distinct
+// from the AOR/XM-facing requirement-gathering form). Dates are plain
+// "YYYY-MM-DD" strings, same convention as every other date field/input in
+// this app (see BASE_SECTIONS' type:"date" fields) rather than DateTime, to
+// avoid timezone round-tripping since these are date-only, no time-of-day.
+model PlanMilestone {
+  id           Int      @id @default(autoincrement())
+  tactplanId   String   @unique
+  discoveryEta String?  // Discovery session
+  cpfEta       String?  // CPF (pre-planning) completion
+  crfEta       String?  // CRF (tactic build) completion
+  updatedAt    DateTime @updatedAt
+}
+
+// Standardizes what used to be scattered hardcoded branches in
+// runReactCheckpoint() (hqe-requirement-studio-mock_2.html) — which section
+// submits nudge whom, and what "phase complete" (e.g. "CPF complete") even
+// means — into real, admin-editable rows. See evaluateNudgeRules() (client)
+// for how these get matched and fired.
+model NudgeRule {
+  id                 String   @id @default(cuid())
+  trigger            String   // "section_submitted" | "phase_complete" | "field_value_equals" | "section_group_complete" | "fields_remaining"
+  triggerSectionId   String?  // for section_submitted, fields_remaining (section holding the metasheet field)
+  triggerPhase       String?  // for phase_complete / section_group_complete (preplan|plan|exec) — this is literally "how CPF completion is defined"
+  triggerFieldDrives String?  // for field_value_equals — a FormField.drives key, e.g. "assetScope"
+  triggerValue       String?  // for field_value_equals — the value that fires it, e.g. "newbrand"
+  triggerSectionIds  String?  // for section_group_complete — JSON array of section ids, e.g. ["generic","oms","cma"]
+  triggerFieldKey    String?  // for fields_remaining — the metasheet FormField.fieldKey, e.g. "1.4.6"
+  conditionsJson     String?  // optional extra AND-gate on top of any trigger, {"logic":"and","rules":[{"key":"enrollment","value":"Yes"}]} — evaluated against campaignConfig
+  message            String   // the major-change message text — may contain {{remaining}}/{{total}} tokens for fields_remaining
+  nudgeMessage       String?  // the follow-up Nudge callout text (null = no separate nudge)
+  nudgeToOwner       String?  // aor | xm | mds | cep | ops | dca — who the nudge names
+  active             Boolean  @default(true)
+  order              Int
+}
