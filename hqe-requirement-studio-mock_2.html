@@ -138,7 +138,11 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 
 /* ============ SECTION MASTER/DETAIL (Plan at a Glance + default section view) ============ */
 .crf-tabs-slot:empty{display:none}
-.sm-wrap{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;margin-top:16px}
+/* Sticks right below the app bar so the nav stays reachable while the
+   section list/detail panel below it scrolls — same sticky pattern
+   .sm-list-panel already uses, just one layer higher. */
+.crf-tabs-slot{position:sticky;top:60px;z-index:75;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);margin:16px 0;padding:0;border-radius:var(--r)}
+.sm-wrap{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;margin-top:0}
 @media (max-width:900px){.sm-wrap{grid-template-columns:1fr}}
 .sm-list-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:8px;display:flex;flex-direction:column;gap:1px;position:sticky;top:74px;max-height:calc(100vh - 88px);overflow-y:auto}
 .glance-toggle-row{display:flex;gap:8px;margin:16px 0 12px}
@@ -686,10 +690,17 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .sec-indent-group .section{margin-top:10px}
 .sec-indent-group .sec-title{padding-left:24px;position:relative}
 .sec-indent-group .sec-title::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--line2)}
-.crf-view-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line2)}
-.crf-tab{padding:8px 14px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer;transition:all .15s}
-.crf-tab:hover{border-color:var(--ai-line,#F5C4B4)}
-.crf-tab.active{background:var(--ai,#e74a21);border-color:var(--ai,#e74a21);color:#fff}
+/* Flat stepper style — thin bar, plain white background, no tab-shaped
+   chrome at all. Each stop's number badge is always tinted with its owning
+   stakeholder's persona color (set inline per-tab via the --sh custom
+   property in renderCrfViewTabs); only the selected stop's label + underline
+   pick up that color too — everything else stays neutral gray. */
+.crf-view-tabs{display:flex;gap:28px;overflow-x:auto;padding:9px 16px}
+.crf-tab{position:relative;display:inline-flex;align-items:center;gap:7px;flex-shrink:0;padding:2px 0 9px;border:none;background:none;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;transition:color .15s;white-space:nowrap}
+.crf-tab:hover{color:var(--ink)}
+.crf-tab.active{color:var(--sh, var(--brand));font-weight:800}
+.crf-tab.active::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:2px;background:var(--sh, var(--brand))}
+.crf-tab-num{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;border:1.5px solid var(--sh, var(--ink3));color:var(--sh, var(--ink3));font-size:10.5px;font-weight:800;flex-shrink:0}
 .crf-view-panel{animation:crfFadeIn .2s ease}
 @keyframes crfFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .float-save-bar{position:fixed;bottom:18px;z-index:60;display:none;width:auto;padding:10px 14px;background:var(--surface);border:1px solid var(--line2);border-radius:12px;box-shadow:var(--shadow-lg)}
@@ -981,6 +992,9 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
     </div>
   </div>
 
+  <!-- Requirement Gathering Process Map — commented out for now, replaced by
+       the milestone pill-strip in #crfTabsSlot below (see renderSections()).
+       Kept here rather than deleted in case it comes back later.
   <div class="flowmap-card" id="flowmapCard">
     <div class="tl-head" onclick="toggleFlowMapCard()">
       <h3>Requirement Gathering Process Map</h3>
@@ -1000,6 +1014,7 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
       </div>
     </div>
   </div>
+  -->
 
   <div class="glance-toggle-row" style="display:none">
     <button class="glance-toggle-btn" id="viewToggleSections" onclick="setSectionsViewMode('sections')">☰ Sections</button>
@@ -1342,7 +1357,7 @@ let BASE_SECTIONS = [
   {id:"generic", num:"01", name:"Generic/Overview", ic:"▣",
    phases:{
      preplan:[{id:"1.1.1",n:"TactPlan ID",src:"⇢ TactPlan",bucket:"tactplan",owner:"aor",type:"text"},{id:"1.1.2",n:"Agency",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.3",n:"Brand",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.4",n:"Indication",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.5",n:"Branded/unbranded",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Branded","Unbranded"]},{id:"1.1.6",n:"Audience",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.6b",n:"Channel Type",src:"—",bucket:"newapp",owner:"aor",type:"multi",opts:["Email","SMS"],drives:"channels",wide:true},{id:"1.1.7",n:"Asset Scope* (Request Type)",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["New Brand Launch", "New Indication Launch", "Update Existing Campaign"],drives:"assetScope"},{id:"1.1.8",n:"Campaign Name",src:"—",bucket:"newapp",owner:"aor",type:"text"}],
-     plan:[{id:"1.1.9",n:"Campiagn Goal",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},{id:"1.1.10",n:"Campaign code",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.11",n:"Campaign Channels Select",src:"⇢ TactPlan",bucket:"auto",owner:"aor",type:"sel",opts:["Email + SMS", "Email only", "SMS only"],drives:"channels"},{id:"1.1.12",n:"Campaign Type",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Model based","Ad Hoc","Cadenced","Real-time","Real-time & Cadenced"],drives:"campaignType"},{id:"1.1.13",n:"Segments",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.15",n:"Therapy",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.19",n:"Estimated GOLIVE Date",src:"—",bucket:"newapp",owner:"aor",type:"date"},{id:"1.2.1",n:"Send Time Optimization",src:"—",bucket:"newapp",owner:"xm",type:"sel",opts:["Yes","No"]},{id:"1.2.2",n:"Sending Time Window",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.3",n:"STO Random",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.4",n:"In-Email Poll",src:"—",bucket:"newapp",owner:"aor",type:"sel"},{id:"1.2.5",n:"A/B Testing required?",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"abTesting"},{id:"1.2.6",n:"Approximate Audience Size",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{abTesting:"Yes"}},{id:"1.2.7",n:"How do you want the test split?",src:"—",bucket:"newapp",owner:"aor",type:"sel",wide:true,cond:{abTesting:"Yes"}},{id:"1.2.8",n:"How would you like your test to send?",src:"—",bucket:"newapp",owner:"aor",type:"sel",wide:true,cond:{abTesting:"Yes"}}],
+     plan:[{id:"1.1.9",n:"Campiagn Goal",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},{id:"1.1.10",n:"Campaign code",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.11",n:"Campaign Channels Select",src:"⇢ TactPlan",bucket:"auto",owner:"aor",type:"sel",opts:["Email + SMS", "Email only", "SMS only"],drives:"channels"},{id:"1.1.12",n:"Campaign Type",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Model based","Ad Hoc","Cadenced","Real-time","Real-time & Cadenced"],drives:"campaignType"},{id:"1.1.13",n:"Segments",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.15",n:"Therapy",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.19",n:"Estimated GOLIVE Date",src:"—",bucket:"newapp",owner:"aor",type:"date"},{id:"1.2.1",n:"Send Time Optimization",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"sendTimeOptimization"},{id:"1.2.1b",n:"Send Time Optimization Rules",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{sendTimeOptimization:"Yes"}},{id:"1.2.2",n:"Sending Time Window",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.3",n:"STO Random",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.4",n:"In-Email Poll",src:"—",bucket:"newapp",owner:"aor",type:"sel"},{id:"1.2.5",n:"A/B Testing required?",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"abTesting"},{id:"1.2.6",n:"Approximate Audience Size",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{abTesting:"Yes"}},{id:"1.2.7",n:"How do you want the test split?",src:"—",bucket:"newapp",owner:"aor",type:"text",wide:true,cond:{abTesting:"Yes"}},{id:"1.2.8",n:"How would you like your test to send?",src:"—",bucket:"newapp",owner:"aor",type:"text",wide:true,cond:{abTesting:"Yes"}}],
      exec:[{id:"1.1.14",n:"Proof Recipients",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.16",n:"Friendly From Name",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.17",n:"Reply to name",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.18",n:"Reply to Address",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.9",n:"Peronalization",src:"—",bucket:"newapp",owner:"aor",type:"sel"},{id:"1.2.10",n:"Personalization Area / Field Name & Criteria",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true}],
    },
    needs:{"preplan": ["aor"], "plan": ["aor", "xm"], "exec": ["aor"]}
@@ -1351,7 +1366,7 @@ let BASE_SECTIONS = [
    phases:{
      preplan:[],
      plan:[{id:"1.3.2",n:"Schedule Type (Frequency)",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"sel",opts:["Model based","Ad Hoc","Cadenced","Real-time","Real-time & Cadenced"],cascadeFrom:"campaignType"},{id:"1.3.3",n:"Journey Start Date",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"date"},{id:"1.3.7",n:"Re-entry Allowed",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"]},{id:"1.3.8",n:"Next Touchpoint Logic",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},{id:"1.3.21",n:"Number of touch points",src:"—",bucket:"newapp",owner:"aor",type:"text",drives:"touchpointCount"}],
-     exec:[{id:"1.3.1",n:"Audience Entry Source",src:"⏳ Filled after submission",bucket:"ops",owner:"ops",type:"sel"},{id:"1.3.4",n:"Automation Name",src:"⏳ Filled after submission",bucket:"ops",owner:"ops",type:"text"},{id:"1.3.5",n:"Data Extension Name",src:"⏳ Filled after submission",bucket:"ops",owner:"ops",type:"text"},{id:"1.3.6",n:"Key Field (SubscriberKey)",src:"⏳ Filled after submission",bucket:"ops",owner:"ops",type:"text"}],
+     exec:[{id:"1.3.1",n:"Audience Entry Source",src:"—",bucket:"ops",owner:"ops",type:"sel",opts:["Data Extension","API","Event"]},{id:"1.3.4",n:"Automation Name",src:"—",bucket:"ops",owner:"ops",type:"text"},{id:"1.3.5",n:"Data Extension Name",src:"—",bucket:"ops",owner:"ops",type:"text"},{id:"1.3.6",n:"Key Field (SubscriberKey)",src:"—",bucket:"ops",owner:"ops",type:"text"}],
    },
    needs:{"preplan": [], "plan": ["aor"], "exec": ["ops"]}
   },
@@ -1366,7 +1381,7 @@ let BASE_SECTIONS = [
   {id:"mci", num:"04", name:"MCI - Campaign Performance Reporting", ic:"▤",
    phases:{
      preplan:[],
-     plan:[{id:"1.5.1",n:"Avaialability of Pretext_Data Extension",src:"—",bucket:"newapp",owner:"cep",type:"text",wide:true},{id:"1.5.2",n:"Technical GO LIVE date",src:"—",bucket:"newapp",owner:"cep",type:"text"},{id:"1.5.3",n:"Business GO LIVE date",src:"—",bucket:"newapp",owner:"ops",type:"text"},{id:"1.5.4",n:"Visio",src:"—",bucket:"newapp",owner:"ops",type:"text"},{id:"1.5.5",n:"MCI User Access to new BU",src:"—",bucket:"newapp",owner:"cep",type:"sel"}],
+     plan:[{id:"1.5.1",n:"Avaialability of Pretext_Data Extension",src:"—",bucket:"newapp",owner:"cep",type:"text",wide:true},{id:"1.5.2",n:"Technical GO LIVE date",src:"—",bucket:"newapp",owner:"cep",type:"date"},{id:"1.5.3",n:"Business GO LIVE date",src:"—",bucket:"newapp",owner:"ops",type:"date"},{id:"1.5.4",n:"Visio",src:"—",bucket:"newapp",owner:"ops",type:"text"},{id:"1.5.5",n:"MCI User Access to new BU",src:"—",bucket:"newapp",owner:"cep",type:"sel"}],
      exec:[],
    },
    needs:{"preplan": [], "plan": ["cep", "ops"], "exec": []}
@@ -1389,7 +1404,7 @@ let BASE_SECTIONS = [
   {id:"dc", num:"07", name:"Data Cloud details", ic:"☁",
    phases:{
      preplan:[],
-     plan:[{id:"1.8.1",n:"Entry Source: Data Cloud Segment rules",src:"⇢ XM handover",bucket:"xm",owner:"mds",type:"text",wide:true},{id:"1.8.2",n:"Engagement Split",src:"⇢ XM handover",bucket:"xm",owner:"dca",type:"text"},{id:"1.8.3",n:"Data Full Refresh or Incremental - Depends on type of Campaign",src:"⇢ XM handover",bucket:"xm",owner:"dca",type:"text",wide:true},{id:"1.8.4",n:"Refresh Frequency",src:"⇢ XM handover",bucket:"xm",owner:"dca",type:"sel"},{id:"1.8.5",n:"Global Suppressions (supressions to be taken as mentione in MDS)",src:"⇢ XM handover",bucket:"xm",owner:"dca",type:"text",wide:true},{id:"1.8.6",n:"Specialty Inclusions",src:"⇢ XM handover",bucket:"xm",owner:"dca",type:"text"},{id:"1.8.7",n:"Specialty Exclusions",src:"⇢ XM handover",bucket:"xm",owner:"dca",type:"text"},{id:"1.8.8",n:"No of New CIs (Calculated Insights) Needed to support all versions of Journey or Existing CI needed",src:"⚠ TBD — unresolved in source",bucket:"tbd",owner:"dca",type:"sel",wide:true},{id:"1.8.9",n:"Data for new CI creation in DC",src:"—",bucket:"unmapped",owner:"aor",type:"text"}],
+     plan:[{id:"1.8.1",n:"Entry Source: Data Cloud Segment rules",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.2",n:"Engagement Split",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.3",n:"Data Full Refresh or Incremental - Depends on type of Campaign",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.4",n:"Refresh Frequency",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"sel",opts:["Daily","Weekly","Monthly"]},{id:"1.8.5",n:"Global Suppressions (supressions to be taken as mentione in MDS)",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.6",n:"Specialty Inclusions",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.7",n:"Specialty Exclusions",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.8",n:"No of New CIs (Calculated Insights) Needed to support all versions of Journey or Existing CI needed",src:"⚠ TBD — unresolved in source",bucket:"tbd",owner:"dca",type:"sel",wide:true},{id:"1.8.9",n:"Data for new CI creation in DC",src:"—",bucket:"unmapped",owner:"aor",type:"text"}],
      exec:[],
    },
    needs:{"preplan": [], "plan": ["dca"], "exec": []}
@@ -1440,7 +1455,7 @@ BASE_SECTIONS = BASE_SECTIONS.map(s => ({...s, needs: withFieldOwnersInNeeds(s.p
 // emailCount/smsCount default empty ('') rather than a prefilled number —
 // "# of Emails"/"# of SMS" are real questions the AOR must answer, not
 // values the platform should silently guess for them.
-let campaignConfig = { assetScope:'update', channels:'Email + SMS', enrollment:'No', audience:'hcp', emailCount:'', smsCount:'', metadataSource:'New metadata', abTesting:'No', touchpointCount:2, campaignType:'' };
+let campaignConfig = { assetScope:'update', channels:'Email + SMS', enrollment:'No', audience:'hcp', emailCount:'', smsCount:'', metadataSource:'New metadata', abTesting:'No', sendTimeOptimization:'No', touchpointCount:2, campaignType:'' };
 
 // Journey → "Number of touch points" (drives:"touchpointCount") fans out
 // into this many separate sections, each with its own Save button — same
@@ -1464,7 +1479,7 @@ function touchpointSection(n){
         {id:`1.3.tp${n}.2`,n:"Touchpoint Name",src:"—",bucket:"newapp",owner:"aor",type:"text"},
         {id:`1.3.tp${n}.3`,n:"Wait Time (before next)",src:"—",bucket:"newapp",owner:"aor",type:"text"},
         {id:`1.3.tp${n}.4`,n:"Resend Needed?",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"]},
-        {id:`1.3.tp${n}.5`,n:"Resend Rule",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+        {id:`1.3.tp${n}.5`,n:"Resend Rule",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{ref:`1.3.tp${n}.4`,value:"Yes"}},
         {id:`1.3.tp${n}.6`,n:"Exit Rule After Send",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},
       ],
       exec:[],
@@ -1481,10 +1496,11 @@ function touchpointSection(n){
 // and nothing else; once answered, Your Focus for those is done. This is a
 // different grouping key from Journey's Touch Point #N, which still nests
 // under its real parent ('journey') via `parentId` — untouched below.
-function makeFanoutSection({crfGroup, idPrefix, name, ic, preplan=[], plan=[], exec=[], needs, parentId}){
+function makeFanoutSection({crfGroup, idPrefix, name, ic, preplan=[], plan=[], exec=[], needs, parentId, audienceGate}){
   const phases = {preplan, plan, exec};
   const out = {id:`${idPrefix}${crfGroup}`, num:`CRF${crfGroup}`, name:`↳ ${name}`, ic, crfGroup,
     phases, needs: withFieldOwnersInNeeds(phases, needs)};
+  if(audienceGate) out.audienceGate = true;
   // parentId (SMS specifically, so far) makes this tactic instance show up
   // indented under its base section — same treatment Journey's Touch Points
   // already get — so its real preplan/CPF fields (Carrier Approval Form,
@@ -1531,7 +1547,7 @@ function fieldsFromTemplatesByPhase(tacticType, n){
     const f = { id: sub(t.fieldKey), n: t.label, src: t.source || '—', owner: t.owner, type: t.type };
     if(t.bucket) f.bucket = t.bucket;
     if(t.opts) f.opts = t.opts;
-    if(t.cond) f.cond = t.cond;
+    if(t.cond) f.cond = (t.cond.ref !== undefined) ? {...t.cond, ref: sub(t.cond.ref)} : t.cond;
     if(t.drives) f.drives = t.drives;
     if(t.cascadeFromField) f.cascadeFromField = sub(t.cascadeFromField);
     if(t.locked) f.locked = true;
@@ -1607,8 +1623,8 @@ function smsTacticSection(crfGroup){
 
 function mdsTacticSection(crfGroup){
   const tf = fieldsFromTemplatesByPhase('mds', crfGroup);
-  if(tf) return makeFanoutSection({crfGroup, idPrefix:'mds-t', name:'MDS Suppression', ic:'◫', ...tf, needs:{"preplan": [], "plan": ["xm", "mds"], "exec": ["mds"]}});
-  return makeFanoutSection({crfGroup, idPrefix:'mds-t', name:'MDS Suppression', ic:'◫',
+  if(tf) return makeFanoutSection({crfGroup, idPrefix:'mds-t', name:'MDS Suppression', ic:'◫', ...tf, needs:{"preplan": [], "plan": ["xm", "mds"], "exec": ["mds"]}, audienceGate:true});
+  return makeFanoutSection({crfGroup, idPrefix:'mds-t', name:'MDS Suppression', ic:'◫', audienceGate:true,
     plan:[
       {id:`1.7.t${crfGroup}.1`,n:"Brand Name",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"text",cond:{audience:"hcp"},cascadeFromField:"1.1.3"},
       {id:`1.7.t${crfGroup}.2`,n:"Campaign Code",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"text",cond:{audience:"hcp"},cascadeFromField:"1.1.10"},
@@ -1626,10 +1642,10 @@ function mdsTacticSection(crfGroup){
       {id:`1.7.t${crfGroup}.14`,n:"Brand Name",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"text",cond:{audience:"dtc"},cascadeFromField:"1.1.3"},
       {id:`1.7.t${crfGroup}.15`,n:"Campaign Name (Branded or Unbranded)",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"text",wide:true,cond:{audience:"dtc"},cascadeFromField:"1.1.8"},
       {id:`1.7.t${crfGroup}.16`,n:"Campaign Source Code",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"text",cond:{audience:"dtc"},cascadeFromField:"1.4.5"},
-      {id:`1.7.t${crfGroup}.17`,n:"Segmentation Logic",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"text",cond:{audience:"dtc"}},
+      {id:`1.7.t${crfGroup}.17`,n:"Segmentation Logic",src:"⇢ Cascaded from Overview — Segments",bucket:"auto",owner:"aor",type:"text",cond:{audience:"dtc"},cascadeFromField:"1.1.13"},
       {id:`1.7.t${crfGroup}.18`,n:"Q & A Pairs",src:"⇢ Cascaded from Enrollment Form",bucket:"auto",owner:"aor",type:"text",cond:{audience:"dtc"},cascadeFromField:"1.4.4"},
-      {id:`1.7.t${crfGroup}.19`,n:"Go Live Date",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"text",cond:{audience:"dtc"},cascadeFromField:"1.1.19"},
-      {id:`1.7.t${crfGroup}.20`,n:"Journey Flow to be Provided",src:"⇢ Attach Visio",bucket:"ops",owner:"aor",type:"text",cond:{audience:"dtc"}},
+      {id:`1.7.t${crfGroup}.19`,n:"Go Live Date",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"date",cond:{audience:"dtc"},cascadeFromField:"1.1.19"},
+      {id:`1.7.t${crfGroup}.20`,n:"Journey Flow to be Provided",src:"⇢ Attach Visio",bucket:"ops",owner:"aor",type:"file",cond:{audience:"dtc"}},
     ],
     needs:{"preplan": [], "plan": ["xm", "mds"], "exec": ["mds"]},
   });
@@ -1748,9 +1764,14 @@ function fieldValue(f){
   if(f.cascadeFrom) return campaignConfig[f.cascadeFrom] || '';
   // cascadeFromField: same idea, but the source is a plain typed field (not
   // a campaignConfig driver) — e.g. MDS Suppression's "Brand Name" mirrors
-  // Generic/Overview's Brand field (id 1.1.3) by reading its fieldValues
-  // entry directly, instead of asking the user to type it again per tactic.
-  if(f.cascadeFromField) return fieldValues[f.cascadeFromField] || '';
+  // Generic/Overview's Brand field (id 1.1.3), pre-filled from its fieldValues
+  // entry instead of asking the user to type it again per tactic. Unlike
+  // cascadeFrom above, this one IS editable (see renderField) — it's a
+  // reconfirm/override pattern, not a permanent read-only mirror: once the
+  // user has actually typed their own value into this field, that wins; only
+  // falls back to mirroring the source field live for as long as this field
+  // itself has never been touched.
+  if(f.cascadeFromField) return fieldValues[f.id] !== undefined ? fieldValues[f.id] : (fieldValues[f.cascadeFromField] || '');
   if(f.locked && f.lockedValue) return f.lockedValue;
   if(fieldValues[f.id] !== undefined) return fieldValues[f.id];
   if(seedValues[f.n] !== undefined) return seedValues[f.n];
@@ -1771,6 +1792,7 @@ function condKeyValue(key){
   if(key==='channels') return campaignConfig.channels;
   if(key==='metadataSource') return campaignConfig.metadataSource;
   if(key==='abTesting') return campaignConfig.abTesting;
+  if(key==='sendTimeOptimization') return campaignConfig.sendTimeOptimization;
   return undefined;
 }
 function condRuleMet(key, want){
@@ -1787,8 +1809,24 @@ function condRuleMet(key, want){
 // after the admin UI moves to the new shape; nothing needs a forced
 // migration to render correctly, though migrate-cond-shape.js normalizes
 // the known existing rows anyway for consistency in the admin UI.
+// Third supported shape — {ref, value} — for gating a field on a SIBLING
+// field's own answer within the same tactic instance (e.g. Touch Point #2's
+// "Resend Rule" only when that same instance's "Resend Needed?" is Yes).
+// The other two shapes only read global campaignConfig keys (assetScope,
+// audience, ...), which can't express "this instance's own other field" —
+// every Touch Point/Email/SMS instance shares one campaignConfig, but each
+// has its own independent Resend Needed? answer. `ref` holds the sibling
+// field's literal id (already `{n}`-substituted by the time it's on a real
+// field, see fieldsFromTemplatesByPhase's sub()), read straight out of
+// fieldValues rather than through condKeyValue's fixed key set.
+function condRefMet(cond){
+  const val = fieldValues[cond.ref];
+  const want = cond.value;
+  return Array.isArray(want) ? want.includes(val) : String(want).toLowerCase() === String(val||'').toLowerCase();
+}
 function condMet(cond){
   if(!cond) return true;
+  if(cond.ref !== undefined) return condRefMet(cond);
   if(Array.isArray(cond.rules)){
     if(cond.rules.length === 0) return true;
     const results = cond.rules.map(r => condRuleMet(r.key, r.value));
@@ -1824,6 +1862,8 @@ function driveField(driveKey, value){
     campaignConfig.metadataSource = value;
   } else if(driveKey==='abTesting'){
     campaignConfig.abTesting = value;
+  } else if(driveKey==='sendTimeOptimization'){
+    campaignConfig.sendTimeOptimization = value;
   } else if(driveKey==='touchpointCount'){
     // Deliberately does NOT rebuild SECTIONS here — the Touch Point #N
     // sections should only appear once Journey is actually Saved (see
@@ -4327,16 +4367,75 @@ function crfTacticGroups(){
 
 function setCrfView(v){
   activeCrfView = v;
-  renderSections();
+  crfNavActive = v==='details' ? 'details' : `crf-${v}`;
+  // The CRF-tab view system (useViews in renderSections()) only ever
+  // activates when currentPhase==='plan' — so clicking "CRF details"/"CRF
+  // #N" right after clicking "CPF" (which sets phase to 'preplan') silently
+  // did nothing: activeCrfView updated, but the section list kept rendering
+  // the flat preplan list since useViews stayed false. These tabs are
+  // meant to always actually switch to that content when clicked, not only
+  // work if you happened to already be on Planning.
+  let phaseChanged = false;
+  if(currentPhase !== 'plan'){
+    currentPhase = 'plan';
+    currentMilestone = 'crf';
+    autoUnlockOwnedSections();
+    phaseChanged = true;
+  }
+  // A phase change affects more than just the section list (You Focus, the
+  // phase stepper, header metrics, ...) — renderAll() covers all of it;
+  // renderSections() alone is enough when only activeCrfView moved.
+  if(phaseChanged) renderAll(); else renderSections();
   scrollBelowHeader(document.getElementById('smWrap'));
 }
 
+// Replaces the old Requirement Gathering Process Map diagram — a plain pill
+// list of the actual fixed navigation points instead of a node/arrow flow
+// diagram: CPF, BU Setup (Ops), CRF details (shared/common content, not
+// per-tactic), one pill per real CRF tactic instance, and Visio (Ops). No
+// ghost/"?" placeholder — every pill here is a real, always-clickable
+// destination, not a stand-in for something not yet known.
+//
+// Which tab reads as "selected" (white) used to be derived from THREE
+// independent bits of state (currentMilestone/activeCrfView/openSectionId) —
+// CPF and CRF details could both end up true at once, so both tabs lit up
+// white simultaneously. crfNavActive is the single source of truth instead:
+// every click handler below sets it explicitly, and rendering just compares
+// against this one value.
+let crfNavActive = 'cpf';
+function crfNavGoCpf(){ crfNavActive='cpf'; setMilestone('cpf'); }
+function goToBuSetup(){
+  if(currentPersona !== 'ops'){
+    toast('BU Setup is on the Campaign Ops view — switch personas (top right) to open it.');
+    return;
+  }
+  crfNavActive = 'bu-setup';
+  activeCrfView = 'details'; // BU Setup only renders in the CRF-details view, not a CRF-N tab — same reasoning as goToVisioBuilder()
+  selectDetailSection('ops-bu-setup');
+}
+function crfNavGoVisio(){ crfNavActive='visio'; goToVisioBuilder(); }
+
+// Each tab tinted with its owning stakeholder's own persona color (solid,
+// not the old flat dark-bar-for-everything look) — only the selected tab
+// goes white; every other tab shows whose court the ball is in at a glance.
+const CRF_NAV_COLOR = { 'cpf':'aor', 'bu-setup':'ops', 'details':'aor', 'visio':'ops' };
+
 function renderCrfViewTabs(groups){
-  const tabs = [`<button class="crf-tab${activeCrfView==='details'?' active':''}" onclick="setCrfView('details')">CRF details</button>`];
+  const specs = [
+    { key: 'cpf', onclick: `crfNavGoCpf()`, label: 'CPF' },
+    { key: 'bu-setup', onclick: `goToBuSetup()`, label: 'BU Setup' },
+    { key: 'details', onclick: `setCrfView('details')`, label: 'CRF details' },
+  ];
   groups.forEach(g=>{
     const channelSec = SECTIONS.find(s=>s.crfGroup===g && (s.id.startsWith('email-t')||s.id.startsWith('sms-t')));
     const channel = channelSec ? channelSec.name.replace(/^↳\s*/,'') : '';
-    tabs.push(`<button class="crf-tab${activeCrfView===g?' active':''}" onclick="setCrfView(${g})">CRF #${g}${channel?` · ${channel}`:''}</button>`);
+    specs.push({ key: `crf-${g}`, onclick: `setCrfView(${g})`, label: `CRF #${g}${channel?` · ${channel}`:''}` });
+  });
+  specs.push({ key: 'visio', onclick: `crfNavGoVisio()`, label: 'Visio' });
+  const tabs = specs.map((t,i)=>{
+    const active = crfNavActive === t.key;
+    const persona = PERSONAS[CRF_NAV_COLOR[t.key] || 'aor'];
+    return `<button class="crf-tab${active?' active':''}" onclick="${t.onclick}" style="--sh:${persona.color}"><span class="crf-tab-num">${i+1}</span>${t.label}</button>`;
   });
   return `<div class="crf-view-tabs">${tabs.join('')}</div>`;
 }
@@ -4516,7 +4615,7 @@ function dispSectionName(s){
 function renderSections(){
   const groups = crfTacticGroups();
   const useViews = currentPhase==='plan' && groups.length>0;
-  document.getElementById('crfTabsSlot').innerHTML = useViews ? renderCrfViewTabs(groups) : '';
+  document.getElementById('crfTabsSlot').innerHTML = renderCrfViewTabs(groups);
 
   // Which SECTIONS entries populate the list: the shared/non-tactic sections
   // (details view) or one tactic instance's own content (a CRF #N tab).
@@ -4669,7 +4768,10 @@ function computeSectionRenderData(s){
   const showExec     = true;
   const preplanEdit = currentPhase === 'preplan' && !isSubmitted;
   const planEdit    = currentPhase === 'plan' && !isSubmitted;
-  const execEdit    = currentPhase === 'exec' && !isSubmitted;
+  // Execution fields unlock together with Planning — AOR/etc. don't have to
+  // wait until the Execution phase actually starts to fill in fields that
+  // are already knowable during Planning, same section, same Save button.
+  const execEdit    = (currentPhase === 'exec' || currentPhase === 'plan') && !isSubmitted;
   const applicable  = sectionApplicable(s);
 
   const preplanF = applicable ? visibleFields(s.phases.preplan) : [];
@@ -4682,9 +4784,16 @@ function computeSectionRenderData(s){
   const phaseOrder = ['preplan','plan','exec'];
   const curIdx = phaseOrder.indexOf(currentPhase);
   const groups = [];
-  if(showPreplan && preplanF.length) groups.push(renderPhaseGroup('Pre-planning fields','pdot-pp',preplanF, preplanEdit, curIdx > phaseOrder.indexOf('preplan') ? 'past' : 'future'));
-  if(showPlan && planF.length)       groups.push(renderPhaseGroup('Planning fields','pdot-p',planF, planEdit, curIdx > phaseOrder.indexOf('plan') ? 'past' : 'future'));
-  if(showExec && execF.length)       groups.push(renderPhaseGroup('Execution fields','pdot-e',execF, execEdit, curIdx > phaseOrder.indexOf('exec') ? 'past' : 'future'));
+  // Multi-contribution sections (e.g. MCI — CEP owns some fields, Ops owns
+  // others, in the same phase) need real per-field ownership enforcement,
+  // not just the phase-level editable/read-only toggle: without it, whoever
+  // has the section open could type into a field that belongs to the OTHER
+  // stakeholder. Single-owner phases are unaffected (restrictOwner is only
+  // true when more than one persona is actually listed for that phase).
+  const restrictOwner = phase => (s.needs[phase]||[]).length > 1;
+  if(showPreplan && preplanF.length) groups.push(renderPhaseGroup('Pre-planning fields','pdot-pp',preplanF, preplanEdit, curIdx > phaseOrder.indexOf('preplan') ? 'past' : 'future', restrictOwner('preplan')));
+  if(showPlan && planF.length)       groups.push(renderPhaseGroup('Planning fields','pdot-p',planF, planEdit, curIdx > phaseOrder.indexOf('plan') ? 'past' : 'future', restrictOwner('plan')));
+  if(showExec && execF.length)       groups.push(renderPhaseGroup('Execution fields','pdot-e',execF, execEdit, curIdx > phaseOrder.indexOf('exec') ? 'past' : 'future', restrictOwner('exec')));
 
   const audienceToggle = s.audienceGate ? `<div class="audience-toggle" onclick="event.stopPropagation()">
       <span>Showing:</span>
@@ -4727,7 +4836,13 @@ function computeSectionRenderData(s){
   // list, so they silently rendered as always-editable with no Save button
   // at all, unlike every other AOR section.
   const isFanoutSection = ['journey-tp','email-t','sms-t','mds-t','automx-t'].some(p=>s.id.startsWith(p));
-  const submitRow = ((['generic','journey','oms','cma','email','automx','sms'].includes(s.id) || isFanoutSection) && applicable && !emptyForPhase)
+  // MCI stays visible to everyone (read-only for non-owners), but the
+  // Save/Edit control itself is CEP/Ops-only — AOR/XM/MDS can see the
+  // section's fields but every one of them renders read-only anyway (see
+  // restrictOwner above), so a clickable Save button for them would be
+  // misleading busywork with nothing left for them to actually submit.
+  const mciCanEdit = s.id !== 'mci' || ['cep','ops'].includes(currentPersona);
+  const submitRow = ((['generic','journey','oms','cma','email','automx','sms','mci','dc'].includes(s.id) || isFanoutSection) && applicable && !emptyForPhase && mciCanEdit)
     ? (isSubmitted
         ? `<div class="sec-submit" id="sec-submit-${s.id}"><button class="btn-ghost" onclick="reopenSectionForm('${s.id}')">Edit</button></div>`
         : `<div class="sec-submit" id="sec-submit-${s.id}"><button class="btn-primary" onclick="submitSectionForm('${s.id}')">Save &amp; Continue</button></div>`)
@@ -4905,7 +5020,7 @@ function reopenSectionForm(id){
 }
 
 let openSectionId = null;
-function renderPhaseGroup(label,dotClass,fields,editable,when){
+function renderPhaseGroup(label,dotClass,fields,editable,when,restrictOwner){
   const state = editable
     ? '<span class="pg-state pg-editable">Editable this phase</span>'
     : when === 'future'
@@ -4916,7 +5031,7 @@ function renderPhaseGroup(label,dotClass,fields,editable,when){
       <span class="pg-label"><span class="pdot ${dotClass}"></span>${label}</span>
       ${state}
     </div>
-    <div class="fields">${fields.map(f=>renderField(f,editable)).join('')}</div>
+    <div class="fields">${fields.map(f=>renderField(f,editable,restrictOwner)).join('')}</div>
   </div>`;
 }
 
@@ -4933,9 +5048,16 @@ function fieldRemainingDot(f, editable){
   return `<span class="f-remaining-dot" style="background:${p.color}" title="Still needs your input"></span>`;
 }
 
-function renderField(f, editable){
+function renderField(f, editable, restrictOwner){
   const wide = f.wide ? ' wide' : '';
-  const readonly = !editable || f.locked || !!f.cascadeFrom || !!f.cascadeFromField;
+  const notMyField = !!restrictOwner && f.owner !== currentPersona;
+  // cascadeFrom (mirrors a campaignConfig driver, e.g. Journey's Schedule
+  // Type) stays a permanent read-only mirror — there's no "typed value" to
+  // reconfirm, it only ever displays another field's live selection.
+  // cascadeFromField is different: it's a reconfirm/override pattern (see
+  // fieldValue() above) — pre-filled from its source but editable, so it's
+  // deliberately left OUT of this readonly check.
+  const readonly = !editable || f.locked || !!f.cascadeFrom || notMyField;
   const v = fieldValue(f);
   const ro = readonly ? ' readonly' : '';
   const remainingDot = fieldRemainingDot(f, editable);
@@ -4953,7 +5075,16 @@ function renderField(f, editable){
   } else if(f.type === 'sel'){
     const placeholder = `<option value="" ${!v?'selected':''} disabled hidden>Select…</option>`;
     const opts = (f.opts||['Yes','No']).map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');
-    control = `<select class="sel${driveAttr?' driver':''}${aiCls}" ${readonly?'disabled':''}${driveAttr} onchange="${persistHandler}">${placeholder}${opts}</select>`;
+    // A `cond:{ref:...}` field elsewhere in this same section (e.g. Touch
+    // Point's "Resend Rule", gated on this exact field's answer) needs to
+    // appear/disappear the instant this select changes, not just whenever
+    // something else happens to trigger a re-render (previously you had to
+    // hit Save first to even see the dependent field show up). Driver
+    // fields already get a full renderAll() via driveField() below, so this
+    // only adds the extra render for non-driver selects, to avoid a
+    // redundant double-render.
+    const selOnchange = f.drives ? persistHandler : `${persistHandler}; renderSections();`;
+    control = `<select class="sel${driveAttr?' driver':''}${aiCls}" ${readonly?'disabled':''}${driveAttr} onchange="${selOnchange}">${placeholder}${opts}</select>`;
   } else if(f.type === 'multi'){
     const emailOn = (v||'').includes('Email');
     const smsOn = (v||'').includes('SMS');
