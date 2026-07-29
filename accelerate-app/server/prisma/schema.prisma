@@ -170,3 +170,21 @@ model NudgeRule {
   active             Boolean  @default(true)
   order              Int
 }
+
+// Per-section conversation threads — comments AOR/XM/MDS/CEP/Ops/DCA leave on
+// a specific section of a specific campaign request (sectionId reuses the
+// exact same id scheme SECTIONS already uses client-side — "oms", "sms-t1",
+// "journey-tp1", ... — so a thread can hang off any section, including a
+// per-tactic CRF instance, with no new id scheme). Append-only: no edit/
+// delete for v1, this is a conversation log, not an editable notes field.
+model Comment {
+  id            String   @id @default(cuid())
+  tactplanId    String   // matches REQUESTS[].id, e.g. "TP-88213"
+  sectionId     String
+  authorPersona String   // aor | xm | mds | cep | ops | dca
+  body          String
+  mentionsJson  String?  // JSON array of persona keys tagged in this comment, e.g. ["xm","mds"] — denormalized so "who do I owe a reply to" doesn't need to parse body text
+  createdAt     DateTime @default(now())
+
+  @@index([tactplanId, sectionId])
+}

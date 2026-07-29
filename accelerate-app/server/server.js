@@ -510,6 +510,33 @@ app.put('/api/plan-milestones/:tactplanId', async (req, res) => {
   }
 });
 
+// Per-section conversation threads (see schema.prisma's Comment model doc
+// comment). Client groups the flat list by sectionId itself — one request
+// fetch per campaign, not one per section, since a request typically has a
+// dozen+ sections and firing that many round-trips would be wasteful.
+app.get('/api/comments/:tactplanId', async (req, res) => {
+  const rows = await prisma.comment.findMany({
+    where: { tactplanId: req.params.tactplanId },
+    orderBy: { createdAt: 'asc' },
+  });
+  res.json({ comments: rows.map(c => ({ ...c, mentions: c.mentionsJson ? JSON.parse(c.mentionsJson) : [] })) });
+});
+
+app.post('/api/comments', async (req, res) => {
+  const { tactplanId, sectionId, authorPersona, body, mentions } = req.body || {};
+  if (!tactplanId || !sectionId || !authorPersona || !body) {
+    return res.status(400).json({ error: 'tactplanId, sectionId, authorPersona, and body are required.' });
+  }
+  try {
+    const row = await prisma.comment.create({
+      data: { tactplanId, sectionId, authorPersona, body, mentionsJson: mentions && mentions.length ? JSON.stringify(mentions) : null },
+    });
+    res.json({ comment: { ...row, mentions: mentions || [] } });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 app.delete('/api/admin/nudge-rules/:id', async (req, res) => {
   try {
     await prisma.nudgeRule.delete({ where: { id: req.params.id } });

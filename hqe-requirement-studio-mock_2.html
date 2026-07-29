@@ -90,6 +90,25 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .persona-item .p-info span{display:block;font-size:.66rem;color:var(--brand);margin-top:2px;font-weight:700}
 .persona-menu hr{border:none;border-top:1px solid var(--line2);margin:4px 0}
 .persona-wrap{position:relative}
+/* Notification bell dropdown — real @mention comments (see the Conversation
+   tab feature), same open/close + positioning pattern as .persona-menu
+   right next to it, instead of the old toast()-only fixed 3-item string. */
+.notif-wrap{position:relative}
+.notif-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);width:340px;max-height:420px;overflow-y:auto;padding:6px;z-index:100;display:none}
+.notif-wrap.open .notif-menu{display:block;animation:fadeDown .18s ease}
+.notif-menu-h{display:flex;align-items:center;justify-content:space-between;padding:9px 12px 6px}
+.notif-menu-h span{font-size:.66rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
+.notif-menu-h button{font-size:.68rem;font-weight:700;color:var(--brand)}
+.notif-menu-h button:hover{text-decoration:underline}
+.notif-item{display:flex;gap:10px;padding:10px 12px;border-radius:8px;width:100%;text-align:left;transition:background .15s}
+.notif-item:hover{background:var(--surface2)}
+.notif-item .p-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:.68rem;flex-shrink:0}
+.notif-item-body{flex:1;min-width:0}
+.notif-item-body b{font-size:.78rem;font-weight:700}
+.notif-item-sec{font-size:.68rem;color:var(--brand);font-weight:700;margin-top:1px}
+.notif-item-text{font-size:.76rem;color:var(--ink2);margin-top:3px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.notif-item-time{font-size:.66rem;color:var(--ink4);margin-top:3px}
+.notif-empty{padding:28px 16px;text-align:center;color:var(--ink3);font-size:.8rem;font-weight:600}
 
 /* ================== STAGE (leaves 30vw for chat) ================== */
 .stage{padding:20px 22px 32px;margin-right:340px}
@@ -161,6 +180,7 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .sm-row-ic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:.76rem;flex-shrink:0}
 .sm-row-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sm-row-check{width:15px;height:15px;border-radius:50%;background:var(--ok);color:#fff;font-size:.6rem;display:grid;place-items:center;flex-shrink:0;font-weight:800}
+.sm-row-comment-badge{font-size:.62rem;font-weight:800;color:var(--brand);background:var(--brand-tint);border-radius:99px;padding:2px 6px;flex-shrink:0}
 .sm-row-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .sm-dot-prog{background:var(--brand)}
 .sm-dot-mine{background:var(--nv-orange)}
@@ -169,6 +189,37 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .sm-detail-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);min-height:200px}
 .sm-detail-card{scroll-margin-top:76px}
 .sm-detail-empty{padding:32px;text-align:center;color:var(--ink3);font-size:.85rem;font-weight:600}
+/* Section-level Fields/Conversation tab strip + comment thread — a
+   lightweight per-section @mention comments feature, separate from the
+   requirement-gathering chat panel. */
+.sd-tabs{display:flex;gap:4px;padding:10px 16px 0;border-bottom:1px solid var(--line2)}
+.sd-tab{padding:8px 4px 10px;border:none;background:none;font-size:.8rem;font-weight:700;color:var(--ink3);cursor:pointer;position:relative;margin-right:18px}
+.sd-tab:hover{color:var(--ink)}
+.sd-tab.active{color:var(--brand)}
+.sd-tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--brand);border-radius:2px}
+.cm-panel{padding:16px}
+.cm-list{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
+.cm-empty{color:var(--ink3);font-size:.8rem;font-weight:600;text-align:center;padding:20px 0}
+.cm-item{display:flex;gap:10px}
+.cm-av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:.66rem;flex-shrink:0}
+.cm-body{flex:1;min-width:0}
+.cm-meta{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:.78rem}
+.cm-meta b{color:var(--ink)}
+.cm-role{color:var(--ink3);font-size:.7rem;font-weight:600}
+.cm-time{color:var(--ink4);font-size:.7rem;margin-left:auto}
+.cm-text{font-size:.82rem;color:var(--ink2);line-height:1.5;margin-top:3px;white-space:pre-wrap}
+.cm-mentions{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap}
+.cm-mention{font-size:.68rem;font-weight:700;color:var(--brand);background:var(--brand-tint);border-radius:6px;padding:2px 7px}
+.cm-compose{border-top:1px solid var(--line2);padding-top:14px;position:relative}
+.cm-input{width:100%;min-height:64px;border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font:inherit;font-size:.82rem;resize:vertical;background:var(--surface2);color:var(--ink)}
+.cm-mention-picker{position:absolute;bottom:100%;left:0;margin-bottom:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;min-width:220px;z-index:20}
+.cm-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border-radius:7px;text-align:left;font-size:.8rem;font-weight:700;color:var(--ink)}
+.cm-picker-item:hover{background:var(--surface2)}
+.cm-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
+.cm-tagged{display:flex;gap:5px;flex-wrap:wrap}
+.cm-tag-chip{font-size:.7rem;font-weight:700;color:var(--brand);background:var(--brand-tint);border-radius:99px;padding:3px 9px 3px 7px;display:inline-flex;align-items:center;gap:4px}
+.cm-tag-chip button{color:var(--brand);opacity:.6;font-weight:800}
+.cm-tag-chip button:hover{opacity:1}
 .sm-detail-head{padding:14px 16px;border-bottom:1px solid var(--line2)}
 .sm-detail-head-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sm-detail-num{font-size:.7rem;font-weight:800;color:var(--ink3)}
@@ -914,9 +965,12 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
   </nav>
   <div class="appbar-right">
     <div class="autosave"><span class="sdot"></span>All changes saved</div>
-    <button class="appbar-icon" title="Notifications" onclick="toast('3 notifications — Megan resolved a conflict · Metadata sheet ready · Priya @-mentioned you')">
-      🔔<span class="badge">3</span>
-    </button>
+    <div class="notif-wrap" id="notifWrap">
+      <button class="appbar-icon" title="Notifications" onclick="toggleNotifMenu(event)">
+        🔔<span class="badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="notif-menu" id="notifMenu"></div>
+    </div>
     <div class="persona-wrap" id="personaWrap">
       <button class="persona-btn" onclick="togglePersonaMenu(event)">
         <span class="p-av" id="pAv" style="background:#E74A21">PS</span>
@@ -1950,7 +2004,9 @@ function switchPersona(k){
     renderSections();
     renderYouFocus();
     renderOwnership();
+    maybeAnnounceNewMentions(); // this persona may have its own unread @mentions the last persona didn't
   }
+  renderNotifBadge();
   chatNotify(`Now viewing as <b>${p.name}</b> — ${p.role}. Sections needing your input are highlighted.`);
 }
 
@@ -2080,6 +2136,8 @@ function openRequest(id){
   document.getElementById('view-request').classList.add('on');
   window.scrollTo({top:0,behavior:'smooth'});
   renderAll();
+  sectionDetailTab = {};
+  loadComments(r.id); // async — re-renders once loaded (also checks for unread @mentions to surface in chat)
 }
 
 function setActiveNav(id){
@@ -4548,10 +4606,13 @@ function renderSectionListRows(rows){
           ? '<span class="sm-row-dot sm-dot-mine"></span>'
           : `<span class="sm-row-dot sm-dot-${st.statusClass==='prog'?'prog':'ns'}"></span>`;
     }
+    const unread = ops ? 0 : unreadMentionCountForSection(s.id);
+    const unreadBadge = unread ? `<span class="sm-row-comment-badge" title="${unread} new mention${unread>1?'s':''}">💬 ${unread}</span>` : '';
     return `<button class="sm-row ${isOpen?'on':''} ${indent?'sm-row-indent':''}" onclick="selectDetailSection('${s.id}')">
       <span class="sm-row-num">${s.num||''}</span>
       <span class="sm-row-ic">${s.ic}</span>
       <span class="sm-row-name">${s.name}</span>
+      ${unreadBadge}
       ${icon}
       <span class="sm-row-chev">›</span>
     </button>`;
@@ -4886,6 +4947,13 @@ function renderSectionDetailCard(s){
   const d = computeSectionRenderData(s);
   const st = sectionStatus(s);
   const mineTag = d.mine ? '<span class="sm-status-pill sm-status-prog">Your input needed</span>' : '';
+  const tab = sectionDetailTab[s.id] || 'fields';
+  const comments = commentsForSection(s.id);
+  const tabsHtml = `<div class="sd-tabs">
+    <button class="sd-tab${tab==='fields'?' active':''}" onclick="setSectionDetailTab('${s.id}','fields')">Fields</button>
+    <button class="sd-tab${tab==='conversation'?' active':''}" onclick="setSectionDetailTab('${s.id}','conversation')">Conversation${comments.length?` (${comments.length})`:''}</button>
+  </div>`;
+  const bodyHtml = tab==='fields' ? `<div class="sm-detail-body">${d.body}${d.submitRow}</div>` : renderConversationPanel(s.id, comments);
 
   return `<div class="sm-detail-card ${d.isSubmitted?'submitted':''}" data-id="${s.id}">
     <div class="sm-detail-head">
@@ -4901,9 +4969,258 @@ function renderSectionDetailCard(s){
         <span class="sm-count">${st.applicable ? `${st.filled} / ${st.total} fields` : '—'}</span>
       </div>
     </div>
-    <div class="sm-detail-body">${d.body}${d.submitRow}</div>
+    ${tabsHtml}
+    ${bodyHtml}
   </div>`;
 }
+
+// ============ SECTION CONVERSATIONS — per-section @mention comment threads
+// (server: schema.prisma Comment model). Separate from the requirement-
+// gathering chat panel: this is a real multi-stakeholder discussion log
+// attached to one section of one campaign request, not the AI agent.
+let COMMENTS = [];
+let sectionDetailTab = {}; // sectionId -> 'fields' | 'conversation', default 'fields'
+let commentDraftMentions = {}; // sectionId -> [personaKey, ...] tagged in the in-progress draft
+
+async function loadComments(tactplanId){
+  try{
+    const res = await fetch(`/api/comments/${tactplanId}`);
+    const data = await res.json();
+    COMMENTS = data.comments || [];
+  }catch(e){
+    COMMENTS = []; // comments just won't show if the API is unreachable — same fallback posture as nudge rules
+  }
+  renderSections(); // picks up Conversation tab counts now that COMMENTS is populated
+  maybeAnnounceNewMentions();
+  renderNotifBadge();
+}
+
+function commentsForSection(sectionId){
+  return COMMENTS.filter(c => c.sectionId === sectionId);
+}
+
+function setSectionDetailTab(sectionId, tab){
+  sectionDetailTab[sectionId] = tab;
+  if(tab === 'conversation') mentionSeenStorageMark(sectionId);
+  renderSections();
+}
+
+function timeAgo(iso){
+  const secs = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime())/1000));
+  if(secs < 60) return 'just now';
+  const mins = Math.floor(secs/60);
+  if(mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs/24)}d ago`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderConversationPanel(sectionId, comments){
+  const list = comments.length ? comments.map(c=>{
+    const p = PERSONAS[c.authorPersona] || {name:c.authorPersona, role:'', color:'#818B9A', abbr:'?'};
+    const mentionsHtml = (c.mentions||[]).map(m=>`<span class="cm-mention">@${(PERSONAS[m]||{name:m}).name.split(' ')[0]}</span>`).join('');
+    return `<div class="cm-item">
+      <span class="cm-av" style="background:${gradFor(p.color)}">${p.abbr}</span>
+      <div class="cm-body">
+        <div class="cm-meta"><b>${p.name}</b><span class="cm-role">${p.role}</span><span class="cm-time">${timeAgo(c.createdAt)}</span></div>
+        <div class="cm-text">${escapeHtml(c.body)}</div>
+        ${mentionsHtml?`<div class="cm-mentions">${mentionsHtml}</div>`:''}
+      </div>
+    </div>`;
+  }).join('') : `<div class="cm-empty">No comments yet on this section — start the conversation.</div>`;
+
+  const tagged = commentDraftMentions[sectionId] || [];
+  const taggedHtml = tagged.map(k=>{
+    const p = PERSONAS[k];
+    return `<span class="cm-tag-chip">@${p.name.split(' ')[0]}<button onclick="untagMention('${sectionId}','${k}')">✕</button></span>`;
+  }).join('');
+
+  return `<div class="cm-panel">
+    <div class="cm-list">${list}</div>
+    <div class="cm-compose">
+      <textarea class="cm-input" id="cm-input-${sectionId}" placeholder="Comment… type @ to tag someone" oninput="handleCommentInput('${sectionId}', this)"></textarea>
+      <div class="cm-mention-picker" id="cm-picker-${sectionId}" style="display:none"></div>
+      <div class="cm-compose-foot">
+        <div class="cm-tagged" id="cm-tagged-${sectionId}">${taggedHtml}</div>
+        <button class="btn-primary btn-sm" onclick="submitComment('${sectionId}')">Post</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Typing "@" opens a picker of the 6 personas right above the compose box —
+// picking one inserts "@Name " into the text and tags them in mentionsJson,
+// same taggable set PERSONAS already defines everywhere else in the app
+// (ownership, ownership matrix, persona switcher) rather than free-text.
+function handleCommentInput(sectionId, el){
+  const picker = document.getElementById(`cm-picker-${sectionId}`);
+  const trailingAt = /(^|\s)@(\w*)$/.test(el.value.slice(0, el.selectionStart));
+  if(!trailingAt){ picker.style.display = 'none'; return; }
+  picker.innerHTML = Object.entries(PERSONAS).map(([k,p])=>
+    `<button class="cm-picker-item" onclick="pickMention('${sectionId}','${k}')"><span class="p-av" style="background:${gradFor(p.color)};width:22px;height:22px;font-size:.6rem">${p.abbr}</span>${p.name} <span style="color:var(--ink3);font-weight:600">· ${p.role}</span></button>`
+  ).join('');
+  picker.style.display = 'block';
+}
+
+function pickMention(sectionId, personaKey){
+  const el = document.getElementById(`cm-input-${sectionId}`);
+  el.value = el.value.replace(/(^|\s)@(\w*)$/, `$1@${PERSONAS[personaKey].name.split(' ')[0]} `);
+  document.getElementById(`cm-picker-${sectionId}`).style.display = 'none';
+  if(!commentDraftMentions[sectionId]) commentDraftMentions[sectionId] = [];
+  if(!commentDraftMentions[sectionId].includes(personaKey)) commentDraftMentions[sectionId].push(personaKey);
+  document.getElementById(`cm-tagged-${sectionId}`).outerHTML = renderTaggedChips(sectionId);
+  el.focus();
+}
+
+function renderTaggedChips(sectionId){
+  const tagged = commentDraftMentions[sectionId] || [];
+  const html = tagged.map(k=>{
+    const p = PERSONAS[k];
+    return `<span class="cm-tag-chip">@${p.name.split(' ')[0]}<button onclick="untagMention('${sectionId}','${k}')">✕</button></span>`;
+  }).join('');
+  return `<div class="cm-tagged" id="cm-tagged-${sectionId}">${html}</div>`;
+}
+
+function untagMention(sectionId, personaKey){
+  commentDraftMentions[sectionId] = (commentDraftMentions[sectionId]||[]).filter(k=>k!==personaKey);
+  document.getElementById(`cm-tagged-${sectionId}`).outerHTML = renderTaggedChips(sectionId);
+}
+
+async function submitComment(sectionId){
+  const el = document.getElementById(`cm-input-${sectionId}`);
+  const body = el.value.trim();
+  if(!body) return;
+  const mentions = commentDraftMentions[sectionId] || [];
+  try{
+    const res = await fetch('/api/comments', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ tactplanId: currentRequest.id, sectionId, authorPersona: currentPersona, body, mentions }),
+    });
+    if(!res.ok){ toast('Could not post comment.'); return; }
+    const data = await res.json();
+    COMMENTS.push(data.comment);
+  }catch(e){
+    toast('Could not post comment.');
+    return;
+  }
+  commentDraftMentions[sectionId] = [];
+  renderSections();
+}
+
+// Surfaces unread @mentions of the CURRENT persona into the chat feed —
+// same .checkpoint bubble style the CMA/CPF milestone callouts already use,
+// with a "Reply" button that jumps straight to that section's Conversation
+// tab. "Unread" is tracked client-side per (persona, comment id) in
+// localStorage, since there's no real auth/session system to hang read-
+// state off of server-side in this mock.
+function mentionSeenKey(){ return `commentsSeen:${currentPersona}`; }
+function getSeenCommentIds(){
+  try{ return new Set(JSON.parse(localStorage.getItem(mentionSeenKey())||'[]')); }catch(e){ return new Set(); }
+}
+function markCommentsSeen(ids){
+  const seen = getSeenCommentIds();
+  ids.forEach(id=>seen.add(id));
+  localStorage.setItem(mentionSeenKey(), JSON.stringify([...seen]));
+}
+function mentionSeenStorageMark(sectionId){
+  markCommentsSeen(commentsForSection(sectionId).map(c=>c.id));
+}
+// Small 💬 count badge on a section's row in the list, so an unread mention
+// is visible without opening every section's Conversation tab to check.
+function unreadMentionCountForSection(sectionId){
+  const seen = getSeenCommentIds();
+  return commentsForSection(sectionId).filter(c => c.authorPersona !== currentPersona && (c.mentions||[]).includes(currentPersona) && !seen.has(c.id)).length;
+}
+function maybeAnnounceNewMentions(){
+  const seen = getSeenCommentIds();
+  const unread = COMMENTS.filter(c => c.authorPersona !== currentPersona && (c.mentions||[]).includes(currentPersona) && !seen.has(c.id));
+  if(!unread.length) return;
+  const body = document.getElementById('chatBody');
+  if(!body) return;
+  unread.forEach(c=>{
+    const author = PERSONAS[c.authorPersona] || {name:c.authorPersona};
+    const section = SECTIONS.find(s=>s.id===c.sectionId);
+    const sectionName = section ? section.name.replace(/^↳\s*/,'') : c.sectionId;
+    postCheckpointCallout(`💬 <b>${author.name}</b> mentioned you on <b>${escapeHtml(sectionName)}</b>: “${escapeHtml(c.body)}”
+      <div class="sec-submit"><button class="btn-primary" onclick="selectDetailSection('${c.sectionId}'); setSectionDetailTab('${c.sectionId}','conversation')">Reply</button></div>`, 'nudge');
+  });
+  markCommentsSeen(unread.map(c=>c.id));
+  renderNotifBadge();
+}
+
+// The bell dropdown is a SEPARATE "seen" tracker from the chat-callout one
+// above (commentsSeen:*) — a mention gets posted into chat exactly once
+// (marked seen there immediately so it doesn't repeat every render), but
+// stays in the bell dropdown, unread, until the user actually opens it from
+// there. Same underlying @mention data, two different lifecycles: chat is
+// "announce once", the bell is "review until dismissed".
+function notifSeenKey(){ return `notifSeen:${currentPersona}`; }
+function getNotifSeenIds(){
+  try{ return new Set(JSON.parse(localStorage.getItem(notifSeenKey())||'[]')); }catch(e){ return new Set(); }
+}
+function markNotifSeen(ids){
+  const seen = getNotifSeenIds();
+  ids.forEach(id=>seen.add(id));
+  localStorage.setItem(notifSeenKey(), JSON.stringify([...seen]));
+}
+function unreadNotifications(){
+  const seen = getNotifSeenIds();
+  return COMMENTS
+    .filter(c => c.authorPersona !== currentPersona && (c.mentions||[]).includes(currentPersona) && !seen.has(c.id))
+    .sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+}
+function renderNotifBadge(){
+  const badge = document.getElementById('notifBadge');
+  if(!badge) return;
+  const n = unreadNotifications().length;
+  badge.textContent = n;
+  badge.style.display = n ? 'grid' : 'none';
+  renderNotifMenu();
+}
+function renderNotifMenu(){
+  const el = document.getElementById('notifMenu');
+  if(!el) return;
+  const unread = unreadNotifications();
+  const items = unread.map(c=>{
+    const p = PERSONAS[c.authorPersona] || {name:c.authorPersona, role:'', color:'#818B9A', abbr:'?'};
+    const section = SECTIONS.find(s=>s.id===c.sectionId);
+    const sectionName = section ? section.name.replace(/^↳\s*/,'') : c.sectionId;
+    return `<button class="notif-item" onclick="openNotification('${c.id}','${c.sectionId}')">
+      <span class="p-av" style="background:${gradFor(p.color)}">${p.abbr}</span>
+      <div class="notif-item-body">
+        <b>${p.name}</b> <span style="color:var(--ink3);font-weight:600;font-size:.72rem">mentioned you</span>
+        <div class="notif-item-sec">${escapeHtml(sectionName)}</div>
+        <div class="notif-item-text">${escapeHtml(c.body)}</div>
+        <div class="notif-item-time">${timeAgo(c.createdAt)}</div>
+      </div>
+    </button>`;
+  }).join('');
+  el.innerHTML = `<div class="notif-menu-h"><span>Notifications</span>${unread.length?'<button onclick="markAllNotificationsRead()">Mark all read</button>':''}</div>`
+    + (items || `<div class="notif-empty">You're all caught up.</div>`);
+}
+function openNotification(commentId, sectionId){
+  markNotifSeen([commentId]);
+  document.getElementById('notifWrap').classList.remove('open');
+  renderNotifBadge();
+  selectDetailSection(sectionId);
+  setSectionDetailTab(sectionId, 'conversation');
+}
+function markAllNotificationsRead(){
+  markNotifSeen(unreadNotifications().map(c=>c.id));
+  renderNotifBadge();
+}
+function toggleNotifMenu(e){
+  e && e.stopPropagation();
+  renderNotifMenu();
+  document.getElementById('notifWrap').classList.toggle('open');
+}
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('#notifWrap')) document.getElementById('notifWrap')?.classList.remove('open');
+});
 
 let submittedSections = new Set();
 
