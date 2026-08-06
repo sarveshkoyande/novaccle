@@ -215,8 +215,65 @@ app.get('/api/admin/export', async (req, res) => {
   res.send(buf);
 });
 
+// Forms — the layer above sections, so future flows (FormB, FormC, ...)
+// don't have to be shoehorned into one hardcoded structure. Each FormSection
+// belongs to exactly one Form; the New Campaign Request modal's "Which
+// form?" picker reads this list directly.
+app.get('/api/forms', async (req, res) => {
+  const forms = await prisma.form.findMany({ orderBy: { order: 'asc' } });
+  res.json({ forms });
+});
+
+app.post('/api/admin/forms', async (req, res) => {
+  const { name, description, active, order } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'name is required.' });
+  try {
+    const form = await prisma.form.create({
+      data: {
+        name, description: description || null, active: active === undefined ? true : !!active,
+        order: order ?? (await prisma.form.count()),
+      },
+    });
+    res.json({ form });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/admin/forms/:id', async (req, res) => {
+  const { name, description, active, order } = req.body || {};
+  try {
+    const form = await prisma.form.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(description !== undefined ? { description: description || null } : {}),
+        ...(active !== undefined ? { active: !!active } : {}),
+        ...(order !== undefined ? { order } : {}),
+      },
+    });
+    res.json({ form });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/forms/:id', async (req, res) => {
+  try {
+    // Sections cascade (schema.prisma Form.sections onDelete: Cascade), taking
+    // their fields with them (FormSection.fields already cascades too) — a
+    // deliberate all-or-nothing delete, no orphaned sections left dangling.
+    await prisma.form.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
 app.get('/api/schema', async (req, res) => {
+  const formId = req.query.formId || 'form-default';
   const sections = await prisma.formSection.findMany({
+    where: { formId },
     include: { fields: { orderBy: { order: 'asc' } } },
     orderBy: { order: 'asc' },
   });
@@ -231,15 +288,15 @@ app.get('/api/schema', async (req, res) => {
 });
 
 app.post('/api/admin/sections', async (req, res) => {
-  const { id, num, name, icon, parentId, audienceGate, note, needs, order } = req.body || {};
+  const { id, formId, num, name, icon, parentId, audienceGate, note, needs, order } = req.body || {};
   if (!id || !name) return res.status(400).json({ error: 'id and name are required.' });
   try {
     const section = await prisma.formSection.create({
       data: {
-        id, num: num || '', name, icon: icon || '▣', parentId: parentId || null,
+        id, formId: formId || 'form-default', num: num || '', name, icon: icon || '▣', parentId: parentId || null,
         audienceGate: !!audienceGate, note: note || null,
         needsJson: JSON.stringify(needs || { preplan: [], plan: [], exec: [] }),
-        order: order ?? (await prisma.formSection.count()),
+        order: order ?? (await prisma.formSection.count({ where: { formId: formId || 'form-default' } })),
       },
     });
     res.json({ section });
@@ -249,11 +306,12 @@ app.post('/api/admin/sections', async (req, res) => {
 });
 
 app.put('/api/admin/sections/:id', async (req, res) => {
-  const { num, name, icon, parentId, audienceGate, note, needs, order } = req.body || {};
+  const { formId, num, name, icon, parentId, audienceGate, note, needs, order } = req.body || {};
   try {
     const section = await prisma.formSection.update({
       where: { id: req.params.id },
       data: {
+        ...(formId !== undefined ? { formId } : {}),
         ...(num !== undefined ? { num } : {}),
         ...(name !== undefined ? { name } : {}),
         ...(icon !== undefined ? { icon } : {}),
@@ -833,6 +891,211 @@ app.post('/api/agent-fill', async (req, res) => {
   } catch (err) {
     console.error('[server] Agent turn failed:', err);
     send('error', { error: 'Agent turn failed.', detail: String(err.message || err) });
+    res.end();
+  }
+});
+
+// ===========================================================================
+// Visio Diagram agent — same real agentic-loop shape as /api/agent-fill
+// above (one model, real tool calls, SSE per-step events), pointed at the
+// AI-driven diagram editor instead of the form. The graph (nodes/edges) is
+// NOT persisted server-side or in the database: the client is the source of
+// truth (see hqe-requirement-studio-mock_2.html's diagramGraph/localStorage),
+// exactly like the old flow-canvas data before it and like TactPlan/brand
+// data elsewhere in this app — "Google Drive" here is a realistic mock, not
+// a real Drive API integration (no OAuth/credentials exist in this project).
+// The model never mutates the graph directly: propose_diagram_edit only
+// resolves and validates operations against the graph the client sent this
+// turn; the client stages them as a "Preview Changes" card and only mutates
+// its own state once the user clicks Apply — same separation as
+// propose_fill/confirmFillProposal.
+// ===========================================================================
+const DIAGRAM_SYSTEM_PROMPT = `You are the Diagram Chat for Novartis Accelerate's AI-driven Visio journey-diagram editor. Users describe edits in plain language; you translate them into structured graph operations. You are NOT a general chatbot — stay focused on the diagram.
+
+The canvas uses exactly these node types (shapes are fixed, do not invent new ones):
+- "process": rectangle, yellow fill — a normal campaign step (e.g. "Email 1", "Send Welcome Email").
+- "decision": diamond, orange outline — a yes/no branch (e.g. "Valid Email?", "Age > 18?").
+- "start" / "end": rounded pill, purple outline — the journey's start or terminal/stop node.
+- "datasource": cylinder — a data source (e.g. "Enrollment Source", "Opt-in Database", "CRM"). Never use "process" for a data source — the cylinder shape is meaningful to users, always preserve it.
+- "infobox": blue rectangle — informational blocks (e.g. "Campaign Information", "Segment", "Metadata").
+
+Nodes may also carry a "status" for the legend dot: "production" (green, live), "new" (yellow), "hold" (red, on hold), "inactive" (grey, never turned on). Only set status if the user's request implies one — do not invent one.
+
+You have one tool: propose_diagram_edit(summary, operations). It does NOT change anything itself — it only stages a preview the user must click Apply on. ALWAYS call this tool for any request that changes the diagram (move/delete/rename/add/connect/recolor/reshape/auto-layout) — never claim you made a change without calling it. If the user asks a read-only question about the diagram (e.g. "what's connected to Email 2?"), answer directly from the graph JSON you were given instead of calling the tool.
+
+Each item in "operations" is one of:
+- {op:"add_node", type, label, afterNodeId?, position?("above"|"below"|"left"|"right"), status?} — afterNodeId/position anchor the new node relative to an existing node (by id or label text); omit both to place it near the canvas center. connectFrom defaults to true (auto-wires an edge to the anchor).
+- {op:"move_node", nodeId, relativeTo, position("above"|"below"|"left"|"right")} — nodeId/relativeTo may be a node id OR its label text.
+- {op:"delete_node", nodeId}
+- {op:"rename_node", nodeId, label}
+- {op:"recolor_node", nodeId, fillColor?, borderColor?, status?} — colors are CSS hex strings.
+- {op:"set_shape", nodeId, shape} — shape is one of the five types above.
+- {op:"add_edge", from, to, label?}
+- {op:"delete_edge", from, to}
+- {op:"auto_layout"} — reorganizes spacing/alignment/routing, preserving logical order.
+
+Rules:
+- nodeId/from/to/relativeTo/afterNodeId may reference a node by its exact id (e.g. "d3") OR by matching/substring-matching its label — you do not need to know the real id, the server resolves it against the graph you were given.
+- A multi-step request (e.g. "add a decision after Email 3; if yes continue to Email 4, if no resend after 5 days") should become several operations in ONE propose_diagram_edit call, not one call per step.
+- If the graph is empty and the user describes a whole journey, emit a full sequence of add_node (+ add_edge as needed) operations bootstrapping it — the client auto-arranges a first-time population, so exact x/y is not your concern (there is no x/y in this schema).
+- Before calling the tool, output exactly one short, plain sentence stating what you're about to do — no chit-chat, no first-person filler.
+- Keep the "summary" argument short (one line) — it is shown as the preview card's headline.`;
+
+function buildDiagramToolDeclarations() {
+  return [
+    {
+      name: 'propose_diagram_edit',
+      description: 'Stage one or more diagram graph operations for the user to preview and apply. Does not mutate the diagram itself.',
+      parametersJsonSchema: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string', description: 'One-line description of the overall edit, shown as the preview card headline.' },
+          operations: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                op: { type: 'string', enum: ['add_node', 'move_node', 'delete_node', 'rename_node', 'recolor_node', 'set_shape', 'add_edge', 'delete_edge', 'auto_layout'] },
+                nodeId: { type: 'string' },
+                type: { type: 'string', enum: ['process', 'decision', 'start', 'end', 'datasource', 'infobox'] },
+                shape: { type: 'string', enum: ['process', 'decision', 'start', 'end', 'datasource', 'infobox'] },
+                label: { type: 'string' },
+                status: { type: 'string', enum: ['production', 'new', 'hold', 'inactive'] },
+                afterNodeId: { type: 'string' },
+                relativeTo: { type: 'string' },
+                position: { type: 'string', enum: ['above', 'below', 'left', 'right'] },
+                connectFrom: { type: 'boolean' },
+                fillColor: { type: 'string' },
+                borderColor: { type: 'string' },
+                from: { type: 'string' },
+                to: { type: 'string' },
+              },
+              required: ['op'],
+            },
+          },
+        },
+        required: ['summary', 'operations'],
+      },
+    },
+  ];
+}
+
+// Resolves a node reference (id, exact label, or substring of label) against
+// the graph the client sent this turn — the model is told it may reference
+// nodes by label text, so this has to actually work, not just pass ids through.
+function resolveDiagramNodeRef(graph, ref) {
+  if (!ref) return null;
+  const nodes = graph.nodes || [];
+  return nodes.find(n => n.id === ref)
+    || nodes.find(n => (n.label || '').toLowerCase() === String(ref).toLowerCase())
+    || nodes.find(n => (n.label || '').toLowerCase().includes(String(ref).toLowerCase()))
+    || null;
+}
+
+// Executed server-side, for real — validates/resolves operations against the
+// actual graph rather than trusting the model's node references verbatim,
+// same "deterministic where it matters" approach as match_section above.
+async function executeDiagramTool(name, args, ctx) {
+  if (name !== 'propose_diagram_edit') return { error: `Unknown tool "${name}".` };
+  const graph = ctx.graph || { nodes: [], edges: [] };
+  const ops = Array.isArray(args.operations) ? args.operations : [];
+  const resolved = [];
+  for (const op of ops) {
+    if (!op || !op.op) continue;
+    const out = { ...op };
+    // For add_node, anchors are optional and may legitimately not resolve
+    // (a brand-new empty graph) — leave as literal text, client falls back
+    // to a default position. For every other op, an unresolved reference
+    // means the edit can't be applied, so it's dropped rather than silently
+    // operating on the wrong node.
+    if (['move_node', 'delete_node', 'rename_node', 'recolor_node', 'set_shape'].includes(op.op)) {
+      const n = resolveDiagramNodeRef(graph, op.nodeId);
+      if (!n && graph.nodes.length) continue; // known graph, unresolved ref — skip
+      if (n) out.nodeId = n.id;
+    }
+    if (op.op === 'move_node') {
+      const anchor = resolveDiagramNodeRef(graph, op.relativeTo);
+      if (anchor) out.relativeTo = anchor.id;
+    }
+    if (op.op === 'add_node' && (op.afterNodeId || op.relativeTo)) {
+      const anchor = resolveDiagramNodeRef(graph, op.afterNodeId || op.relativeTo);
+      if (anchor) { out.afterNodeId = anchor.id; delete out.relativeTo; }
+    }
+    if (op.op === 'add_edge' || op.op === 'delete_edge') {
+      const a = resolveDiagramNodeRef(graph, op.from), b = resolveDiagramNodeRef(graph, op.to);
+      if (a) out.from = a.id;
+      if (b) out.to = b.id;
+    }
+    resolved.push(out);
+  }
+  if (!resolved.length) return { error: 'No operations could be resolved against the current diagram.' };
+  return { proposed: true, summary: args.summary || 'Proposed diagram edit', operations: resolved };
+}
+
+// SSE agent loop for the Diagram Chat — same event shape as /api/agent-fill
+// (reasoning/tool_start/tool/proposal/final/error/history) so the client's
+// existing SSE parsing pattern (see vbSendChat) needed no new plumbing.
+app.post('/api/visio-agent', async (req, res) => {
+  const { graph, text, history, tactplanId } = req.body || {};
+  if (!ai) return res.status(503).json({ error: 'GEMINI_API_KEY not configured on the server.' });
+  if (!text) return res.status(400).json({ error: 'text is required.' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders();
+  const send = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  const ctx = { graph: graph && graph.nodes ? graph : { nodes: [], edges: [] }, tactplanId: tactplanId || null };
+
+  try {
+    const chat = ai.chats.create({
+      model: MODEL,
+      history: Array.isArray(history) ? history : undefined,
+      config: {
+        systemInstruction: DIAGRAM_SYSTEM_PROMPT,
+        tools: [{ functionDeclarations: buildDiagramToolDeclarations() }],
+        automaticFunctionCalling: { disable: true },
+        temperature: 0.3,
+      },
+    });
+
+    // The graph is sent inline with the message (not just in a tool result)
+    // so the model can answer read-only questions without needing a tool
+    // round-trip, and so it always has real current node ids/labels to
+    // reference even on the very first turn.
+    const messageWithGraph = `Current diagram graph (JSON):\n${JSON.stringify(ctx.graph)}\n\nUser message: ${text}`;
+
+    let response = await chat.sendMessage({ message: messageWithGraph });
+    if (response.text?.trim() && response.functionCalls?.length) send('reasoning', { text: response.text.trim() });
+
+    let rounds = 0;
+    while (response.functionCalls?.length && rounds < MAX_TOOL_ROUNDS) {
+      rounds++;
+      const responseParts = [];
+      for (const call of response.functionCalls) {
+        const name = call.name || 'unknown_tool';
+        const args = call.args || {};
+        const callId = call.id || `${name}-${rounds}`;
+
+        send('tool_start', { name });
+        let result;
+        try { result = await executeDiagramTool(name, args, ctx); }
+        catch (err) { result = { error: err instanceof Error ? err.message : 'Tool execution failed.' }; }
+        send('tool', { name, result });
+        if (name === 'propose_diagram_edit' && result?.proposed) send('proposal', result);
+
+        responseParts.push(createPartFromFunctionResponse(callId, name, result));
+      }
+      response = await chat.sendMessage({ message: responseParts });
+      if (response.text?.trim() && response.functionCalls?.length) send('reasoning', { text: response.text.trim() });
+    }
+
+    send('final', { text: response.text?.trim() || '' });
+    send('history', { history: chat.getHistory() });
+    res.end();
+  } catch (err) {
+    console.error('[server] Diagram agent turn failed:', err);
+    send('error', { error: 'Diagram agent turn failed.', detail: String(err.message || err) });
     res.end();
   }
 });

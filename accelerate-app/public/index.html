@@ -5,15 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Novartis Accelerate · Campaign Requirement Gathering Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Volta Modern Display is Novartis' proprietary, exclusively-licensed
+     typeface (a customized Neue Haas Grotesk, distributed only through
+     Commercial Type) — not something that can be legitimately downloaded
+     for this project. Inter is used as the real working substitute: same
+     modern-grotesque lineage, free (SIL Open Font License), actually loads. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --nv-blue:#0460A9; --nv-orange:#E74A21; --nv-gold:#EC961D;
+  /* Novartis brand-guidelines typography colors, exact hex from BrandLab
+     (brandguidelines/Type graphy rule 2...jpeg) — Warm Black / Soft White
+     are the two typography colors; Space Orange is accent-only, never for
+     large headlines or long text blocks, never below 19pt/24px as a text
+     color (brandguidelines/Typography rule 4...jpeg, "Basic rules"). */
+  --nv-warm-black:#161616; --nv-soft-white:#FCFCFC; --nv-space-orange:#FF4E00;
+  --nv-blue:#0460A9; --nv-orange:#FF4E00; --nv-gold:#EC961D;
   --bg:#EEF2F7; --surface:#FFFFFF; --surface2:#F7F9FC; --surface3:#EEF2F7;
-  --ink:#0F1A2A; --ink2:#3E4A5C; --ink3:#818B9A; --ink4:#B8C0CD;
+  --ink:#161616; --ink2:#3E4A5C; --ink3:#818B9A; --ink4:#B8C0CD;
   --line:#E6EAF0; --line2:#EDF0F4;
   --brand:#0460A9; --brand-dk:#0A3D7A; --brand-tint:#E8F1FA; --brand-line:#C0D6EE; --brand-light:#3E86C4;
-  --ai:#E74A21; --ai-dk:#B23417; --ai-tint:#FDECE6; --ai-line:#F5C4B4; --ai-light:#F0805C;
+  --ai:#FF4E00; --ai-dk:#C23D00; --ai-tint:#FFEEE6; --ai-line:#FFC4A8; --ai-light:#FF7D40;
   --accent-gold:#EC961D; --gold-tint:#FDF1DC; --gold-dk:#B87304; --gold-light:#F5B966;
   --ok:#1E7A4F; --ok-tint:#E8F4ED; --ok-light:#3FA070;
   /* Gradient pairs — every solid brand fill uses [color]→[color]-grad instead of a flat swatch */
@@ -27,15 +39,26 @@
   --r:10px; --r-sm:8px;
   --shadow:0 1px 2px rgba(16,26,32,.04);
   --shadow-lg:0 6px 20px rgba(16,26,32,.1);
-  --font:'Nunito',-apple-system,'Segoe UI',sans-serif;
+  /* Brand font is Volta Modern Display (brandguidelines/Typography rule 4)
+     — not licensed/bundled in this project, so it's named first and falls
+     through to Nunito (already loaded) wherever it isn't installed locally. */
+  --font:'Inter','Nunito',-apple-system,'Segoe UI',sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{font-size:15px}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-weight:500}
+/* Body Copy: Roman (400) with Medium (500) highlights — brandguidelines'
+   "Basic rules" #1. Headings are Medium (500), set explicitly below since
+   they no longer inherit it from the body default. */
+/* Brand gradient (brandguidelines/HD Display 1920x1080.jpeg) behind the
+   whole page, washed with a translucent white layer so it stays a subtle
+   backdrop rather than competing with the dense form UI sitting on top —
+   per the brand guide's own rule, body text never sits directly on the raw
+   gradient (only Warm Black/white cards do), so contrast stays safe. */
+body{font-family:var(--font);background:linear-gradient(rgba(238,242,247,.93),rgba(238,242,247,.93)),url('brand-gradient.jpg') center/cover fixed,var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-weight:400}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
-input,select,textarea{font-family:inherit;font-weight:500}
+input,select,textarea{font-family:inherit;font-weight:400}
 ::selection{background:var(--brand-line)}
-h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
+h1,h2,h3,h4{font-family:var(--font);font-weight:500;letter-spacing:-.005em}
 .mono,.fid,.rt-id{font-variant-numeric:tabular-nums;letter-spacing:0;font-weight:600}
 
 /* ================== LOGIN SCREEN ================== */
@@ -55,8 +78,11 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 /* ================== APP BAR ================== */
 .appbar{background:var(--surface);border-bottom:1px solid var(--line);height:60px;display:flex;align-items:center;padding:0 26px;gap:22px;position:sticky;top:0;z-index:80;box-shadow:0 1px 3px rgba(16,26,32,.04)}
 .brand-logo{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink)}
-.brand-mark{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex-shrink:0}
-.brand-mark img{width:100%;height:100%;object-fit:contain}
+/* Real Novartis wordmark lockup (brandguidelines/Logo Warm Black RGB.svg) —
+   wide aspect ratio (283x42), so this is sized by height with auto width,
+   not the old square icon-only box. */
+.brand-mark{height:26px;width:auto;display:grid;place-items:center;flex-shrink:0}
+.brand-mark img{height:100%;width:auto;object-fit:contain}
 .brand-name{font-weight:800;font-size:1rem}
 .brand-name span{color:var(--ink3);font-weight:600}
 .top-nav{display:flex;gap:2px;margin-left:20px}
@@ -122,7 +148,7 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .hero-l p{font-size:.85rem;color:var(--ink2);margin-top:4px;max-width:640px;font-weight:500}
 .hero-l p b{color:var(--ink);font-weight:700}
 .hero-r{display:flex;gap:10px;align-items:center}
-.new-btn{display:inline-flex;align-items:center;gap:10px;height:40px;background:var(--grad-blue);color:#fff;padding:0 18px 0 14px;border-radius:8px;font-size:.85rem;font-weight:700;transition:all .15s;box-shadow:0 2px 8px rgba(4,96,169,.22)}
+.new-btn{display:inline-flex;align-items:center;gap:10px;height:40px;background:var(--grad-orange);color:#fff;padding:0 18px 0 14px;border-radius:8px;font-size:.85rem;font-weight:700;transition:all .15s;box-shadow:0 2px 8px rgba(255,78,0,.25)}
 .new-btn:hover{background:var(--brand-dk);transform:translateY(-1px);box-shadow:0 4px 12px rgba(4,96,169,.3)}
 .new-btn .plus{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:.9rem;line-height:1;font-weight:400}
 
@@ -160,7 +186,14 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 /* Sticks right below the app bar so the nav stays reachable while the
    section list/detail panel below it scrolls — same sticky pattern
    .sm-list-panel already uses, just one layer higher. */
-.crf-tabs-slot{position:sticky;top:60px;z-index:75;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);margin:16px 0;padding:0;border-radius:var(--r)}
+.crf-tabs-slot{position:sticky;top:60px;z-index:75;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);margin:16px 0;padding:0;border-radius:var(--r);display:flex;align-items:stretch}
+.crf-tabs-slot .crf-view-tabs{flex:1;min-width:0}
+/* Fixed, non-scrolling area to the right of the (horizontally scrollable)
+   tab strip — same sticky bar, same height, never scrolls with the tabs.
+   Opens the project conversation drawer. */
+.crf-comments-trigger{flex-shrink:0;display:flex;align-items:center;gap:7px;padding:0 18px;border:none;border-left:1px solid var(--line2);background:none;font-size:.8rem;font-weight:700;color:var(--ink2);cursor:pointer;white-space:nowrap}
+.crf-comments-trigger:hover{background:var(--surface2)}
+.crf-comments-badge{background:var(--grad-orange);color:#fff;font-size:.62rem;font-weight:800;min-width:16px;height:16px;border-radius:99px;display:inline-grid;place-items:center;padding:0 4px}
 .sm-wrap{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;margin-top:0}
 @media (max-width:900px){.sm-wrap{grid-template-columns:1fr}}
 .sm-list-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:8px;display:flex;flex-direction:column;gap:1px;position:sticky;top:74px;max-height:calc(100vh - 88px);overflow-y:auto}
@@ -180,7 +213,6 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .sm-row-ic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:.76rem;flex-shrink:0}
 .sm-row-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sm-row-check{width:15px;height:15px;border-radius:50%;background:var(--ok);color:#fff;font-size:.6rem;display:grid;place-items:center;flex-shrink:0;font-weight:800}
-.sm-row-comment-badge{font-size:.62rem;font-weight:800;color:var(--brand);background:var(--brand-tint);border-radius:99px;padding:2px 6px;flex-shrink:0}
 .sm-row-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .sm-dot-prog{background:var(--brand)}
 .sm-dot-mine{background:var(--nv-orange)}
@@ -189,16 +221,25 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .sm-detail-panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);min-height:200px}
 .sm-detail-card{scroll-margin-top:76px}
 .sm-detail-empty{padding:32px;text-align:center;color:var(--ink3);font-size:.85rem;font-weight:600}
-/* Section-level Fields/Conversation tab strip + comment thread — a
-   lightweight per-section @mention comments feature, separate from the
-   requirement-gathering chat panel. */
-.sd-tabs{display:flex;gap:4px;padding:10px 16px 0;border-bottom:1px solid var(--line2)}
-.sd-tab{padding:8px 4px 10px;border:none;background:none;font-size:.8rem;font-weight:700;color:var(--ink3);cursor:pointer;position:relative;margin-right:18px}
-.sd-tab:hover{color:var(--ink)}
-.sd-tab.active{color:var(--brand)}
-.sd-tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--brand);border-radius:2px}
-.cm-panel{padding:16px}
-.cm-list{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
+/* Project-level conversation — one @mention comment thread per whole
+   campaign request. Opens as a dropdown-style panel directly BELOW the
+   "Conversations" trigger next to the CPF/BU Setup/CRF details pill nav
+   (not a full-height side drawer) — .project-drawer-backdrop is just an
+   invisible full-page click-catcher so clicking outside the panel closes
+   it, same click-outside pattern the persona/notification menus use,
+   scaled up to also work when the trigger itself is scrolled off-screen.
+   Position (top/right) is computed in JS from the trigger's own
+   getBoundingClientRect() — see positionProjectDrawer(). */
+.project-drawer-backdrop{position:fixed;inset:0;z-index:200;display:none}
+.project-drawer-backdrop.open{display:block}
+.project-drawer{position:fixed;width:400px;max-width:92vw;max-height:min(520px,70vh);background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);z-index:201;display:flex;flex-direction:column;opacity:0;transform:translateY(-6px);transition:opacity .15s ease,transform .15s ease}
+.project-drawer-backdrop.open .project-drawer{opacity:1;transform:none}
+.project-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line2);flex-shrink:0}
+.project-drawer-head h3{font-size:.92rem;font-weight:800}
+.project-drawer-head p{font-size:.72rem;color:var(--ink3);font-weight:600;margin-top:1px}
+.project-drawer-body{flex:1;overflow-y:auto;padding:14px 16px;min-height:80px}
+.project-drawer-compose{border-top:1px solid var(--line2);padding:12px 16px;flex-shrink:0;position:relative}
+.cm-list{display:flex;flex-direction:column;gap:14px}
 .cm-empty{color:var(--ink3);font-size:.8rem;font-weight:600;text-align:center;padding:20px 0}
 .cm-item{display:flex;gap:10px}
 .cm-av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:.66rem;flex-shrink:0}
@@ -207,12 +248,12 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .cm-meta b{color:var(--ink)}
 .cm-role{color:var(--ink3);font-size:.7rem;font-weight:600}
 .cm-time{color:var(--ink4);font-size:.7rem;margin-left:auto}
+.cm-section-tag{font-size:.66rem;font-weight:700;color:var(--brand);margin-top:2px}
 .cm-text{font-size:.82rem;color:var(--ink2);line-height:1.5;margin-top:3px;white-space:pre-wrap}
 .cm-mentions{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap}
 .cm-mention{font-size:.68rem;font-weight:700;color:var(--brand);background:var(--brand-tint);border-radius:6px;padding:2px 7px}
-.cm-compose{border-top:1px solid var(--line2);padding-top:14px;position:relative}
 .cm-input{width:100%;min-height:64px;border:1px solid var(--line2);border-radius:8px;padding:9px 11px;font:inherit;font-size:.82rem;resize:vertical;background:var(--surface2);color:var(--ink)}
-.cm-mention-picker{position:absolute;bottom:100%;left:0;margin-bottom:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;min-width:220px;z-index:20}
+.cm-mention-picker{position:absolute;bottom:100%;left:18px;right:18px;margin-bottom:6px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;z-index:20}
 .cm-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border-radius:7px;text-align:left;font-size:.8rem;font-weight:700;color:var(--ink)}
 .cm-picker-item:hover{background:var(--surface2)}
 .cm-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
@@ -833,48 +874,144 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .btn-icon:hover{background:var(--surface2)}
 .btn-icon:disabled{opacity:.35;cursor:default}
 .modal-x:hover{background:var(--surface2);color:var(--ink)}
-/* Visio Builder used to be a free-form node/connector canvas (n8n/Power
-   Automate style) with an add-node toolbar. Replaced with a plain iframe of
-   the actual Visio PDF (visio.pdf, served from public/) — no toolbar, no
-   canvas, just the diagram. */
-.visio-pdf-frame{width:100%;height:640px;border:1px solid var(--line2);border-radius:10px;background:var(--surface2)}
-.flow-canvas-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 0 12px;flex-wrap:wrap}
-.fc-hint{font-size:.76rem;color:var(--ink3);font-weight:600;line-height:1.5}
-.fc-add-buttons{display:flex;gap:6px;flex-shrink:0}
-.fc-add-btn{padding:6px 12px;border-radius:8px;border:1.5px solid var(--line);background:var(--surface);font-size:.74rem;font-weight:700;color:var(--ink2);cursor:pointer;transition:all .15s}
-.fc-add-btn:hover{background:var(--surface2)}
-.fc-add-action{border-color:#B7D3EF}
-.fc-add-wait{border-color:#F0D9A0}
-.fc-add-loop{border-color:#D3C2EE}
-.fc-add-end{border-color:#CBD2D9}
-.flow-canvas-wrap{position:relative;overflow:auto;max-height:50vh;background:var(--surface2);background-image:radial-gradient(var(--line2) 1px, transparent 1px);background-size:16px 16px;border-radius:10px;border:1px solid var(--line2)}
-.flow-canvas-svg{position:absolute;top:0;left:0;pointer-events:none}
-.flow-canvas-nodes{position:relative}
-.flow-edge{fill:none;stroke:var(--ink3);stroke-width:2}
-.flow-edge-arrow{fill:var(--ink3)}
-.flow-edge-live{stroke:var(--persona-accent,var(--nv-orange));stroke-dasharray:5 4}
-.fc-node{position:absolute;width:180px;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;box-shadow:var(--shadow);cursor:grab;user-select:none}
-.fc-node:active{cursor:grabbing}
-.fc-node.trigger{border-color:var(--ai-line,#F5C4B4);background:var(--ai-tint,#FDECE6)}
-.fc-node.action{border-color:#B7D3EF}
-.fc-node.wait{border-color:#F0D9A0}
-.fc-node.loop{border-color:#D3C2EE}
-.fc-node.end{border-color:#CBD2D9}
-.fc-node-top{display:flex;align-items:center;gap:6px;padding:8px 10px 4px}
-.fc-node-ic{font-size:.8rem;flex-shrink:0}
-.fc-node.trigger .fc-node-ic{color:var(--ai,#e74a21)}
-.fc-node.action .fc-node-ic{color:#0460A9}
-.fc-node.wait .fc-node-ic{color:#B8860B}
-.fc-node.loop .fc-node-ic{color:#7A5AB8}
-.fc-node.end .fc-node-ic{color:#5B6B7A}
-.fc-node-kind{font-size:.6rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);flex:1}
-.fc-node-del{width:16px;height:16px;border-radius:50%;background:var(--surface2);color:var(--ink3);font-size:.55rem;display:grid;place-items:center;flex-shrink:0}
-.fc-node-del:hover{background:var(--danger-tint,#FBE3E0);color:var(--danger,#c0392b)}
-.fc-node-text{font-size:.76rem;color:var(--ink);line-height:1.4;font-weight:600;padding:0 10px 10px;cursor:text;border-radius:6px}
-.fc-node-text:hover{background:rgba(0,0,0,.03)}
-.fc-node-text:focus{outline:2px solid var(--persona-accent,var(--nv-orange));background:var(--surface)}
-.fc-node-port{position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:14px;height:14px;border-radius:50%;background:var(--surface);border:2px solid var(--ink3);cursor:crosshair;transition:all .15s}
-.fc-node-port:hover{border-color:var(--persona-accent,var(--nv-orange));background:var(--persona-accent-tint,var(--ai-tint));transform:translateX(-50%) scale(1.2)}
+/* ============ AI-DRIVEN VISIO DIAGRAM EDITOR ============
+   Replaces the old free-form node/connector canvas AND the plain PDF
+   iframe that replaced it. Canvas is the visual truth; editing happens
+   only through the AI Diagram Editor panel (server/server.js
+   /api/visio-agent) — see vbSendChat/vbApplyPreview below. Visio file +
+   Google Drive are a realistic mock (localStorage), same as every other
+   external system in this app (TactPlan, brand master, ...).
+   Layout is deliberately NOT an even split — the diagram is the product,
+   the AI panel is a tool for editing it: ~70/30 diagram/AI-panel of the
+   workspace once the left Sections rail (unchanged, owned elsewhere) takes
+   its ~18%. See .vb-main's flex-grow ratio below. */
+.vb-root{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line2);border-radius:12px;background:var(--surface2);padding:10px}
+.vb-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 2px 0}
+.vb-tool-group{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;padding:3px}
+.vb-tool{height:30px;min-width:30px;padding:0 10px;border-radius:6px;background:transparent;color:var(--ink2);font-size:.76rem;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.vb-tool:hover{background:var(--surface2)}
+.vb-tool.on{background:var(--brand-tint);color:var(--brand)}
+.vb-tool:disabled{opacity:.35;cursor:default}
+.vb-tool-save{background:var(--grad-blue);color:#fff}
+.vb-tool-save:hover{background:var(--grad-blue);opacity:.92}
+.vb-zoom-pct{font-size:.72rem;font-weight:700;color:var(--ink3);width:34px;text-align:center}
+.vb-search-wrap{flex:1;min-width:160px}
+.vb-search{width:100%;height:30px;border:1px solid var(--line2);border-radius:8px;padding:0 10px;font-size:.78rem;background:var(--surface)}
+.vb-search:focus{outline:none;border-color:var(--brand)}
+.vb-main{display:flex;gap:10px;align-items:stretch}
+.vb-canvas-wrap{position:relative;width:100%;height:640px;overflow:hidden;border-radius:12px;border:1px solid var(--line2);background:var(--surface);background-image:radial-gradient(var(--line2) 1px, transparent 1px);background-size:20px 20px;cursor:grab}
+.vb-canvas-wrap:active{cursor:grabbing}
+.vb-canvas{position:absolute;top:0;left:0;transform-origin:0 0;transition:transform .12s linear}
+.vb-edges-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
+.vb-nodes{position:relative}
+.vb-node{position:absolute;border-radius:10px;border-width:2px;border-style:solid;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 14px;cursor:pointer;box-shadow:var(--shadow);user-select:none;transition:left .35s cubic-bezier(.22,.9,.32,1),top .35s cubic-bezier(.22,.9,.32,1),opacity .28s,transform .28s,box-shadow .15s}
+.vb-node:hover{box-shadow:var(--shadow-lg);z-index:3}
+.vb-node.sel{outline:2.5px solid var(--brand);outline-offset:2px}
+.vb-node.vb-match{outline:2.5px solid var(--nv-orange);outline-offset:2px;animation:vbFlash .5s ease 2}
+@keyframes vbFlash{0%,100%{box-shadow:var(--shadow)}50%{box-shadow:0 0 0 6px rgba(255,138,61,.25)}}
+.vb-anim-in{opacity:0;transform:scale(.6)}
+.vb-anim-out{opacity:0 !important;transform:scale(.7) !important}
+.vb-node-label{font-size:1rem;font-weight:800;color:#26333F;text-align:center;line-height:1.3;overflow-wrap:break-word;pointer-events:none}
+.vb-node-sub{font-size:.82rem;font-weight:700;color:#4B5A68;text-align:center;line-height:1.25;pointer-events:none}
+/* Decision diamond: clip-path on a bordered box clips the border away along
+   the diagonal edges in most browsers, leaving it borderless. Fixed with a
+   two-layer technique instead — ::before is a full diamond filled with the
+   border color, ::after is a smaller diamond (inset by the border width)
+   filled with the actual fill color sitting on top, so the visible ring
+   between them IS the border. The real border is turned off. */
+.vb-shape-decision{border:none !important; background:transparent !important}
+.vb-shape-decision::before{content:'';position:absolute;inset:0;z-index:-2;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:var(--vb-border)}
+.vb-shape-decision::after{content:'';position:absolute;inset:calc(var(--vb-bw) * 1.4);z-index:-1;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:var(--vb-fill)}
+.vb-shape-start,.vb-shape-end{border-radius:999px}
+.vb-shape-infobox{border-radius:6px;align-items:flex-start;text-align:left;padding-left:16px}
+.vb-shape-infobox .vb-node-label,.vb-shape-infobox .vb-node-sub{color:#fff;text-align:left}
+/* Data source: a cylinder lying on its side — rounded cap on the left,
+   a true ellipse cap on the right (::after) — matches the reference Visio
+   export exactly, NOT the vertical soda-can look a plain top-ellipse gives.
+   Uses var(...) rather than `border:2px solid inherit`, which pseudo-
+   elements don't reliably inherit from an ancestor with an inline style. */
+.vb-shape-datasource{border-right:none;border-radius:999px 0 0 999px}
+.vb-shape-datasource::after{content:'';position:absolute;top:calc(-1 * var(--vb-bw));bottom:calc(-1 * var(--vb-bw));right:-16px;width:34px;border-radius:50%;background:var(--vb-fill);border:var(--vb-bw) solid var(--vb-border)}
+.vb-status-dot{position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface)}
+.vb-edge{fill:none;stroke:#F0A93A;stroke-width:3.25;stroke-linecap:round;stroke-linejoin:round;transition:opacity .2s}
+.vb-edge-dim{opacity:.18}
+.vb-edge-arrow{fill:#F0A93A}
+.vb-edge-label{font-size:11px;font-weight:700;fill:var(--ink2)}
+.vb-legend{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.vb-legend-chip{font-size:.72rem;font-weight:700;color:#26333F;padding:7px 16px;border-radius:4px;border:1.5px solid;white-space:nowrap;text-align:center}
+.vb-minimap-wrap{position:absolute;bottom:10px;left:10px;z-index:5;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.vb-minimap{width:180px;height:120px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;box-shadow:var(--shadow)}
+.vb-mm-node{fill:var(--ink3)}
+.vb-mm-node.sel{fill:var(--brand)}
+.vb-mm-viewport{fill:var(--brand-tint);stroke:var(--brand);stroke-width:1}
+.vb-minimap-tools{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line2);border-radius:8px;padding:3px;box-shadow:var(--shadow)}
+.vb-mm-btn{width:24px;height:24px;border-radius:5px;font-size:.78rem;font-weight:800;color:var(--ink2);display:grid;place-items:center;cursor:pointer}
+.vb-mm-btn:hover{background:var(--surface2)}
+.vb-node-meta{position:absolute;background:var(--surface);border:1px solid var(--line2);border-radius:9px;padding:9px 11px;box-shadow:var(--shadow-lg);font-size:.72rem;color:var(--ink2);width:200px;z-index:8;pointer-events:auto}
+.vb-meta-row{padding:1.5px 0}
+.vb-meta-actions{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line2)}
+.vb-meta-action{font-size:.72rem;font-weight:700;color:var(--brand);text-align:left;padding:2px 0;cursor:pointer}
+.vb-meta-action:hover{text-decoration:underline}
+.vb-empty-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;color:var(--ink3);font-weight:700;font-size:.95rem;pointer-events:none;z-index:4}
+.vb-empty-overlay span{font-weight:500;font-size:.78rem;max-width:320px}
+.vb-empty-example{font-weight:600;font-size:.74rem;color:var(--ink2);background:var(--surface2);border:1px solid var(--line2);border-radius:8px;padding:8px 12px;text-align:left;white-space:pre-line;max-width:320px}
+/* ---------- canvas header / sub-tabs above the toolbar ---------- */
+.vb-canvas-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 0}
+.vb-canvas-head-l{display:flex;align-items:center;gap:8px}
+.vb-canvas-head-badge{font-size:.62rem;font-weight:800;letter-spacing:.04em;color:var(--persona-accent,var(--nv-orange))}
+.vb-canvas-head-ic{font-size:.95rem}
+.vb-canvas-head-title{font-size:.95rem;font-weight:800;color:var(--ink)}
+.vb-visio-link{font-size:.74rem;font-weight:700;color:var(--brand);margin-left:6px;padding:3px 9px;border-radius:6px;background:var(--brand-tint)}
+.vb-visio-link:hover{text-decoration:underline}
+.vb-canvas-head-r{display:flex;align-items:center;gap:8px}
+.vb-canvas-head-r .btn-ghost,.vb-canvas-head-r .btn-primary{height:32px;padding:0 14px;font-size:.76rem}
+.vb-toggle-wrap{display:flex;align-items:center;gap:7px;font-size:.74rem;font-weight:700;color:var(--ink2);cursor:pointer}
+.vb-toggle-wrap input{display:none}
+.vb-toggle-track{width:32px;height:18px;border-radius:999px;background:var(--line2);position:relative;transition:background .15s}
+.vb-toggle-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:var(--shadow);transition:left .15s}
+.vb-toggle-wrap input:checked + .vb-toggle-track{background:var(--brand)}
+.vb-toggle-wrap input:checked + .vb-toggle-track .vb-toggle-knob{left:16px}
+.vb-canvas-sub{font-size:.72rem;color:#2E7D32;font-weight:700;padding:2px 2px 0;display:flex;align-items:center;gap:5px}
+.vb-saved-dot{color:#3FAE49;font-size:.6rem}
+.vb-subtabs{display:flex;gap:18px;padding:8px 2px 0;border-bottom:1px solid var(--line2)}
+.vb-subtab{font-size:.78rem;font-weight:700;color:var(--ink3);padding:0 0 8px;border-bottom:2px solid transparent}
+.vb-subtab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.vb-tool-sep{width:1px;height:20px;background:var(--line2);margin:0 2px}
+/* ---------- AI panel: tabbed (Conversations / Diagram Chat) message thread ---------- */
+.vb-chat{flex:3 1 0;min-width:260px;display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:12px;background:var(--surface);overflow:hidden}
+.vb-chat-tabs{display:flex;gap:20px;padding:12px 14px 0;border-bottom:1px solid var(--line2)}
+.vb-chat-tab{font-size:.82rem;font-weight:700;color:var(--ink3);padding:0 0 12px;border-bottom:2px solid transparent}
+.vb-chat-tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:800}
+.vb-chat-log{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-height:80px}
+.vb-turn{display:flex;flex-direction:column;margin-bottom:12px;max-width:92%}
+.vb-turn.user{align-items:flex-end;align-self:flex-end}
+.vb-turn.bot{align-items:flex-start;align-self:flex-start}
+.vb-turn-meta{font-size:.66rem;font-weight:700;color:var(--ink3);margin-bottom:4px;display:flex;gap:6px}
+.vb-turn-meta span{font-weight:600;opacity:.75}
+.vb-bubble{border-radius:12px;padding:10px 13px;font-size:.8rem;line-height:1.45}
+.vb-bubble.user{background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+.vb-bubble.bot{background:var(--surface2);color:var(--ink);border:1px solid var(--line2);border-bottom-left-radius:4px}
+.vb-applied-check{display:flex;align-items:center;gap:5px;font-weight:800;color:#2E7D32;margin-top:7px}
+.vb-applied-check .ok{font-size:.85rem}
+.vb-applied-sub{font-size:.72rem;color:var(--ink3);font-weight:600;margin-top:1px}
+.vb-applied-actions{margin-top:7px;display:flex;justify-content:flex-end}
+.vb-undo-inline{font-size:.72rem;font-weight:700;color:var(--brand);background:var(--surface);border:1px solid var(--line2);border-radius:7px;padding:4px 10px;cursor:pointer}
+.vb-undo-inline:hover{background:var(--brand-tint)}
+.vb-reasoning{opacity:.7;font-style:italic}
+.vb-chat-input-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--line2)}
+.vb-chat-input-row input{flex:1;height:38px;border:1px solid var(--line2);border-radius:20px;padding:0 14px;font-size:.79rem}
+.vb-send-btn{width:38px;height:38px;border-radius:50%;background:var(--brand);color:#fff;font-size:.9rem;display:grid;place-items:center;flex-shrink:0}
+.vb-send-btn:hover{opacity:.9}
+.vb-chat-hint{font-size:.68rem;color:var(--ink3);font-weight:600;padding:0 14px 4px}
+.vb-chat-footer{font-size:.66rem;color:var(--ink3);font-weight:600;padding:0 14px 10px;display:flex;align-items:center;gap:5px}
+.vb-statusbar{display:flex;align-items:center;gap:8px;font-size:.72rem;color:var(--ink3);font-weight:600;padding:0 2px;flex-wrap:wrap}
+.vb-statusbar-spacer{flex:1}
+.vb-link-btn{color:var(--brand);font-weight:700;font-size:.72rem}
+.vb-link-btn:hover{text-decoration:underline}
+.vb-version-panel{border:1px solid var(--line2);border-radius:8px;background:var(--surface);padding:6px 10px;font-size:.74rem}
+.vb-version-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line2)}
+.vb-version-row:last-child{border-bottom:none}
+.vb-version-note{flex:1;color:var(--ink3)}
 .modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
 .modal-tabs{display:flex;gap:6px;background:var(--surface2);border-radius:10px;padding:4px}
 .modal-tab{flex:1;padding:9px 10px;border-radius:8px;font-size:.79rem;font-weight:700;color:var(--ink3);text-align:center}
@@ -910,8 +1047,8 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 .btn-ghost,.btn-primary{height:40px;padding:0 16px;border-radius:8px;font-size:.82rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .btn-ghost{color:var(--ink2);background:var(--surface2)}
 .btn-ghost:hover{background:var(--line2)}
-.btn-primary{color:#fff;background:var(--grad-blue)}
-.btn-primary:hover{background:var(--brand-dk)}
+.btn-primary{color:#fff;background:var(--grad-orange)}
+.btn-primary:hover{background:var(--ai-dk)}
 .btn-sm{height:32px;padding:0 12px;font-size:.76rem}
 
 /* ================== RESPONSIVE ================== */
@@ -940,7 +1077,7 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 <!-- ============ LOGIN SCREEN ============ -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="login-brand"><div class="brand-mark"><img src="logo.png" alt="Logo"></div><div class="brand-name">Novartis Accelerate</div></div>
+    <div class="login-brand"><div class="brand-mark"><img src="novartis-logo.svg" alt="Novartis"></div><div class="brand-name">Accelerate</div></div>
     <h2>Sign in</h2>
     <p class="login-sub">Requirement Gathering Platform</p>
     <label class="login-field"><span>Email</span><input id="loginEmail" value="priya.sharma@novartis-agency.com"></label>
@@ -953,8 +1090,8 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 <!-- ============ APP BAR ============ -->
 <div class="appbar">
   <a href="#" class="brand-logo" onclick="showLanding();return false">
-    <div class="brand-mark"><img src="logo.png" alt="Logo"></div>
-    <div class="brand-name">Novartis Accelerate <span>· Requirement Gathering Platform</span></div>
+    <div class="brand-mark"><img src="novartis-logo.svg" alt="Novartis"></div>
+    <div class="brand-name">Accelerate</div>
   </a>
   <nav class="top-nav">
     <a href="#" id="navRequests" class="on" onclick="showLanding();return false">Requests</a>
@@ -1086,6 +1223,20 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 </div>
 <div class="float-save-bar" id="floatSaveBar"></div>
 
+<!-- ============ PROJECT CONVERSATION DRAWER — one @mention thread per whole
+     campaign request, opened from the 💬 trigger next to the CPF/BU Setup/
+     CRF details pill nav. Slides in over the page content, doesn't push it. ============ -->
+<div class="project-drawer-backdrop" id="projectDrawerWrap" onclick="if(event.target===this) closeCommentsDrawer()">
+  <div class="project-drawer">
+    <div class="project-drawer-head">
+      <div><h3>Project conversation</h3><p>Comments &amp; @mentions for this request</p></div>
+      <button class="modal-x" onclick="closeCommentsDrawer()">✕</button>
+    </div>
+    <div class="project-drawer-body" id="projectDrawerBody"></div>
+    <div class="project-drawer-compose" id="projectDrawerCompose"></div>
+  </div>
+</div>
+
 <!-- ============ VIEW: ADMIN (manage form fields) ============ -->
 <div class="view" id="view-admin">
   <div class="hero">
@@ -1096,10 +1247,12 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
     <div class="hero-r" id="adminHeroActions"></div>
   </div>
   <div class="admin-tabs">
+    <button id="adminTabForms" onclick="showAdminTab('forms')">Manage forms</button>
     <button id="adminTabSections" class="on" onclick="showAdminTab('sections')">Manage sections</button>
     <button id="adminTabFields" onclick="showAdminTab('fields')">Manage form fields</button>
     <button id="adminTabNudges" onclick="showAdminTab('nudges')">Manage nudges</button>
   </div>
+  <div id="adminFormsView" style="display:none"></div>
   <div id="adminSectionsView"></div>
   <div class="admin-layout" id="adminFieldsView" style="display:none">
     <aside class="admin-sec-list" id="adminSecList"></aside>
@@ -1161,9 +1314,14 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
 
 </div><!-- /stage -->
 
-<!-- ============ CHATBOT (persistent right 30vw) ============ -->
+<!-- ============ CHATBOT (persistent right 30vw) ============
+     Same single Campaign Navigator pane everywhere in the app — including
+     while Visio Builder is open. sendChat() (below) detects that case and
+     routes to the diagram agent instead of the form-fill agent, but renders
+     into this same #chatBody with the same .msg bubble styling; there is no
+     separate "Diagram Chat" panel/tabs/look. -->
 <div class="chat-panel" id="chatPanel">
-  <div class="cp-head">
+  <div class="cp-head" id="cpHead">
     <div class="cp-av">✦</div>
     <div>
       <h3>Campaign Navigator</h3>
@@ -1173,7 +1331,7 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
   <div class="cp-body" id="chatBody">
     <div class="msg bot you-focus-msg" id="youFocus"></div>
   </div>
-  <div class="cp-input-card">
+  <div class="cp-input-card" id="cpAssistantInputCard">
     <div class="cp-input-tabs">
       <button class="cp-tab on" id="cpTabAsk" onclick="document.getElementById('chatInput').focus()">💬 Ask</button>
       <button class="cp-tab" id="cpTabUpload" title="Upload a PDF, Word, or Excel file" onclick="document.getElementById('chatFileInput').click()">📎 Upload</button>
@@ -1222,6 +1380,10 @@ h1,h2,h3,h4{font-family:var(--font);letter-spacing:-.005em}
       <button class="modal-x" onclick="closeNewRequestModal()">✕</button>
     </div>
     <div class="modal-body">
+      <label class="modal-field">
+        <span>Which form?</span>
+        <select id="newReqForm"></select>
+      </label>
       <label class="modal-field">
         <span>TactPlan ID</span>
         <input id="newReqTactplan" placeholder="e.g. TP-88500" value="TP-88500">
@@ -1410,17 +1572,17 @@ function withFieldOwnersInNeeds(phases, needs){
 let BASE_SECTIONS = [
   {id:"generic", num:"01", name:"Generic/Overview", ic:"▣",
    phases:{
-     preplan:[{id:"1.1.1",n:"TactPlan ID",src:"⇢ TactPlan",bucket:"tactplan",owner:"aor",type:"text"},{id:"1.1.2",n:"Agency",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.3",n:"Brand",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.4",n:"Indication",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.5",n:"Branded/unbranded",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Branded","Unbranded"]},{id:"1.1.6",n:"Audience",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.6b",n:"Channel Type",src:"—",bucket:"newapp",owner:"aor",type:"multi",opts:["Email","SMS"],drives:"channels",wide:true},{id:"1.1.7",n:"Asset Scope* (Request Type)",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["New Brand Launch", "New Indication Launch", "Update Existing Campaign"],drives:"assetScope"},{id:"1.1.8",n:"Campaign Name",src:"—",bucket:"newapp",owner:"aor",type:"text"}],
-     plan:[{id:"1.1.9",n:"Campiagn Goal",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},{id:"1.1.10",n:"Campaign code",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.11",n:"Campaign Channels Select",src:"⇢ TactPlan",bucket:"auto",owner:"aor",type:"sel",opts:["Email + SMS", "Email only", "SMS only"],drives:"channels"},{id:"1.1.12",n:"Campaign Type",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Model based","Ad Hoc","Cadenced","Real-time","Real-time & Cadenced"],drives:"campaignType"},{id:"1.1.13",n:"Segments",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.15",n:"Therapy",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.19",n:"Estimated GOLIVE Date",src:"—",bucket:"newapp",owner:"aor",type:"date"},{id:"1.2.1",n:"Send Time Optimization",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"sendTimeOptimization"},{id:"1.2.1b",n:"Send Time Optimization Rules",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{sendTimeOptimization:"Yes"}},{id:"1.2.2",n:"Sending Time Window",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.3",n:"STO Random",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.4",n:"In-Email Poll",src:"—",bucket:"newapp",owner:"aor",type:"sel"},{id:"1.2.5",n:"A/B Testing required?",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"abTesting"},{id:"1.2.6",n:"Approximate Audience Size",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{abTesting:"Yes"}},{id:"1.2.7",n:"How do you want the test split?",src:"—",bucket:"newapp",owner:"aor",type:"text",wide:true,cond:{abTesting:"Yes"}},{id:"1.2.8",n:"How would you like your test to send?",src:"—",bucket:"newapp",owner:"aor",type:"text",wide:true,cond:{abTesting:"Yes"}}],
-     exec:[{id:"1.1.14",n:"Proof Recipients",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.16",n:"Friendly From Name",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.17",n:"Reply to name",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.18",n:"Reply to Address",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.9",n:"Peronalization",src:"—",bucket:"newapp",owner:"aor",type:"sel"},{id:"1.2.10",n:"Personalization Area / Field Name & Criteria",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true}],
+     preplan:[{id:"1.1.1",n:"TactPlan ID",src:"⇢ TactPlan",bucket:"tactplan",owner:"aor",type:"text"},{id:"1.1.2",n:"Agency",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.3",n:"Brand",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.4",n:"Indication",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.5",n:"Branded/unbranded",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Branded","Unbranded"]},{id:"1.1.6",n:"Audience",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["HCP","DTC"],drives:"audience"},{id:"1.1.6b",n:"Channel Type",src:"—",bucket:"newapp",owner:"aor",type:"multi",opts:["Email","SMS"],drives:"channels",wide:true},{id:"1.1.7",n:"Asset Scope* (Request Type)",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["New Brand Launch", "New Indication Launch", "Update Existing Campaign"],drives:"assetScope"},{id:"1.1.8",n:"Campaign Name",src:"—",bucket:"newapp",owner:"aor",type:"text"}],
+     plan:[{id:"1.1.9",n:"Campiagn Goal",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},{id:"1.1.10",n:"Campaign code (8-digit numeric)",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.11",n:"Campaign Channels Select",src:"⇢ TactPlan",bucket:"auto",owner:"aor",type:"sel",opts:["Email + SMS", "Email only", "SMS only"],drives:"channels"},{id:"1.1.12",n:"Campaign Type",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Model based","Ad Hoc","Cadenced","Real-time","Real-time & Cadenced"],drives:"campaignType"},{id:"1.1.13",n:"Segments",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.15",n:"Therapy",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.19",n:"Estimated GOLIVE Date",src:"—",bucket:"newapp",owner:"aor",type:"date"},{id:"1.2.1",n:"Send Time Optimization",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"sendTimeOptimization"},{id:"1.2.1b",n:"Send Time Optimization Rules",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{sendTimeOptimization:"Yes"}},{id:"1.2.2",n:"Sending Time Window",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{sendTimeOptimization:"Yes"}},{id:"1.2.3",n:"STO Random",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{sendTimeOptimization:"Yes"}},{id:"1.2.4",n:"In-Email Poll",src:"—",bucket:"newapp",owner:"aor",type:"sel"},{id:"1.2.5",n:"A/B Testing required?",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"abTesting"},{id:"1.2.6",n:"Approximate Audience Size",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{abTesting:"Yes"}},{id:"1.2.7",n:"How do you want the test split?",src:"—",bucket:"newapp",owner:"aor",type:"text",wide:true,cond:{abTesting:"Yes"}},{id:"1.2.8",n:"How would you like your test to send?",src:"—",bucket:"newapp",owner:"aor",type:"text",wide:true,cond:{abTesting:"Yes"}}],
+     exec:[{id:"1.1.14",n:"Proof Recipients",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.16",n:"Friendly From Name",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.17",n:"Reply to name",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.1.18",n:"Reply to Address",src:"—",bucket:"newapp",owner:"aor",type:"text"},{id:"1.2.9",n:"Peronalization",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"],drives:"personalization"},{id:"1.2.10",n:"Personalization Area / Field Name & Criteria",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true,cond:{personalization:"Yes"}}],
    },
    needs:{"preplan": ["aor"], "plan": ["aor", "xm"], "exec": ["aor"]}
   },
   {id:"journey", num:"02", name:"Journey", ic:"⤳",
    phases:{
      preplan:[],
-     plan:[{id:"1.3.2",n:"Schedule Type (Frequency)",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"sel",opts:["Model based","Ad Hoc","Cadenced","Real-time","Real-time & Cadenced"],cascadeFrom:"campaignType"},{id:"1.3.3",n:"Journey Start Date",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"date"},{id:"1.3.7",n:"Re-entry Allowed",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"]},{id:"1.3.8",n:"Next Touchpoint Logic",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},{id:"1.3.21",n:"Number of touch points",src:"—",bucket:"newapp",owner:"aor",type:"text",drives:"touchpointCount"}],
-     exec:[{id:"1.3.1",n:"Audience Entry Source",src:"—",bucket:"ops",owner:"ops",type:"sel",opts:["Data Extension","API","Event"]},{id:"1.3.4",n:"Automation Name",src:"—",bucket:"ops",owner:"ops",type:"text"},{id:"1.3.5",n:"Data Extension Name",src:"—",bucket:"ops",owner:"ops",type:"text"},{id:"1.3.6",n:"Key Field (SubscriberKey)",src:"—",bucket:"ops",owner:"ops",type:"text"}],
+     plan:[{id:"1.3.2",n:"Schedule Type (Frequency)",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"sel",opts:["Run Once","Always On"],cascadeFrom:"campaignType"},{id:"1.3.3",n:"Journey Start Date",src:"⇢ Cascaded from Overview",bucket:"auto",owner:"aor",type:"date"},{id:"1.3.7",n:"Re-entry Allowed",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"]},{id:"1.3.21",n:"Number of touch points",src:"—",bucket:"newapp",owner:"aor",type:"text",drives:"touchpointCount"}],
+     exec:[{id:"1.3.1",n:"Audience Entry Source",src:"—",bucket:"ops",owner:"ops",type:"sel",opts:["Data Extension","API event"]},{id:"1.3.4",n:"Automation Name",src:"—",bucket:"ops",owner:"ops",type:"text"},{id:"1.3.5",n:"Data Extension Name",src:"—",bucket:"ops",owner:"ops",type:"text"}],
    },
    needs:{"preplan": [], "plan": ["aor"], "exec": ["ops"]}
   },
@@ -1435,7 +1597,7 @@ let BASE_SECTIONS = [
   {id:"mci", num:"04", name:"MCI - Campaign Performance Reporting", ic:"▤",
    phases:{
      preplan:[],
-     plan:[{id:"1.5.1",n:"Avaialability of Pretext_Data Extension",src:"—",bucket:"newapp",owner:"cep",type:"text",wide:true},{id:"1.5.2",n:"Technical GO LIVE date",src:"—",bucket:"newapp",owner:"cep",type:"date"},{id:"1.5.3",n:"Business GO LIVE date",src:"—",bucket:"newapp",owner:"ops",type:"date"},{id:"1.5.4",n:"Visio",src:"—",bucket:"newapp",owner:"ops",type:"text"},{id:"1.5.5",n:"MCI User Access to new BU",src:"—",bucket:"newapp",owner:"cep",type:"sel"}],
+     plan:[{id:"1.5.1",n:"Avaialability of Pretext_Data Extension",src:"—",bucket:"newapp",owner:"cep",type:"text",wide:true},{id:"1.5.2",n:"Technical GO LIVE date",src:"—",bucket:"newapp",owner:"cep",type:"date"},{id:"1.5.3",n:"Business GO LIVE date",src:"—",bucket:"newapp",owner:"ops",type:"date"},{id:"1.5.4",n:"Visio",src:"—",bucket:"newapp",owner:"ops",type:"text"},{id:"1.5.5",n:"MCI User Access to new BU",src:"—",bucket:"newapp",owner:"cep",type:"sel",opts:["Yes","No"]}],
      exec:[],
    },
    needs:{"preplan": [], "plan": ["cep", "ops"], "exec": []}
@@ -1458,7 +1620,7 @@ let BASE_SECTIONS = [
   {id:"dc", num:"07", name:"Data Cloud details", ic:"☁",
    phases:{
      preplan:[],
-     plan:[{id:"1.8.1",n:"Entry Source: Data Cloud Segment rules",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.2",n:"Engagement Split",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.3",n:"Data Full Refresh or Incremental - Depends on type of Campaign",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.4",n:"Refresh Frequency",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"sel",opts:["Daily","Weekly","Monthly"]},{id:"1.8.5",n:"Global Suppressions (supressions to be taken as mentione in MDS)",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.6",n:"Specialty Inclusions",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.7",n:"Specialty Exclusions",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.8",n:"No of New CIs (Calculated Insights) Needed to support all versions of Journey or Existing CI needed",src:"⚠ TBD — unresolved in source",bucket:"tbd",owner:"dca",type:"sel",wide:true},{id:"1.8.9",n:"Data for new CI creation in DC",src:"—",bucket:"unmapped",owner:"aor",type:"text"}],
+     plan:[{id:"1.8.1",n:"Entry Source: Data Cloud Segment rules",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.2",n:"Engagement Split",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.3",n:"Data Full Refresh or Incremental - Depends on type of Campaign",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.4",n:"Refresh Frequency",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"sel",opts:["Daily","Weekly","Monthly"]},{id:"1.8.5",n:"Global Suppressions (supressions to be taken as mentione in MDS)",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text",wide:true},{id:"1.8.6",n:"Specialty Inclusions",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.7",n:"Specialty Exclusions",src:"⇢ XM handover (HQE Adhoc & E360 only)",bucket:"xm",owner:"xm",type:"text"},{id:"1.8.8",n:"No of New CIs (Calculated Insights) Needed to support all versions of Journey or Existing CI needed",src:"—",bucket:"newapp",owner:"dca",type:"text",wide:true},{id:"1.8.9",n:"Data for new CI creation in DC",src:"—",bucket:"unmapped",owner:"aor",type:"text"}],
      exec:[],
    },
    needs:{"preplan": [], "plan": ["dca"], "exec": []}
@@ -1509,7 +1671,7 @@ BASE_SECTIONS = BASE_SECTIONS.map(s => ({...s, needs: withFieldOwnersInNeeds(s.p
 // emailCount/smsCount default empty ('') rather than a prefilled number —
 // "# of Emails"/"# of SMS" are real questions the AOR must answer, not
 // values the platform should silently guess for them.
-let campaignConfig = { assetScope:'update', channels:'Email + SMS', enrollment:'No', audience:'hcp', emailCount:'', smsCount:'', metadataSource:'New metadata', abTesting:'No', sendTimeOptimization:'No', touchpointCount:2, campaignType:'' };
+let campaignConfig = { assetScope:'update', channels:'Email + SMS', enrollment:'No', audience:'hcp', emailCount:'', smsCount:'', metadataSource:'New metadata', abTesting:'No', sendTimeOptimization:'No', touchpointCount:2, campaignType:'', personalization:'No' };
 
 // Journey → "Number of touch points" (drives:"touchpointCount") fans out
 // into this many separate sections, each with its own Save button — same
@@ -1535,6 +1697,7 @@ function touchpointSection(n){
         {id:`1.3.tp${n}.4`,n:"Resend Needed?",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Yes","No"]},
         {id:`1.3.tp${n}.5`,n:"Resend Rule",src:"—",bucket:"newapp",owner:"aor",type:"text",cond:{ref:`1.3.tp${n}.4`,value:"Yes"}},
         {id:`1.3.tp${n}.6`,n:"Exit Rule After Send",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},
+        {id:`1.3.tp${n}.7`,n:"Next Touchpoint Logic",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},
       ],
       exec:[],
     },
@@ -1636,6 +1799,17 @@ function emailTacticSection(crfGroup){
       {id:`1.6.t${crfGroup}.17`,n:"Retirement Date",src:"—",bucket:"unmapped",owner:"aor",type:"text"},
       {id:`1.6.t${crfGroup}.18`,n:"Metadata ID",src:"—",bucket:"unmapped",owner:"aor",type:"text"},
       {id:`1.6.t${crfGroup}.19`,n:"Autogenerate numbers (×4)",src:"⇢ System-generated, selected from dropdown per Subject Line / Pre-header",bucket:"auto",owner:"aor",type:"text",wide:true,locked:true},
+      {id:`1.6.t${crfGroup}.20`,n:"Email Banner / Hero Headline",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.6.t${crfGroup}.21`,n:"Email Hero Image / Visual Direction",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.6.t${crfGroup}.22`,n:"Email Body Messaging Hierarchy",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},
+      {id:`1.6.t${crfGroup}.23`,n:"Footer & Legal Requirements",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},
+      {id:`1.6.t${crfGroup}.24`,n:"Rendering Specifications (Responsive/Desktop-Mobile-Tablet/Dark Mode/Image Weight/Alt Text)",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},
+      {id:`1.6.t${crfGroup}.25`,n:"Primary CTA Copy",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.6.t${crfGroup}.26`,n:"Primary CTA URL",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.6.t${crfGroup}.27`,n:"Primary CTA Objective",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.6.t${crfGroup}.28`,n:"Secondary CTA Copy",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.6.t${crfGroup}.29`,n:"Secondary CTA URL",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.6.t${crfGroup}.30`,n:"Secondary CTA Objective",src:"—",bucket:"newapp",owner:"aor",type:"text"},
     ],
     needs:{"preplan": [], "plan": ["aor"], "exec": []},
   });
@@ -1664,8 +1838,8 @@ function smsTacticSection(crfGroup){
       {id:`1.10.t${crfGroup}.4`,n:"FUSE ID",src:"—",bucket:"newapp",owner:"aor",type:"text"},
       {id:`1.10.t${crfGroup}.5`,n:"Message Text(character limit is 160)",src:"—",bucket:"newapp",owner:"aor",type:"ta",wide:true},
       {id:`1.10.t${crfGroup}.6`,n:"URL's",src:"—",bucket:"newapp",owner:"aor",type:"text"},
-      {id:`1.10.t${crfGroup}.7`,n:"Verification",src:"⇢ Auto-populated",bucket:"auto",owner:"aor",type:"text"},
-      {id:`1.10.t${crfGroup}.8`,n:"Confirmation",src:"⇢ Auto-populated",bucket:"auto",owner:"aor",type:"text"},
+      {id:`1.10.t${crfGroup}.7`,n:"Verification",src:"⇢ Auto-populated",bucket:"auto",owner:"aor",type:"text",wide:true,locked:true,lockedValue:"NOVARTIS: [Brand] Reply Y to sign up. MsgFreqVaries. T&C [https://www.novartis.com/us-en/terms-use]. Reply HELP for help. STOP to cancel. Msg&DataRatesMayApply"},
+      {id:`1.10.t${crfGroup}.8`,n:"Confirmation",src:"⇢ Auto-populated",bucket:"auto",owner:"aor",type:"text",wide:true,locked:true,lockedValue:"NOVARTIS: [Brand] SMS. You've signed up to marketing related alerts. MsgFreqVaries. Reply HELP for help. STOP to cancel. Msg&DataRatesMayApply"},
       {id:`1.10.t${crfGroup}.9`,n:"HELP",src:"⇢ Auto-populated",bucket:"auto",owner:"aor",type:"text"},
       {id:`1.10.t${crfGroup}.10`,n:"STOP",src:"⇢ Auto-populated",bucket:"auto",owner:"aor",type:"text"},
       {id:`1.10.t${crfGroup}.11`,n:"ERROR",src:"⇢ Auto-populated",bucket:"auto",owner:"aor",type:"text"},
@@ -1723,7 +1897,7 @@ function automxTacticSection(crfGroup){
       {id:`1.9.t${crfGroup}.11`,n:"Speciality (Product)",src:"—",bucket:"newapp",owner:"aor",type:"text"},
       {id:`1.9.t${crfGroup}.12`,n:"Composite Row Number",src:"—",bucket:"newapp",owner:"aor",type:"text"},
       {id:`1.9.t${crfGroup}.13`,n:"Metadata_ID",src:"—",bucket:"newapp",owner:"aor",type:"text"},
-      {id:`1.9.t${crfGroup}.14`,n:"Indication",src:"—",bucket:"newapp",owner:"aor",type:"text"},
+      {id:`1.9.t${crfGroup}.14`,n:"Indication",src:"—",bucket:"newapp",owner:"aor",type:"sel",opts:["Oncology","Cardiology","Diabetes","Immunology","Neurology","Respiratory","Dermatology","Rare Disease"]},
     ],
     needs:{"preplan": [], "plan": ["aor"], "exec": []},
   });
@@ -1805,6 +1979,7 @@ function fieldValue(f){
   if(f.drives==='emailCount') return String(campaignConfig.emailCount);
   if(f.drives==='smsCount') return String(campaignConfig.smsCount);
   if(f.drives==='metadataSource') return campaignConfig.metadataSource;
+  if(f.drives==='audience') return campaignConfig.audience==='hcp' ? 'HCP' : 'DTC';
   // Generic fallback for any other `drives` key (touchpointCount, campaignType,
   // abTesting, ...) whose campaignConfig property name matches the drives
   // value exactly — added ones (like these) kept getting missed here because
@@ -1815,6 +1990,10 @@ function fieldValue(f){
   // cascadeFrom: read-only mirror of a driver field elsewhere (e.g. Journey's
   // "Schedule Type (Frequency)" mirrors Generic/Overview's Campaign Type) —
   // unlike `drives`, this field never writes back, it only displays.
+  // Journey's Schedule Type simplifies Campaign Type down to just two values
+  // per the customer's spec: Ad Hoc campaigns run once, everything else is
+  // always-on — not a 1:1 mirror of Campaign Type's five options.
+  if(f.id==='1.3.2' && f.cascadeFrom==='campaignType') return campaignConfig.campaignType ? (campaignConfig.campaignType==='Ad Hoc' ? 'Run Once' : 'Always On') : '';
   if(f.cascadeFrom) return campaignConfig[f.cascadeFrom] || '';
   // cascadeFromField: same idea, but the source is a plain typed field (not
   // a campaignConfig driver) — e.g. MDS Suppression's "Brand Name" mirrors
@@ -1847,6 +2026,7 @@ function condKeyValue(key){
   if(key==='metadataSource') return campaignConfig.metadataSource;
   if(key==='abTesting') return campaignConfig.abTesting;
   if(key==='sendTimeOptimization') return campaignConfig.sendTimeOptimization;
+  if(key==='personalization') return campaignConfig.personalization;
   return undefined;
 }
 function condRuleMet(key, want){
@@ -1925,6 +2105,11 @@ function driveField(driveKey, value){
     campaignConfig.touchpointCount = Math.max(0, parseInt(value,10) || 0);
   } else if(driveKey==='campaignType'){
     campaignConfig.campaignType = value;
+  } else if(driveKey==='audience'){
+    campaignConfig.audience = value==='HCP' ? 'hcp' : 'dtc';
+    normalized = campaignConfig.audience;
+  } else if(driveKey==='personalization'){
+    campaignConfig.personalization = value;
   }
   if(!suspendRender) renderAll();
   // No chat message here on purpose — the agent speaks up when you hit Submit,
@@ -2096,13 +2281,22 @@ function setFilt(el, key){
 }
 
 /* ============ REQUEST DETAIL ============ */
-function openRequest(id){
+async function openRequest(id){
   adminExitEditMode();
   hideGanttView();
   flowMapMode = 'mini';
   flowMapUserPinned = false;
   const r = REQUESTS.find(x=>x.id===id) || REQUESTS[0];
   currentRequest = r;
+  // Each request belongs to a Form (form-default for every legacy/mock
+  // request, or whichever Form was picked in the New Campaign Request modal)
+  // — reload BASE_SECTIONS scoped to THAT form before rebuilding SECTIONS,
+  // rather than assuming whatever form happened to be loaded last is right.
+  const requestFormId = r.formId || 'form-default';
+  if(requestFormId !== loadedSchemaFormId){
+    loadedSchemaFormId = requestFormId;
+    await loadFormSchemaFromDb(requestFormId);
+  }
   // Kickoff & Demand happens before anyone opens this tool — by the time an AOR is
   // here, that step is already done. Default straight into CPF (or later), never
   // back at Kickoff.
@@ -2136,8 +2330,9 @@ function openRequest(id){
   document.getElementById('view-request').classList.add('on');
   window.scrollTo({top:0,behavior:'smooth'});
   renderAll();
-  sectionDetailTab = {};
-  loadComments(r.id); // async — re-renders once loaded (also checks for unread @mentions to surface in chat)
+  projectDrawerOpen = false;
+  commentDraftMentions = [];
+  loadComments(r.id); // async — re-renders the drawer if it's open (also checks for unread @mentions to surface in chat)
 }
 
 function setActiveNav(id){
@@ -2201,6 +2396,10 @@ let adminSchema = null;
 let adminSelectedSectionId = null;
 let adminExpandedFieldId = null;
 let adminAddingField = false;
+// Which Form the admin is currently managing sections/fields for — the
+// Manage Sections/Fields tabs are always scoped to one Form at a time.
+let ADMIN_FORMS = [];
+let currentAdminFormId = 'form-default';
 
 // CRF #N tactic field templates, folded into this same tab (not a separate
 // admin tab) — an extra block under whichever base section fans out into
@@ -2237,9 +2436,10 @@ async function showAdmin(){
   document.getElementById('adminEditPanel').style.display = 'flex';
   adminCloseEditPanel();
   window.scrollTo({top:0,behavior:'smooth'});
+  await loadAdminForms();
   await loadAdminSchema();
   await loadAdminTacticTemplates();
-  await loadFormSchemaFromDb(); // keep the live form in sync with admin field edits, immediately
+  await loadFormSchemaFromDb(currentAdminFormId); // keep the live form in sync with admin field edits, immediately
   await loadTacticTemplatesFromDb();
   await showAdminTab('sections'); // Manage sections is the default tab
 }
@@ -2278,9 +2478,98 @@ async function showPlan(){
   renderPlanTable();
 }
 
+// ============ MANAGE FORMS — the layer above sections. Each Form is a
+// named, independent flow (its own section pool) a campaign request can be
+// built on; the New Campaign Request modal's "Which form?" picker reads
+// this same /api/forms list. Picking "Manage sections →" on a Form sets
+// currentAdminFormId and switches to the existing Manage Sections tab,
+// scoped to it — that tab/the field editor underneath it don't need to know
+// Forms exist at all beyond reading this one variable.
+async function loadAdminForms(){
+  try{
+    const res = await fetch('/api/forms');
+    const data = await res.json();
+    ADMIN_FORMS = data.forms || [];
+  }catch(e){
+    ADMIN_FORMS = [];
+  }
+  renderAdminFormsTable();
+}
+
+function renderAdminFormsTable(){
+  const el = document.getElementById('adminFormsView');
+  if(!el) return;
+  const rows = ADMIN_FORMS.map(f=>`
+    <tr class="admin-frow">
+      <td><div class="admin-flabel">${f.name}${f.id===currentAdminFormId?' <span class="admin-ftype-badge">Editing</span>':''}</div><div class="admin-fmachine">${f.id}</div></td>
+      <td>${f.description||'—'}</td>
+      <td><span class="admin-ftype-badge" style="${f.active?'':'opacity:.5'}">${f.active?'Active':'Inactive'}</span></td>
+      <td style="text-align:right">
+        <button class="btn-ghost btn-sm" onclick="adminManageFormSections('${f.id}')">Manage sections →</button>
+        <button class="btn-icon" onclick="adminEditFormPrompt('${f.id}')" title="Rename / edit">✎</button>
+        <button class="btn-icon" onclick="adminDeleteForm('${f.id}','${f.name.replace(/'/g,"\\'")}')" title="Delete">🗑</button>
+      </td>
+    </tr>`).join('');
+  el.innerHTML = `
+    <section class="admin-field-panel">
+      <div class="admin-panel-head">
+        <div><h3>Forms</h3><p>${ADMIN_FORMS.length} form${ADMIN_FORMS.length===1?'':'s'}</p></div>
+        <button class="btn-primary" onclick="adminAddFormPrompt()">+ Add form</button>
+      </div>
+      <table class="admin-ftable">
+        <thead><tr><th>Form</th><th>Description</th><th>Status</th><th></th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="4" style="text-align:center;color:var(--ink3);padding:24px">No forms yet.</td></tr>`}</tbody>
+      </table>
+    </section>`;
+}
+
+function adminManageFormSections(formId){
+  currentAdminFormId = formId;
+  adminSelectedSectionId = null;
+  showAdminTab('sections');
+}
+
+async function adminAddFormPrompt(){
+  const name = prompt('Form name (e.g. "FormB — Field Force Requests"):');
+  if(!name || !name.trim()) return;
+  const description = prompt('Short description (optional):') || '';
+  const res = await fetch('/api/admin/forms', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ name: name.trim(), description: description.trim() }),
+  });
+  if(!res.ok){ const err = await res.json().catch(()=>({})); toast(`Couldn't add form: ${err.error||res.status}`); return; }
+  toast(`Added "${name.trim()}".`);
+  await loadAdminForms();
+}
+
+async function adminEditFormPrompt(formId){
+  const f = ADMIN_FORMS.find(x=>x.id===formId);
+  if(!f) return;
+  const name = prompt('Form name:', f.name);
+  if(name === null) return;
+  const description = prompt('Description:', f.description||'');
+  if(description === null) return;
+  const res = await fetch(`/api/admin/forms/${formId}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ name: name.trim() || f.name, description: description.trim() }),
+  });
+  if(!res.ok){ const err = await res.json().catch(()=>({})); toast(`Couldn't update form: ${err.error||res.status}`); return; }
+  await loadAdminForms();
+}
+
+async function adminDeleteForm(formId, name){
+  if(formId === 'form-default'){ toast(`"${name}" is the default form and can't be deleted.`); return; }
+  if(!confirm(`Delete "${name}"? This also deletes every section and field that belongs to it.`)) return;
+  const res = await fetch(`/api/admin/forms/${formId}`, { method:'DELETE' });
+  if(!res.ok){ const err = await res.json().catch(()=>({})); toast(`Couldn't delete form: ${err.error||res.status}`); return; }
+  if(currentAdminFormId === formId) currentAdminFormId = 'form-default';
+  toast(`Deleted "${name}".`);
+  await loadAdminForms();
+}
+
 async function loadAdminSchema(){
   try{
-    const res = await fetch('/api/schema');
+    const res = await fetch(`/api/schema?formId=${encodeURIComponent(currentAdminFormId)}`);
     const data = await res.json();
     adminSchema = data.sections;
     if(!adminSelectedSectionId || !adminSchema.some(s=>s.id===adminSelectedSectionId)){
@@ -2323,6 +2612,8 @@ const ADMIN_COND_KEYS = [
   {key:'audience', label:'Audience', values:['hcp','dtc']},
   {key:'metadataSource', label:'Metadata Source', values:['New metadata','Existing metadata']},
   {key:'abTesting', label:'A/B Testing', values:['Yes','No']},
+  {key:'sendTimeOptimization', label:'Send Time Optimization', values:['Yes','No']},
+  {key:'personalization', label:'Personalization', values:['Yes','No']},
 ];
 // Draft state for the condition builder while a drawer is open — a rule is
 // {key, values:[...]}, a value list >1 long means "key is any of these"
@@ -2580,7 +2871,7 @@ async function adminSaveField(id){
   adminCloseEditPanel();
   toast(`Saved "${patch.label}".`);
   await loadAdminSchema();
-  await loadFormSchemaFromDb(); // keep the live form in sync with admin field edits, immediately
+  await loadFormSchemaFromDb(currentAdminFormId); // keep the live form in sync with admin field edits, immediately
 }
 
 async function adminDeleteField(id){
@@ -2591,7 +2882,7 @@ async function adminDeleteField(id){
   adminCloseEditPanel();
   toast(`Deleted "${f.label}".`);
   await loadAdminSchema();
-  await loadFormSchemaFromDb(); // keep the live form in sync with admin field edits, immediately
+  await loadFormSchemaFromDb(currentAdminFormId); // keep the live form in sync with admin field edits, immediately
 }
 
 // ============ ADMIN: CRF #N TACTIC TEMPLATES (folded into this same tab) ============
@@ -2720,7 +3011,7 @@ async function adminSubmitAddField(sectionId){
   adminCloseEditPanel();
   toast(`Added "${label}".`);
   await loadAdminSchema();
-  await loadFormSchemaFromDb(); // keep the live form in sync with admin field edits, immediately
+  await loadFormSchemaFromDb(currentAdminFormId); // keep the live form in sync with admin field edits, immediately
 }
 
 // ============ ADMIN: MANAGE SECTIONS ============
@@ -2826,7 +3117,7 @@ async function adminSaveSection(id){
   adminCloseEditPanel();
   toast('Section saved.');
   await loadAdminSchema();
-  await loadFormSchemaFromDb();
+  await loadFormSchemaFromDb(currentAdminFormId);
   renderAdminSectionsTable();
 }
 
@@ -2836,7 +3127,7 @@ async function adminDeleteSection(id){
   adminCloseEditPanel();
   toast('Section deleted.');
   await loadAdminSchema();
-  await loadFormSchemaFromDb();
+  await loadFormSchemaFromDb(currentAdminFormId);
   renderAdminSectionsTable();
 }
 
@@ -2865,7 +3156,7 @@ async function adminSubmitAddSection(){
   const name = document.getElementById('nas-name').value.trim();
   if(!id || !name){ toast('Id and name are required.'); return; }
   const body = {
-    id, name,
+    id, name, formId: currentAdminFormId,
     num: document.getElementById('nas-num').value.trim(),
     icon: document.getElementById('nas-icon').value.trim() || '▣',
   };
@@ -2876,7 +3167,7 @@ async function adminSubmitAddSection(){
   adminCloseEditPanel();
   toast(`Added "${name}".`);
   await loadAdminSchema();
-  await loadFormSchemaFromDb();
+  await loadFormSchemaFromDb(currentAdminFormId);
   renderAdminSectionsTable();
 }
 
@@ -2891,6 +3182,10 @@ const ADMIN_NUDGE_TRIGGERS = ['section_submitted','field_value_equals','phase_co
 function adminAllSectionIds(){ return SECTIONS.map(s=>s.id); }
 
 const ADMIN_TAB_META = {
+  forms: {
+    title: 'Manage forms',
+    sub: 'The named flows a campaign request can use (e.g. this Requirement Gathering Form, or a future FormB) — pick one below to manage its sections/fields.',
+  },
   sections: {
     title: 'Manage sections',
     sub: 'Add, edit, reorder, and remove the form\'s sections themselves — before you get to individual fields.',
@@ -2907,16 +3202,23 @@ const ADMIN_TAB_META = {
 
 async function showAdminTab(tab){
   adminCloseEditPanel();
+  document.getElementById('adminTabForms').classList.toggle('on', tab==='forms');
   document.getElementById('adminTabSections').classList.toggle('on', tab==='sections');
   document.getElementById('adminTabFields').classList.toggle('on', tab==='fields');
   document.getElementById('adminTabNudges').classList.toggle('on', tab==='nudges');
+  document.getElementById('adminFormsView').style.display = tab==='forms' ? '' : 'none';
   document.getElementById('adminSectionsView').style.display = tab==='sections' ? '' : 'none';
   document.getElementById('adminFieldsView').style.display = tab==='fields' ? '' : 'none';
   document.getElementById('adminNudgesView').style.display = tab==='nudges' ? '' : 'none';
   document.getElementById('adminHeroTitle').textContent = ADMIN_TAB_META[tab].title;
-  document.getElementById('adminHeroSub').textContent = ADMIN_TAB_META[tab].sub;
+  // Sections/Fields are scoped to whichever Form is currently selected —
+  // name it in the sub-line so it's never ambiguous which flow you're
+  // editing once more than one Form exists.
+  const formTag = (tab==='sections'||tab==='fields') ? ` — editing "${ADMIN_FORMS.find(f=>f.id===currentAdminFormId)?.name || currentAdminFormId}"` : '';
+  document.getElementById('adminHeroSub').textContent = ADMIN_TAB_META[tab].sub + formTag;
   document.getElementById('adminHeroActions').innerHTML = tab==='fields'
     ? `<a class="btn-ghost" href="/api/admin/export" download>⬇ Export fields (Excel)</a>` : '';
+  if(tab==='forms') await loadAdminForms();
   if(tab==='sections') await loadAdminSectionsTab();
   if(tab==='nudges') await loadAdminNudges();
 }
@@ -3602,7 +3904,21 @@ document.addEventListener('focusin', (e) => {
   }
 });
 
-function startNewRequest(){
+async function startNewRequest(){
+  // "Which form?" is deliberately the very first thing this modal asks —
+  // called out per the customer's ask, since which Form a request uses
+  // determines everything else the requirement-gathering flow will show.
+  const formSel = document.getElementById('newReqForm');
+  formSel.innerHTML = `<option value="form-default">Loading…</option>`;
+  try{
+    const res = await fetch('/api/forms');
+    const data = await res.json();
+    const forms = (data.forms || []).filter(f=>f.active);
+    formSel.innerHTML = (forms.length ? forms : [{id:'form-default', name:'Requirement Gathering Form'}])
+      .map(f=>`<option value="${f.id}">${f.name}</option>`).join('');
+  }catch(e){
+    formSel.innerHTML = `<option value="form-default">Requirement Gathering Form</option>`;
+  }
   document.getElementById('newReqTactplan').value = 'TP-88500';
   document.getElementById('newReqAgency').value = '';
   document.getElementById('newReqBrandName').value = '';
@@ -3627,60 +3943,155 @@ function closeNewRequestModal(){
   document.getElementById('newReqBackdrop').classList.remove('open');
 }
 
-// Visio Builder — a real free-form node-and-connector canvas for the Visio
-// Diagram parallel node, in the shape of n8n/Power Automate's designer:
-// nodes are absolutely positioned and draggable anywhere on the canvas,
-// connectors are SVG lines drawn between them (drag from a node's output dot
-// onto another node to link them), and node TYPES cover the automation
-// vocabulary this is modeling — Trigger (fixed start), Action, Wait, Loop,
-// End. Not a real execution engine — nothing here actually runs — this is a
-// planning/documentation canvas Campaign Ops shapes to the real campaign,
-// persisted per TactPlan (nodes + edges + positions, all of it).
-const FLOW_NODE_TYPES = {
-  trigger: { icon:'⚡', label:'Trigger', cls:'trigger' },
-  action:  { icon:'▸', label:'Action',  cls:'action'  },
-  wait:    { icon:'⏱', label:'Wait',    cls:'wait'    },
-  loop:    { icon:'↻', label:'Loop',    cls:'loop'    },
-  end:     { icon:'■', label:'End',     cls:'end'     },
+// ============================================================================
+// Visio Builder — AI-driven diagram editor. Replaces the old free-form
+// node/connector canvas AND the plain PDF iframe that later replaced it.
+// The node/edge graph (diagramGraph) is the source of truth while editing;
+// "Visio file" + "Google Drive" are a realistic mock via localStorage, same
+// as every other external system already mocked in this app (TactPlan,
+// brand master, ...) — see server/server.js's /api/visio-agent doc comment
+// for why this stays a mock rather than a real Drive/Visio integration.
+// Users never drag nodes by hand: the canvas is the visual truth, the
+// Diagram Chat (vbSendChat below) is the only editing interface — the model
+// returns structured operations (vbApplyOperations) that get previewed
+// (vbRenderPreviewCard) before being applied.
+// ============================================================================
+// Standard Shape Library — exact spec (fill/border/border-width/default
+// size), the authoritative source of truth for node styling. Supersedes the
+// earlier image-derived guess that Terminal nodes were grey/orange: per this
+// spec they're white with a purple border, back to that.
+// ============================================================================
+const DIAGRAM_SHAPES = {
+  process:    { label:'Process Rectangle', fill:'#FFF2B8', border:'#F5A300', borderWidth:3, w:240, h:120 },
+  decision:   { label:'Decision Diamond',  fill:'#FFFFFF', border:'#F5A300', borderWidth:3, w:180, h:120 },
+  start:      { label:'Terminal Pill',     fill:'#FFFFFF', border:'#8B5CF6', borderWidth:3, w:90,  h:34 },
+  end:        { label:'Terminal Pill',     fill:'#FFFFFF', border:'#8B5CF6', borderWidth:3, w:90,  h:34 },
+  datasource: { label:'Database Cylinder', fill:'#FFFFFF', border:'#F5A300', borderWidth:4, w:320, h:110 },
+  infobox:    { label:'Information Box',   fill:'#4F84E8', border:'#2F66C5', borderWidth:3, w:260, h:90 },
 };
-const FLOW_CANVAS_DEFAULT = {
-  nodes: [
-    { id:'n0', type:'trigger', label:'CPF details submitted (Generic/Overview saved)', x:40,  y:30 },
-    { id:'n1', type:'action',  label:"Map audience entry point(s) from Journey's Audience Entry Source", x:40,  y:150 },
-    { id:'n2', type:'action',  label:'Draft the touchpoint sequence & wait times from each Touch Point #N', x:40, y:270 },
-    { id:'n3', type:'wait',    label:'Wait for XM specialty/test decisions', x:340, y:270 },
-    { id:'n4', type:'action',  label:'Define re-entry, resend, and exit rules per touchpoint', x:40,  y:390 },
-    { id:'n5', type:'loop',    label:'Repeat per CRF tactic (Email/SMS)', x:340, y:390 },
-    { id:'n6', type:'action',  label:'Route to MDS for suppression/target-list review', x:40, y:510 },
-    { id:'n7', type:'end',     label:'Handoff to Build & Proofing', x:40, y:630 },
-  ],
-  edges: [ ['n0','n1'], ['n1','n2'], ['n2','n3'], ['n2','n4'], ['n4','n5'], ['n4','n6'], ['n6','n7'] ],
-};
-let flowCanvasNodes = [];
-let flowCanvasEdges = [];
-let flowCanvasNodeSeq = 0;
+const DIAGRAM_LEGEND = [
+  { status:'production', color:'#A9C48A', border:'#7FA35C', label:'Live in Production' },
+  { status:'new',        color:'#F2C94C', border:'#D9A82E', label:'New' },
+  { status:'hold',       color:'#E17575', border:'#C24F4F', label:'On Hold / Off' },
+  { status:'inactive',   color:'#BFBFBF', border:'#333333', label:'Never Turned On' },
+];
+// Top-to-bottom flow (main spine down the left, decisions branch right to
+// their own Stop node) — matches the exact node spec given for the
+// Zolgensma DTC Unbranded journey (ids/positions/sizes/colors/content taken
+// directly from that spec; email3/email6/email7/stop2/stop3/the final Stop
+// weren't given explicit shape data, only referenced in the shape hierarchy
+// and connector list — positioned to continue the same vertical spine using
+// the same shape-library defaults as their siblings).
+function diagramDefaultGraph(){
+  return {
+    nodes:[
+      { id:'campaign_info', type:'infobox', x:80, y:120, w:260, h:90,
+        lines:['Campaign Information','Source Campaign: 20252054','Fulfilment Campaign: 20252054'] },
+      { id:'optin_source', type:'datasource', x:520, y:90, w:320, h:110,
+        lines:['Opt Ins Info','Source Campaign 20252054','Opt In Database','Disposition 4 & 26'] },
+      { id:'dedupe_step', type:'process', x:610, y:260, w:170, h:90,
+        lines:['Deduplicate','using latest','response timestamp'] },
+      { id:'opted_in', type:'decision', x:615, y:430, w:170, h:120, label:'Opted into campaign?' },
+      { id:'stop1', type:'end', x:900, y:450, w:90, h:34, label:'Stop' },
+      { id:'age_check', type:'decision', x:615, y:640, w:230, h:150, label:'Age 18+ check' },
+      { id:'stop2', type:'end', x:900, y:660, w:90, h:34, label:'Stop' },
+      { id:'valid_email', type:'decision', x:615, y:920, w:180, h:130, label:'Valid Email?' },
+      { id:'stop3', type:'end', x:900, y:940, w:90, h:34, label:'Stop' },
+      { id:'segment', type:'infobox', x:560, y:1180, w:250, h:100, fillColor:'#5C8FE8', borderColor:'#5C8FE8', borderWidth:0, label:'Segment', sub:'ZOL_SM' },
+      { id:'email1', type:'process', x:560, y:1420, w:240, h:120, lines:['Day 0','Welcome Email','Live 06/18/2025'], status:'production' },
+      { id:'email2', type:'process', x:560, y:1660, w:240, h:120, lines:['Day 1','Prompt Email'], status:'new' },
+      { id:'resend1', type:'process', x:900, y:1680, w:240, h:120, lines:['Day 4','Resend Email'] },
+      { id:'email3', type:'process', x:560, y:1900, w:240, h:120, lines:['Day 3','Follow-up Email'] },
+      { id:'email6', type:'process', x:560, y:2140, w:240, h:120, lines:['Day 7','Re-engagement Email'] },
+      { id:'email7', type:'process', x:560, y:2380, w:240, h:120, lines:['Day 10','Final Email'], status:'hold' },
+      { id:'stop_final', type:'end', x:610, y:2620, w:90, h:34, label:'Stop' },
+    ],
+    edges:[
+      { id:'c1', from:'campaign_info', to:'optin_source' },
+      { id:'c2', from:'optin_source', to:'dedupe_step' },
+      { id:'c3', from:'dedupe_step', to:'opted_in' },
+      { id:'c4', from:'opted_in', to:'age_check', label:'Yes' },
+      { id:'c5', from:'opted_in', to:'stop1', label:'No' },
+      { id:'c6', from:'age_check', to:'valid_email', label:'Yes' },
+      { id:'c7', from:'age_check', to:'stop2', label:'No' },
+      { id:'c8', from:'valid_email', to:'segment', label:'Yes' },
+      { id:'c9', from:'valid_email', to:'stop3', label:'No' },
+      { id:'c10', from:'segment', to:'email1' },
+      { id:'c11', from:'email1', to:'email2' },
+      { id:'c12', from:'email2', to:'email3', label:'Opened' },
+      { id:'c13', from:'email2', to:'resend1', label:'Resend to Non Opens +3 Days' },
+      { id:'c14', from:'email3', to:'email6' },
+      { id:'c15', from:'resend1', to:'email6' },
+      { id:'c16', from:'email6', to:'email7' },
+      { id:'c17', from:'email7', to:'stop_final' },
+    ],
+  };
+}
+
+let diagramGraph = null;           // null => empty state ("Describe your campaign journey.")
+let diagramSelectedId = null;
+let diagramZoom = 1;
+let diagramPan = { x:0, y:0 };
+let diagramUndoStack = [];
+let diagramRedoStack = [];
+let diagramAgentHistory = [];
+let diagramSearchTerm = '';
+let diagramLastSavedAt = null;
+let diagramVersions = [];          // [{ts, graph, note}], newest first, capped at 20
+let vbPendingOps = {};
+let vbPendingSeq = 0;
 // Inline expand/collapse within the Visio Builder card itself (renderSections'
 // opsCards splice) — not a modal, specifically so the chat panel stays fully
 // usable alongside it instead of being blocked by an overlay.
 let visioBuilderOpen = false;
+// Nodes are laid out across a canvas far larger than the visible viewport —
+// without an initial fit, only whatever's near x:0/y:0 is on-screen and the
+// rest looks like it's simply missing. Reset per campaign (loadVisioBuilderData)
+// so switching requests re-fits instead of keeping a stale zoom/pan.
+let vbHasFitOnce = false;
 
-function flowCanvasStorageKey(){
-  return `visioFlowCanvas:${campaignConfig.tactplanId || 'default'}`;
+function diagramStorageKey(){ return `visioDiagram:${campaignConfig.tactplanId || 'default'}`; }
+function diagramVersionsKey(){ return `visioDiagramVersions:${campaignConfig.tactplanId || 'default'}`; }
+
+// First-ever open for a campaign seeds the example journey (diagramDefaultGraph)
+// so the editor never opens to a blank canvas that looks broken — subsequent
+// opens load whatever's actually been saved (including a real empty graph, if
+// the user explicitly cleared it, which is why this checks for the key's
+// presence rather than truthiness of its contents).
+function loadVisioBuilderData(){
+  const saved = localStorage.getItem(diagramStorageKey());
+  diagramGraph = saved ? JSON.parse(saved) : diagramDefaultGraph();
+  const savedVersions = localStorage.getItem(diagramVersionsKey());
+  diagramVersions = savedVersions ? JSON.parse(savedVersions) : [];
+  diagramLastSavedAt = diagramVersions[0]?.ts || null;
+  diagramUndoStack = []; diagramRedoStack = [];
+  diagramSelectedId = null; diagramZoom = 1; diagramPan = { x:0, y:0 };
+  diagramSearchTerm = '';
+  vbHasFitOnce = false;
 }
 
-function loadVisioBuilderData(){
-  const saved = localStorage.getItem(flowCanvasStorageKey());
-  const data = saved ? JSON.parse(saved) : FLOW_CANVAS_DEFAULT;
-  flowCanvasNodes = data.nodes.map(n=>({...n}));
-  flowCanvasEdges = data.edges.map(e=>e.slice());
-  flowCanvasNodeSeq = flowCanvasNodes.length;
+function saveDiagramGraph(note){
+  localStorage.setItem(diagramStorageKey(), JSON.stringify(diagramGraph));
+  diagramLastSavedAt = Date.now();
+  diagramVersions.unshift({ ts: diagramLastSavedAt, graph: JSON.parse(JSON.stringify(diagramGraph)), note: note || 'Edit applied' });
+  diagramVersions = diagramVersions.slice(0, 20);
+  localStorage.setItem(diagramVersionsKey(), JSON.stringify(diagramVersions));
+  renderDiagramStatusBar();
+}
+// Explicit toolbar Save — autosave already fires after every AI edit, this
+// is for a user who just wants to confirm/force a fresh snapshot.
+function vbManualSave(){
+  if(!diagramGraph) return;
+  saveDiagramGraph('Manual save');
+  vbRenderRecentChanges();
+  toast('Saved to Google Drive.');
 }
 
 function toggleVisioBuilder(){
   visioBuilderOpen = !visioBuilderOpen;
   if(visioBuilderOpen) loadVisioBuilderData();
   renderSections();
-  if(visioBuilderOpen) renderFlowCanvas();
+  if(visioBuilderOpen) vbRenderAll();
 }
 
 // The Visio Diagram flow-map cell (top of page) links here — the card only
@@ -3701,131 +4112,709 @@ function goToVisioBuilder(){
   }
 }
 
-function addFlowCanvasNode(type){
-  const id = `n${flowCanvasNodeSeq++}`;
-  const label = type==='wait' ? 'Wait…' : type==='loop' ? 'Repeat…' : type==='end' ? 'End' : 'New step';
-  // Cascade new nodes so they don't stack exactly on top of each other.
-  const n = flowCanvasNodes.length;
-  flowCanvasNodes.push({ id, type, label, x: 60 + (n%3)*40, y: 40 + (n%5)*70 });
-  renderFlowCanvas();
+/* ---------- toolbar: mode / zoom / pan / fit ---------- */
+function vbApplyTransform(){
+  const el = document.getElementById('vbCanvasEl');
+  if(el) el.style.transform = `translate(${diagramPan.x}px,${diagramPan.y}px) scale(${diagramZoom})`;
+  const pct = document.getElementById('vbZoomPct');
+  if(pct) pct.textContent = Math.round(diagramZoom*100)+'%';
+  vbRenderMinimap();
 }
-function removeFlowCanvasNode(id){
-  if(flowCanvasNodes.find(n=>n.id===id)?.type === 'trigger') return; // trigger is fixed
-  flowCanvasNodes = flowCanvasNodes.filter(n=>n.id!==id);
-  flowCanvasEdges = flowCanvasEdges.filter(([a,b])=>a!==id && b!==id);
-  renderFlowCanvas();
+function vbZoom(delta){
+  diagramZoom = Math.min(2, Math.max(0.25, +(diagramZoom+delta).toFixed(2)));
+  vbApplyTransform();
 }
-function renameFlowCanvasNode(id, text){
-  const n = flowCanvasNodes.find(n=>n.id===id);
-  if(n) n.label = text.trim() || n.label;
-}
-
-function nodePortPoint(n){
-  // Output port sits at the node's bottom-center; input is anywhere on body.
-  return { x: n.x + 90, y: n.y + 44 };
-}
-function edgePath(a, b){
-  const p1 = nodePortPoint(a), p2 = { x: b.x + 90, y: b.y };
-  const dy = Math.max(30, Math.abs(p2.y - p1.y) / 2);
-  return `M ${p1.x} ${p1.y} C ${p1.x} ${p1.y+dy}, ${p2.x} ${p2.y-dy}, ${p2.x} ${p2.y}`;
-}
-
-function renderFlowCanvas(){
-  const nodesEl = document.getElementById('flowCanvasNodesEl');
-  const svg = document.getElementById('flowCanvasSvg');
-  if(!nodesEl || !svg) return;
-
-  const maxX = Math.max(600, ...flowCanvasNodes.map(n=>n.x+220));
-  const maxY = Math.max(400, ...flowCanvasNodes.map(n=>n.y+140));
-  nodesEl.style.width = svg.style.width = maxX+'px';
-  nodesEl.style.height = svg.style.height = maxY+'px';
-  svg.setAttribute('viewBox', `0 0 ${maxX} ${maxY}`);
-
-  svg.innerHTML = flowCanvasEdges.map(([aId,bId])=>{
-    const a = flowCanvasNodes.find(n=>n.id===aId), b = flowCanvasNodes.find(n=>n.id===bId);
-    if(!a||!b) return '';
-    return `<path class="flow-edge" d="${edgePath(a,b)}" marker-end="url(#flowArrow)"></path>`;
-  }).join('') + `<defs><marker id="flowArrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="flow-edge-arrow"></path></marker></defs>`;
-
-  nodesEl.innerHTML = flowCanvasNodes.map(n=>{
-    const t = FLOW_NODE_TYPES[n.type];
-    const isTrigger = n.type==='trigger';
-    return `<div class="fc-node ${t.cls}" data-id="${n.id}" style="left:${n.x}px;top:${n.y}px" onmousedown="startFlowNodeDrag(event,'${n.id}')">
-      <div class="fc-node-top">
-        <span class="fc-node-ic">${t.icon}</span>
-        <span class="fc-node-kind">${t.label}</span>
-        ${isTrigger?'':`<button class="fc-node-del" onmousedown="event.stopPropagation()" onclick="removeFlowCanvasNode('${n.id}')">✕</button>`}
-      </div>
-      <div class="fc-node-text" contenteditable="true" onmousedown="event.stopPropagation()" onblur="renameFlowCanvasNode('${n.id}', this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}">${n.label.replace(/</g,'&lt;')}</div>
-      <div class="fc-node-port" title="Drag to connect" onmousedown="startFlowConnect(event,'${n.id}')"></div>
-    </div>`;
-  }).join('');
-}
-
-// Dragging repositions a node; a separate drag starting from the port
-// (.flow-node-port, stopPropagation'd off the node's own mousedown) draws a
-// live connector instead. Both use document-level mousemove/mouseup so the
-// drag keeps tracking even if the cursor leaves the node/canvas briefly.
-let flowDragState = null;
-function startFlowNodeDrag(evt, id){
-  if(evt.target.closest('.fc-node-port') || evt.target.closest('.fc-node-del')) return;
-  const wrap = document.getElementById('flowCanvasWrap');
-  const n = flowCanvasNodes.find(x=>x.id===id);
-  flowDragState = { mode:'move', id, startX:evt.clientX, startY:evt.clientY, origX:n.x, origY:n.y, wrap };
+function vbOnWheel(evt){
   evt.preventDefault();
+  vbZoom(evt.deltaY > 0 ? -0.08 : 0.08);
 }
-function startFlowConnect(evt, id){
-  flowDragState = { mode:'connect', from:id, x:evt.clientX, y:evt.clientY };
-  evt.stopPropagation();
-  evt.preventDefault();
+function vbFitToScreen(){
+  const wrap = document.getElementById('vbCanvasWrap');
+  if(!wrap) return;
+  if(!diagramGraph || !diagramGraph.nodes.length){ diagramZoom = 1; diagramPan = { x:0, y:0 }; vbApplyTransform(); return; }
+  const xs = diagramGraph.nodes.map(n=>n.x), xe = diagramGraph.nodes.map(n=>n.x+n.w);
+  const ys = diagramGraph.nodes.map(n=>n.y), ye = diagramGraph.nodes.map(n=>n.y+n.h);
+  const minX = Math.min(...xs), maxX = Math.max(...xe), minY = Math.min(...ys), maxY = Math.max(...ye);
+  const gw = (maxX-minX) + 120, gh = (maxY-minY) + 120;
+  const cw = wrap.clientWidth, ch = wrap.clientHeight;
+  diagramZoom = Math.min(1.5, Math.max(0.2, Math.min(cw/gw, ch/gh)));
+  diagramPan = { x: -minX*diagramZoom + (cw - gw*diagramZoom)/2 + 60*diagramZoom, y: -minY*diagramZoom + (ch - gh*diagramZoom)/2 + 60*diagramZoom };
+  vbApplyTransform();
+}
+let vbPanDrag = null;
+function vbOnCanvasMouseDown(evt){
+  if(evt.target.closest('.vb-node')) return; // clicking a node selects, doesn't pan
+  vbPanDrag = { startX:evt.clientX, startY:evt.clientY, origX:diagramPan.x, origY:diagramPan.y };
 }
 document.addEventListener('mousemove', (evt)=>{
-  if(!flowDragState) return;
-  if(flowDragState.mode==='move'){
-    const dx = evt.clientX - flowDragState.startX, dy = evt.clientY - flowDragState.startY;
-    const n = flowCanvasNodes.find(x=>x.id===flowDragState.id);
-    n.x = Math.max(0, flowDragState.origX + dx);
-    n.y = Math.max(0, flowDragState.origY + dy);
-    renderFlowCanvas();
-  } else if(flowDragState.mode==='connect'){
-    flowDragState.x = evt.clientX;
-    flowDragState.y = evt.clientY;
-    const wrap = document.getElementById('flowCanvasWrap');
-    const svg = document.getElementById('flowCanvasSvg');
-    if(!wrap || !svg) return;
-    const rect = wrap.getBoundingClientRect();
-    const from = flowCanvasNodes.find(n=>n.id===flowDragState.from);
-    const p1 = nodePortPoint(from);
-    const liveX = evt.clientX - rect.left + wrap.scrollLeft;
-    const liveY = evt.clientY - rect.top + wrap.scrollTop;
-    let live = svg.querySelector('#flowLiveEdge');
-    if(!live){
-      live = document.createElementNS('http://www.w3.org/2000/svg','path');
-      live.setAttribute('id','flowLiveEdge');
-      live.setAttribute('class','flow-edge flow-edge-live');
-      svg.appendChild(live);
-    }
-    live.setAttribute('d', `M ${p1.x} ${p1.y} L ${liveX} ${liveY}`);
-  }
+  if(!vbPanDrag) return;
+  diagramPan.x = vbPanDrag.origX + (evt.clientX - vbPanDrag.startX);
+  diagramPan.y = vbPanDrag.origY + (evt.clientY - vbPanDrag.startY);
+  vbApplyTransform();
 });
-document.addEventListener('mouseup', (evt)=>{
-  if(!flowDragState) return;
-  if(flowDragState.mode==='connect'){
-    const target = evt.target.closest('.fc-node');
-    if(target){
-      const toId = target.dataset.id;
-      if(toId !== flowDragState.from && !flowCanvasEdges.some(([a,b])=>a===flowDragState.from&&b===toId)){
-        flowCanvasEdges.push([flowDragState.from, toId]);
+document.addEventListener('mouseup', ()=>{ vbPanDrag = null; });
+
+/* ---------- selection / metadata / search ---------- */
+function vbMatchesSearch(n){
+  if(!diagramSearchTerm.trim()) return false;
+  const t = diagramSearchTerm.trim().toLowerCase();
+  return n.id.toLowerCase()===t || n.label.toLowerCase().includes(t) || (n.metadata && JSON.stringify(n.metadata).toLowerCase().includes(t));
+}
+function vbSelectNode(id, evt){
+  if(evt) evt.stopPropagation();
+  diagramSelectedId = diagramSelectedId===id ? null : id;
+  vbRenderNodes(); vbRenderEdges(); vbRenderSelectionPanel();
+  const hover = document.getElementById('vbNodeMeta');
+  if(hover) hover.style.display='none';
+}
+// Selected node's details live in the AI panel's "Current Selection" section
+// (see visioBuilderMarkup) — an inspector, not a floating canvas overlay.
+function vbRenderSelectionPanel(){
+  const el = document.getElementById('vbSelectionBody');
+  if(!el) return;
+  const n = diagramSelectedId && diagramGraph ? diagramGraph.nodes.find(x=>x.id===diagramSelectedId) : null;
+  if(!n){ el.innerHTML = `<div class="vb-selection-empty">Click a node to inspect it.</div>`; return; }
+  el.innerHTML = `<div class="vb-selection-name">${(n.label||'').replace(/</g,'&lt;')}</div>
+    <div class="vb-selection-row"><b>Type:</b> ${(DIAGRAM_SHAPES[n.type]||{}).label || n.type}</div>
+    ${n.sub ? `<div class="vb-selection-row"><b>Metadata:</b> ${n.sub.replace(/</g,'&lt;')}</div>` : ''}
+    ${n.status ? `<div class="vb-selection-row"><b>Status:</b> ${(DIAGRAM_LEGEND.find(l=>l.status===n.status)||{}).label||n.status}</div>` : ''}
+    <div class="vb-selection-row"><b>ID:</b> <code>${n.id}</code></div>`;
+}
+// Hover shows a transient floating tooltip near the node itself (canvas
+// interaction, per spec) — distinct from the persistent Current Selection
+// panel, which only updates on click.
+function vbHoverNode(id){
+  const panel = document.getElementById('vbNodeMeta');
+  const wrap = document.getElementById('vbCanvasWrap');
+  const nodeEl = wrap ? wrap.querySelector(`.vb-node[data-id="${id}"]`) : null;
+  const n = diagramGraph ? diagramGraph.nodes.find(x=>x.id===id) : null;
+  if(!panel || !wrap || !nodeEl || !n) return;
+  const wrapRect = wrap.getBoundingClientRect();
+  const nodeRect = nodeEl.getBoundingClientRect();
+  let left = nodeRect.right - wrapRect.left + 10;
+  const top = Math.max(6, nodeRect.top - wrapRect.top);
+  if(left + 208 > wrap.clientWidth) left = Math.max(6, nodeRect.left - wrapRect.left - 208);
+  panel.style.left = left+'px'; panel.style.top = top+'px';
+  panel.style.display = 'block';
+  panel.innerHTML = `<div class="vb-meta-row"><b>${(n.label||'').replace(/</g,'&lt;')}</b></div>
+    ${n.sub ? `<div class="vb-meta-row">${n.sub.replace(/</g,'&lt;')}</div>` : ''}
+    <div class="vb-meta-row"><b>Type:</b> ${(DIAGRAM_SHAPES[n.type]||{}).label || n.type}</div>
+    ${n.metadata?.owner ? `<div class="vb-meta-row"><b>Owner:</b> ${n.metadata.owner}</div>` : ''}
+    ${n.metadata?.journey ? `<div class="vb-meta-row"><b>Journey:</b> ${n.metadata.journey}</div>` : ''}
+    ${n.metadata?.created ? `<div class="vb-meta-row"><b>Created:</b> ${n.metadata.created}</div>` : ''}
+    <div class="vb-meta-actions">
+      <span class="vb-meta-action" onclick="vbSelectNode('${id}')">Highlight Connections</span>
+      <span class="vb-meta-action" onclick="vbSelectNode('${id}')">Open Metadata</span>
+    </div>`;
+}
+function vbUnhoverNode(){
+  const panel = document.getElementById('vbNodeMeta');
+  if(panel) panel.style.display='none';
+}
+function vbSearch(term){
+  diagramSearchTerm = term;
+  vbRenderNodes();
+  if(!term.trim() || !diagramGraph) return;
+  const t = term.trim().toLowerCase();
+  const hit = diagramGraph.nodes.find(n=>n.id.toLowerCase()===t) || diagramGraph.nodes.find(n=>vbMatchesSearch(n));
+  if(hit){
+    diagramSelectedId = hit.id;
+    vbRenderNodes(); vbRenderEdges(); vbRenderSelectionPanel();
+    vbCenterOnNode(hit);
+  }
+}
+function vbCenterOnNode(n){
+  const wrap = document.getElementById('vbCanvasWrap');
+  if(!wrap) return;
+  diagramZoom = Math.max(diagramZoom, 0.9);
+  diagramPan = { x: wrap.clientWidth/2 - (n.x+n.w/2)*diagramZoom, y: wrap.clientHeight/2 - (n.y+n.h/2)*diagramZoom };
+  vbApplyTransform();
+}
+
+/* ---------- rendering: nodes (incremental, so left/top transitions animate), edges, minimap ---------- */
+function vbRenderNodes(){
+  const el = document.getElementById('vbNodesEl');
+  const overlay = document.getElementById('vbEmptyOverlay');
+  if(!el) return;
+  const empty = !diagramGraph || !diagramGraph.nodes.length;
+  if(overlay) overlay.style.display = empty ? 'flex' : 'none';
+  if(!diagramGraph) { el.innerHTML=''; return; }
+
+  const seen = new Set();
+  diagramGraph.nodes.forEach(n=>{
+    seen.add(n.id);
+    const shape = DIAGRAM_SHAPES[n.type] || DIAGRAM_SHAPES.process;
+    const fill = n.fillColor || shape.fill;
+    const border = n.borderColor || shape.border;
+    let node = el.querySelector(`[data-id="${n.id}"]`);
+    const isNew = !node;
+    if(isNew){
+      node = document.createElement('div');
+      node.dataset.id = n.id;
+      node.onclick = (e)=>vbSelectNode(n.id, e);
+      node.onmouseenter = ()=>vbHoverNode(n.id);
+      node.onmouseleave = ()=>vbUnhoverNode(n.id);
+      el.appendChild(node);
+    }
+    node.className = `vb-node vb-shape-${n.type} ${diagramSelectedId===n.id?'sel':''} ${vbMatchesSearch(n)?'vb-match':''} ${isNew?'vb-anim-in':''}`;
+    node.style.left = n.x+'px'; node.style.top = n.y+'px';
+    node.style.width = n.w+'px'; node.style.height = n.h+'px';
+    const borderWidth = n.borderWidth !== undefined ? n.borderWidth : (shape.borderWidth !== undefined ? shape.borderWidth : 2);
+    // Set as CSS custom properties (not just node.style.background/borderColor)
+    // so pseudo-elements — the cylinder's right ellipse cap, the diamond's
+    // border layer — can reference the exact same values via var(...)
+    // reliably. `border:2px solid inherit` on a pseudo-element is not
+    // dependable across browsers; a custom property always is.
+    node.style.setProperty('--vb-fill', fill);
+    node.style.setProperty('--vb-border', border);
+    node.style.setProperty('--vb-bw', borderWidth+'px');
+    node.style.background = fill; node.style.borderColor = border;
+    node.style.borderWidth = borderWidth+'px';
+    node.title = n.id;
+    const dot = n.status ? `<span class="vb-status-dot" style="background:${(DIAGRAM_LEGEND.find(l=>l.status===n.status)||{}).color||'#999'}"></span>` : '';
+    // Richer nodes (e.g. Campaign Information, Opt Ins Info) carry multiple
+    // stacked lines instead of one label + one sub-line.
+    const body = Array.isArray(n.lines) && n.lines.length
+      ? n.lines.map((l,i)=>`<div class="${i===0?'vb-node-label':'vb-node-sub'}">${String(l).replace(/</g,'&lt;')}</div>`).join('')
+      : `<div class="vb-node-label">${(n.label||'').replace(/</g,'&lt;')}</div>${n.sub ? `<div class="vb-node-sub">${n.sub.replace(/</g,'&lt;')}</div>` : ''}`;
+    node.innerHTML = `${dot}${body}`;
+    if(isNew) requestAnimationFrame(()=>requestAnimationFrame(()=>node.classList.remove('vb-anim-in')));
+  });
+  [...el.children].forEach(child=>{
+    if(!seen.has(child.dataset.id)){
+      child.classList.add('vb-anim-out');
+      setTimeout(()=>child.remove(), 320);
+    }
+  });
+}
+function vbPortPoints(a, b){
+  const aC = { x:a.x+a.w/2, y:a.y+a.h/2 }, bC = { x:b.x+b.w/2, y:b.y+b.h/2 };
+  const dx = bC.x-aC.x, dy = bC.y-aC.y;
+  if(Math.abs(dx) >= Math.abs(dy)){
+    return [ { x: dx>=0 ? a.x+a.w : a.x, y: aC.y }, { x: dx>=0 ? b.x : b.x+b.w, y: bC.y } ];
+  }
+  return [ { x: aC.x, y: dy>=0 ? a.y+a.h : a.y }, { x: bC.x, y: dy>=0 ? b.y : b.y+b.h } ];
+}
+// Sharp orthogonal elbow connectors (straight L/Z segments, right-angle
+// corners) — no bezier curves anywhere, matching the shape library's
+// "Connector: Auto, Orthogonal with arrowheads" spec.
+function vbEdgePath(p1, p2){
+  const dx = p2.x-p1.x, dy = p2.y-p1.y;
+  if(Math.abs(dx) < 2 || Math.abs(dy) < 2){
+    return `M ${p1.x} ${p1.y} L ${p2.x} ${p2.y}`;
+  }
+  if(Math.abs(dx) >= Math.abs(dy)){
+    const mx = p1.x + dx/2;
+    return `M ${p1.x} ${p1.y} L ${mx} ${p1.y} L ${mx} ${p2.y} L ${p2.x} ${p2.y}`;
+  }
+  const my = p1.y + dy/2;
+  return `M ${p1.x} ${p1.y} L ${p1.x} ${my} L ${p2.x} ${my} L ${p2.x} ${p2.y}`;
+}
+function vbRenderEdges(){
+  const svg = document.getElementById('vbEdgesSvg');
+  const canvasEl = document.getElementById('vbCanvasEl');
+  if(!svg || !canvasEl) return;
+  if(!diagramGraph || !diagramGraph.nodes.length){ svg.innerHTML=''; canvasEl.style.width='100%'; canvasEl.style.height='100%'; return; }
+  const maxX = Math.max(1200, ...diagramGraph.nodes.map(n=>n.x+n.w+200));
+  const maxY = Math.max(700, ...diagramGraph.nodes.map(n=>n.y+n.h+200));
+  canvasEl.style.width = maxX+'px'; canvasEl.style.height = maxY+'px';
+  svg.setAttribute('width', maxX); svg.setAttribute('height', maxY);
+  const highlight = diagramSelectedId ? new Set(diagramGraph.edges.filter(e=>e.from===diagramSelectedId||e.to===diagramSelectedId).map(e=>e.id)) : null;
+  svg.innerHTML = diagramGraph.edges.map(e=>{
+    const a = diagramGraph.nodes.find(n=>n.id===e.from), b = diagramGraph.nodes.find(n=>n.id===e.to);
+    if(!a||!b) return '';
+    const [p1,p2] = vbPortPoints(a,b);
+    const dim = highlight && !highlight.has(e.id) ? 'vb-edge-dim' : '';
+    const mid = { x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2 };
+    const labelEl = e.label ? `<text class="vb-edge-label" x="${mid.x}" y="${mid.y-4}" text-anchor="middle">${e.label.replace(/</g,'&lt;')}</text>` : '';
+    return `<path class="vb-edge ${dim}" d="${vbEdgePath(p1,p2)}" marker-end="url(#vbArrow)"></path>${labelEl}`;
+  }).join('') + `<defs><marker id="vbArrow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="vb-edge-arrow"></path></marker></defs>`;
+}
+function vbRenderMinimap(){
+  const svg = document.getElementById('vbMinimap');
+  const wrap = document.getElementById('vbCanvasWrap');
+  if(!svg || !wrap) return;
+  if(!diagramGraph || !diagramGraph.nodes.length){ svg.innerHTML=''; return; }
+  const W=160, H=110;
+  const xs = diagramGraph.nodes.map(n=>n.x), xe = diagramGraph.nodes.map(n=>n.x+n.w);
+  const ys = diagramGraph.nodes.map(n=>n.y), ye = diagramGraph.nodes.map(n=>n.y+n.h);
+  const minX = Math.min(...xs)-40, maxX = Math.max(...xe)+40, minY = Math.min(...ys)-40, maxY = Math.max(...ye)+40;
+  const gw = maxX-minX, gh = maxY-minY;
+  const s = Math.min(W/gw, H/gh);
+  const ox = (W-gw*s)/2, oy = (H-gh*s)/2;
+  const rects = diagramGraph.nodes.map(n=>`<rect x="${ox+(n.x-minX)*s}" y="${oy+(n.y-minY)*s}" width="${Math.max(2,n.w*s)}" height="${Math.max(2,n.h*s)}" rx="1.5" class="vb-mm-node ${diagramSelectedId===n.id?'sel':''}"></rect>`).join('');
+  const vx = ox + (-diagramPan.x/diagramZoom - minX)*s;
+  const vy = oy + (-diagramPan.y/diagramZoom - minY)*s;
+  const vw = (wrap.clientWidth/diagramZoom)*s;
+  const vh = (wrap.clientHeight/diagramZoom)*s;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = rects + `<rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" class="vb-mm-viewport"></rect>`;
+}
+function vbRenderAll(){
+  vbRenderNodes();
+  vbRenderEdges();
+  vbRenderMinimap();
+  vbRenderSelectionPanel();
+  vbRenderRecentChanges();
+  renderDiagramStatusBar();
+}
+
+/* ---------- undo / redo ---------- */
+function vbPushUndo(){
+  diagramUndoStack.push(JSON.stringify(diagramGraph));
+  if(diagramUndoStack.length>30) diagramUndoStack.shift();
+  diagramRedoStack = [];
+}
+function vbUndo(){
+  if(!diagramUndoStack.length) return;
+  diagramRedoStack.push(JSON.stringify(diagramGraph));
+  diagramGraph = JSON.parse(diagramUndoStack.pop());
+  vbRenderAll();
+  saveDiagramGraph('Undo');
+  toast('Undone.');
+}
+function vbRedo(){
+  if(!diagramRedoStack.length) return;
+  diagramUndoStack.push(JSON.stringify(diagramGraph));
+  diagramGraph = JSON.parse(diagramRedoStack.pop());
+  vbRenderAll();
+  saveDiagramGraph('Redo');
+  toast('Redone.');
+}
+
+/* ---------- auto layout: real topological/layered layout (BFS from roots), not cosmetic ---------- */
+function vbComputeAutoLayout(graph){
+  const nodes = graph.nodes;
+  const outgoing = {}; nodes.forEach(n=>outgoing[n.id]=[]);
+  const incomingCount = {}; nodes.forEach(n=>incomingCount[n.id]=0);
+  graph.edges.forEach(e=>{
+    if(outgoing[e.from]) outgoing[e.from].push(e.to);
+    if(incomingCount[e.to]!==undefined) incomingCount[e.to]++;
+  });
+  const depth = {};
+  let frontier = nodes.filter(n=>incomingCount[n.id]===0).map(n=>n.id);
+  if(!frontier.length && nodes.length) frontier = [nodes[0].id];
+  frontier.forEach(id=>depth[id]=0);
+  let d = 0;
+  while(frontier.length && d<200){
+    const next = [];
+    frontier.forEach(id=>{
+      (outgoing[id]||[]).forEach(to=>{
+        if(depth[to]===undefined || depth[to] < d+1){ depth[to]=d+1; next.push(to); }
+      });
+    });
+    frontier = [...new Set(next)];
+    d++;
+  }
+  nodes.forEach(n=>{ if(depth[n.id]===undefined) depth[n.id]=0; });
+  const layers = {};
+  nodes.forEach(n=>{ (layers[depth[n.id]] ||= []).push(n); });
+  // Vertical (top-to-bottom) layering — depth becomes Y, siblings fan out
+  // across X — matches the reference Visio export's flow direction.
+  const COL_W = 380, ROW_H = 220;
+  Object.keys(layers).map(Number).sort((a,b)=>a-b).forEach(layerIdx=>{
+    layers[layerIdx].forEach((n,i)=>{ n.y = 20 + layerIdx*ROW_H; n.x = 40 + i*COL_W; });
+  });
+  return graph;
+}
+function vbAutoLayout(){
+  if(!diagramGraph || !diagramGraph.nodes.length) return;
+  vbPushUndo();
+  vbComputeAutoLayout(diagramGraph);
+  vbRenderAll();
+  saveDiagramGraph('Auto Layout applied');
+  const body = document.getElementById('chatBody');
+  if(body){
+    const subNote = `${diagramGraph.edges.length} connector${diagramGraph.edges.length!==1?'s':''} rerouted`;
+    body.innerHTML += `<div class="msg bot">Auto Layout — reorganized spacing, alignment, and connector routing.<div class="vb-applied-check"><span class="ok">✓</span> Change applied</div><div class="vb-applied-sub">· ${subNote}</div><div class="vb-applied-actions"><button class="vb-undo-inline" onclick="vbUndo()">Undo</button></div></div>`;
+    body.scrollTop = body.scrollHeight;
+  }
+  setTimeout(vbFitToScreen, 60);
+}
+
+/* ---------- export (mock) ---------- */
+function vbExport(){
+  if(!diagramGraph || !diagramGraph.nodes.length){ toast('Nothing to export yet.'); return; }
+  const blob = new Blob([JSON.stringify(diagramGraph, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `visio-diagram-${campaignConfig.tactplanId||'campaign'}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Diagram exported.');
+}
+
+/* ---------- version history (bottom status bar) ---------- */
+function diagramLastSavedText(){
+  if(!diagramLastSavedAt) return 'Not saved yet';
+  const mins = Math.round((Date.now()-diagramLastSavedAt)/60000);
+  return `✓ Saved to Drive ${mins<1 ? 'just now' : mins+'m ago'}`;
+}
+function renderDiagramStatusBar(){
+  const el = document.getElementById('vbLastSaved');
+  if(el) el.textContent = diagramLastSavedAt ? 'All changes autosaved' : 'Not saved yet';
+  const sub = document.getElementById('vbCanvasSubText');
+  if(sub) sub.textContent = diagramLastSavedAt ? `Saved to Drive · Last saved ${diagramLastSavedText().replace('✓ Saved to Drive ','')}` : 'Not saved yet';
+  const vhBtn = document.getElementById('vbVersionBtn');
+  if(vhBtn) vhBtn.textContent = 'Version history';
+}
+// "Recent Changes" in the AI panel reads like an edit history, not a chat
+// log — each saved version's note (already a plain-English summary from
+// vbApplyPreview/vbAutoLayout/vbUndo/vbRestoreVersion) becomes one line.
+function vbRenderRecentChanges(){
+  const el = document.getElementById('vbRecentChanges');
+  if(!el) return;
+  if(!diagramVersions.length){ el.innerHTML = `<div class="vb-recent-empty">No edits yet this session.</div>`; return; }
+  el.innerHTML = diagramVersions.slice(0,6).map(v=>{
+    const note = (v.note||'Edit applied').split(';')[0].replace(/<[^>]+>/g,'');
+    return `<div class="vb-recent-row"><span class="ok">✓</span><span>${note.replace(/</g,'&lt;')}</span></div>`;
+  }).join('');
+}
+// Suggestions are quick-fire canned prompts into the same AI pipeline as
+// typing — not a shortcut that bypasses the agent, so every suggestion
+// still goes through propose_diagram_edit → Preview Changes → Apply.
+function vbToggleVersionHistory(){
+  const panel = document.getElementById('vbVersionPanel');
+  if(!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  if(isOpen){ panel.style.display='none'; return; }
+  panel.innerHTML = diagramVersions.length ? diagramVersions.map((v,i)=>`
+    <div class="vb-version-row">
+      <span>${new Date(v.ts).toLocaleString()}</span>
+      <span class="vb-version-note">${(v.note||'').replace(/</g,'&lt;')}</span>
+      <button class="vb-link-btn" onclick="vbRestoreVersion(${i})">Restore</button>
+    </div>`).join('') : `<div class="vb-version-row">No versions saved yet.</div>`;
+  panel.style.display = 'block';
+}
+function vbRestoreVersion(i){
+  const v = diagramVersions[i];
+  if(!v) return;
+  vbPushUndo();
+  diagramGraph = JSON.parse(JSON.stringify(v.graph));
+  vbRenderAll();
+  saveDiagramGraph(`Restored version from ${new Date(v.ts).toLocaleString()}`);
+  document.getElementById('vbVersionPanel').style.display='none';
+  toast('Version restored.');
+}
+
+/* ---------- applying AI-proposed operations to the graph ---------- */
+function vbGenNodeId(){ return 'd'+Math.random().toString(36).slice(2,8); }
+function vbGenEdgeId(){ return 'e'+Math.random().toString(36).slice(2,8); }
+function vbFindNode(graph, ref){
+  if(!ref) return null;
+  return graph.nodes.find(n=>n.id===ref)
+    || graph.nodes.find(n=>n.label.toLowerCase()===String(ref).toLowerCase())
+    || graph.nodes.find(n=>n.label.toLowerCase().includes(String(ref).toLowerCase()));
+}
+function vbApplyOperations(graph, ops){
+  const summaryLines = [];
+  let affectedConnectors = 0;
+  const countConnectors = (id) => graph.edges.filter(e=>e.from===id||e.to===id).length;
+
+  ops.forEach(op=>{
+    if(op.op === 'add_node'){
+      const id = op.id || vbGenNodeId();
+      const type = DIAGRAM_SHAPES[op.type] ? op.type : 'process';
+      const shapeDef = DIAGRAM_SHAPES[type];
+      const w = shapeDef.w, h = shapeDef.h;
+      let x = 500, y = 380;
+      const anchor = vbFindNode(graph, op.afterNodeId || op.relativeTo);
+      if(anchor){
+        if(op.position==='above'){ x=anchor.x; y=anchor.y-(h+80); }
+        else if(op.position==='below'){ x=anchor.x; y=anchor.y+anchor.h+80; }
+        else if(op.position==='left'){ x=anchor.x-(w+80); y=anchor.y; }
+        else { x=anchor.x+anchor.w+80; y=anchor.y; }
+      }
+      graph.nodes.push({ id, type, label: op.label||'New node', sub: op.sub||null, x, y, w, h, status: op.status||null, metadata: op.metadata||null });
+      summaryLines.push(`Added: <b>${(op.label||'New node').replace(/</g,'&lt;')}</b>`);
+      if(anchor && op.connectFrom !== false){
+        const eid = vbGenEdgeId();
+        if(op.position==='above') graph.edges.push({ id:eid, from:id, to:anchor.id });
+        else graph.edges.push({ id:eid, from:anchor.id, to:id });
+        affectedConnectors++;
+      }
+    } else if(op.op === 'move_node'){
+      const n = vbFindNode(graph, op.nodeId);
+      const anchor = vbFindNode(graph, op.relativeTo);
+      if(n && anchor){
+        if(op.position==='above'){ n.x=anchor.x; n.y=anchor.y-(n.h+80); }
+        else if(op.position==='below'){ n.x=anchor.x; n.y=anchor.y+anchor.h+80; }
+        else if(op.position==='left'){ n.x=anchor.x-(n.w+80); n.y=anchor.y; }
+        else if(op.position==='right'){ n.x=anchor.x+anchor.w+80; n.y=anchor.y; }
+        summaryLines.push(`Moved: <b>${n.label.replace(/</g,'&lt;')}</b> ${op.position||''} <b>${anchor.label.replace(/</g,'&lt;')}</b>`);
+        affectedConnectors += countConnectors(n.id);
+      }
+    } else if(op.op === 'delete_node'){
+      const n = vbFindNode(graph, op.nodeId);
+      if(n){
+        affectedConnectors += countConnectors(n.id);
+        graph.edges = graph.edges.filter(e=>e.from!==n.id && e.to!==n.id);
+        graph.nodes = graph.nodes.filter(x=>x.id!==n.id);
+        summaryLines.push(`Deleted: <b>${n.label.replace(/</g,'&lt;')}</b>`);
+      }
+    } else if(op.op === 'rename_node'){
+      const n = vbFindNode(graph, op.nodeId);
+      if(n){ const old=n.label; n.label=op.label; summaryLines.push(`Renamed: <b>${old.replace(/</g,'&lt;')}</b> → <b>${(op.label||'').replace(/</g,'&lt;')}</b>`); }
+    } else if(op.op === 'recolor_node'){
+      const n = vbFindNode(graph, op.nodeId);
+      if(n){
+        if(op.fillColor) n.fillColor = op.fillColor;
+        if(op.borderColor) n.borderColor = op.borderColor;
+        if(op.status) n.status = op.status;
+        summaryLines.push(`Recolored: <b>${n.label.replace(/</g,'&lt;')}</b>`);
+      }
+    } else if(op.op === 'set_shape'){
+      const n = vbFindNode(graph, op.nodeId);
+      if(n && DIAGRAM_SHAPES[op.shape]){
+        n.type = op.shape; delete n.fillColor; delete n.borderColor;
+        summaryLines.push(`Shape changed: <b>${n.label.replace(/</g,'&lt;')}</b> → ${DIAGRAM_SHAPES[op.shape].label}`);
+      }
+    } else if(op.op === 'add_edge'){
+      const a = vbFindNode(graph, op.from), b = vbFindNode(graph, op.to);
+      if(a && b){
+        graph.edges.push({ id:vbGenEdgeId(), from:a.id, to:b.id, label: op.label||undefined });
+        affectedConnectors++;
+        summaryLines.push(`Connected: <b>${a.label.replace(/</g,'&lt;')}</b> → <b>${b.label.replace(/</g,'&lt;')}</b>`);
+      }
+    } else if(op.op === 'delete_edge'){
+      const a = vbFindNode(graph, op.from), b = vbFindNode(graph, op.to);
+      const before = graph.edges.length;
+      graph.edges = graph.edges.filter(e=>!((a&&e.from===a.id)&&(b&&e.to===b.id)));
+      affectedConnectors += before - graph.edges.length;
+      summaryLines.push('Connector removed');
+    } else if(op.op === 'auto_layout'){
+      vbComputeAutoLayout(graph);
+      affectedConnectors += graph.edges.length;
+      summaryLines.push('Auto-layout applied');
+    }
+  });
+  return { summaryLines, affectedConnectors };
+}
+
+/* ---------- Diagram Chat — renders into the SAME #chatBody as the normal
+   Campaign Navigator, using the SAME .msg/.m-card styling as propose_fill's
+   Confirm/Cancel cards (see handleFillCommand) — no separate chat surface
+   or bubble style. Every AI edit is still previewed before it touches the
+   graph; only where it renders changed, not the propose → preview → apply
+   flow. ---------- */
+function vbRenderPreviewCard(body, summary, operations){
+  const id = `vbprev-${vbPendingSeq++}`;
+  vbPendingOps[id] = { operations: operations||[], summary: summary||'Proposed diagram edit' };
+  const opLines = (operations||[]).map(o=>{
+    const what = o.op.replace(/_/g,' ');
+    const target = o.label || o.nodeId || o.from || '';
+    return `<div class="m-row"><span>${what}</span><b>${String(target).replace(/</g,'&lt;')}</b></div>`;
+  }).join('');
+  body.innerHTML += `<div class="msg bot"><div class="m-card">
+      <div class="m-card-h">Preview Changes</div>
+      <div class="m-card-sub">${(summary||'Proposed diagram edit').replace(/</g,'&lt;')}</div>
+      ${opLines}
+      <div class="foot" id="${id}-actions">
+        <button class="btn-ghost" onclick="vbCancelPreview('${id}')">Cancel</button>
+        <button class="btn-primary" onclick="vbApplyPreview('${id}')">Apply</button>
+      </div>
+    </div></div>`;
+  body.scrollTop = body.scrollHeight;
+  return id;
+}
+function vbCancelPreview(id){
+  delete vbPendingOps[id];
+  const actions = document.getElementById(`${id}-actions`);
+  if(actions) actions.outerHTML = `<div class="foot">Cancelled — nothing applied.</div>`;
+}
+function vbApplyPreview(id){
+  const p = vbPendingOps[id];
+  if(!p) return;
+  delete vbPendingOps[id];
+  if(!diagramGraph) diagramGraph = { nodes:[], edges:[] };
+  vbPushUndo();
+  const preCount = diagramGraph.nodes.length;
+  const { summaryLines, affectedConnectors } = vbApplyOperations(diagramGraph, p.operations);
+  if(preCount === 0 && diagramGraph.nodes.length > 0) vbComputeAutoLayout(diagramGraph);
+  vbRenderAll();
+  if(preCount === 0) setTimeout(vbFitToScreen, 60);
+  saveDiagramGraph(summaryLines.join('; '));
+
+  const actions = document.getElementById(`${id}-actions`);
+  if(actions) actions.outerHTML = `<div class="foot">Applied ✓</div>`;
+  const body = document.getElementById('chatBody');
+  if(body){
+    const subNote = affectedConnectors ? `${affectedConnectors} connector${affectedConnectors!==1?'s':''} rerouted` : 'Diagram updated';
+    body.innerHTML += `<div class="msg bot">${(p.summary||'').replace(/</g,'&lt;')}<div class="vb-applied-check"><span class="ok">✓</span> Change applied</div><div class="vb-applied-sub">· ${subNote}</div><div class="vb-applied-actions"><button class="vb-undo-inline" onclick="vbUndo()">Undo</button></div></div>`;
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+// Diagram Chat equivalent of handleFillCommand — same signature (rawText,
+// body), called from sendChat() when Visio Builder is open. Sends to
+// /api/visio-agent (same SSE agentic-loop shape as /api/agent-fill) and
+// renders the stream: "reasoning" (narration), "proposal" (propose_diagram_
+// edit's result → Preview Changes card), "final" (closing text), "history"
+// (resent next turn).
+async function handleDiagramCommand(text, body){
+  if(!diagramGraph) diagramGraph = { nodes:[], edges:[] };
+  const thinkingId = `vbthink-${Date.now()}`;
+  body.innerHTML += `<div class="msg bot thinking" id="${thinkingId}">Thinking…</div>`;
+  body.scrollTop = body.scrollHeight;
+
+  let res;
+  try{
+    res = await fetch('/api/visio-agent', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ graph: diagramGraph, text, history: diagramAgentHistory, tactplanId: currentRequest ? currentRequest.id : null }),
+    });
+  } catch(e){
+    document.getElementById(thinkingId)?.remove();
+    body.innerHTML += `<div class="msg bot">Couldn't reach the diagram agent — is server/ running?</div>`;
+    body.scrollTop = body.scrollHeight;
+    return;
+  }
+  document.getElementById(thinkingId)?.remove();
+  if(!res.ok || !res.body){
+    body.innerHTML += `<div class="msg bot">Diagram agent returned an error (${res.status}). Is GEMINI_API_KEY set in server/.env?</div>`;
+    body.scrollTop = body.scrollHeight;
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  while(true){
+    const { done, value } = await reader.read();
+    if(done) break;
+    buf += decoder.decode(value, { stream:true });
+    let idx;
+    while((idx = buf.indexOf('\n\n')) !== -1){
+      const raw = buf.slice(0, idx); buf = buf.slice(idx+2);
+      const evMatch = raw.match(/^event:\s*(.+)$/m);
+      const dataMatch = raw.match(/^data:\s*(.+)$/m);
+      if(!evMatch || !dataMatch) continue;
+      const event = evMatch[1].trim();
+      const data = JSON.parse(dataMatch[1]);
+      if(event === 'reasoning'){
+        body.innerHTML += `<div class="msg bot">${data.text}</div>`;
+        body.scrollTop = body.scrollHeight;
+      } else if(event === 'proposal'){
+        vbRenderPreviewCard(body, data.summary, data.operations || []);
+      } else if(event === 'final'){
+        if(data.text) body.innerHTML += `<div class="msg bot">${data.text}</div>`;
+        body.scrollTop = body.scrollHeight;
+      } else if(event === 'history'){
+        diagramAgentHistory = data.history || diagramAgentHistory;
+      } else if(event === 'error'){
+        body.innerHTML += `<div class="msg bot">Diagram agent error: ${data.error}</div>`;
+        body.scrollTop = body.scrollHeight;
       }
     }
-    renderFlowCanvas();
   }
-  flowDragState = null;
-});
+}
 
-function saveFlowCanvas(){
-  localStorage.setItem(flowCanvasStorageKey(), JSON.stringify({ nodes:flowCanvasNodes, edges:flowCanvasEdges }));
-  toast('Visio flow saved for this campaign.');
+// Full Visio Builder card body — toolbar, canvas (edges/nodes/legend/minimap/
+// metadata overlay), Diagram Chat panel, and the bottom status bar. One shared
+// builder for both render sites (accordion card + master/detail card) since
+// they're never mounted at the same time (sectionsViewMode picks one or the
+// other) — see renderOpsSectionCards/renderOpsDetailCard below.
+// Diagram-first layout: the canvas dominates (flex:7) and the AI panel is
+// a narrow tool beside it (flex:3), never an even split — see .vb-main.
+// The toolbar deliberately excludes low-level diagram tools (no draw/
+// connect/select-mode controls): editing only happens through the AI panel.
+// Non-AI toolbar buttons (Select/Pan/Connector/Text/Shape/Sticky/Delete) are
+// shown for visual parity with the reference design's toolbar, but stay
+// inert — editing in this app happens only through the AI Diagram Editor
+// (vbSendChat → propose_diagram_edit → preview → apply), never by manual
+// drag/draw, so these just explain that instead of pretending to work.
+function vbManualToolStub(name){
+  toast(`${name} is handled by the AI Diagram Editor — describe the change in the chat instead.`);
+}
+function vbSubtabStub(name){
+  vbCanvasSubtab = name;
+  renderSections();
+  vbRenderAll();
+}
+let vbCanvasSubtab = 'Canvas';
+
+function visioBuilderMarkup(){
+  const empty = !diagramGraph || !diagramGraph.nodes.length;
+  const subtabs = ['Canvas','Layout','Style','Export'];
+  return `<div class="vb-root">
+    <div class="vb-canvas-head">
+      <div class="vb-canvas-head-l">
+        <span class="vb-canvas-head-badge">OPS</span>
+        <span class="vb-canvas-head-ic">🔲</span>
+        <span class="vb-canvas-head-title">Visio Builder</span>
+        <a class="vb-visio-link" href="#" onclick="event.preventDefault(); toast('Demo only — no real Visio file is connected.');">⧉ View in Visio</a>
+      </div>
+      <div class="vb-canvas-head-r">
+        <label class="vb-toggle-wrap"><span>Auto-layout</span><input type="checkbox" id="vbAutoLayoutToggle" onchange="if(this.checked) vbAutoLayout()"><span class="vb-toggle-track"><span class="vb-toggle-knob"></span></span></label>
+        <button class="btn-ghost" onclick="vbManualSave()">Save</button>
+        <button class="btn-primary" onclick="toast('Share is a demo stub — no real link generated.')">Share</button>
+        <button class="vb-tool" onclick="vbToggleVersionHistory()" title="More">⋯</button>
+      </div>
+    </div>
+    <div class="vb-canvas-sub"><span class="vb-saved-dot">●</span> <span id="vbCanvasSubText">${diagramLastSavedAt ? `Saved to Drive · Last saved ${diagramLastSavedText().replace('✓ Saved to Drive ','')}` : 'Not saved yet'}</span></div>
+    <div class="vb-subtabs">
+      ${subtabs.map(t=>`<button class="vb-subtab ${vbCanvasSubtab===t?'on':''}" onclick="${t==='Canvas'?`vbSubtabStub('Canvas')`:`vbSubtabStub('${t}'); toast('${t} view is not part of this demo — Canvas is the only live view.')`}">${t}</button>`).join('')}
+    </div>
+    <div class="vb-toolbar">
+      <button class="vb-tool on" onclick="vbManualToolStub('Select')" title="Select">↖ Select</button>
+      <button class="vb-tool" onclick="vbManualToolStub('Pan')" title="Pan">✋ Pan</button>
+      <button class="vb-tool" onclick="vbManualToolStub('Connector')" title="Connector">⤳ Connector</button>
+      <button class="vb-tool" onclick="vbManualToolStub('Text')" title="Text">T Text</button>
+      <button class="vb-tool" onclick="vbManualToolStub('Shape')" title="Shape">◇ Shape</button>
+      <button class="vb-tool" onclick="vbManualToolStub('Sticky')" title="Sticky">▤ Sticky</button>
+      <button class="vb-tool" onclick="vbManualToolStub('Delete')" title="Delete">🗑 Delete</button>
+      <span class="vb-tool-sep"></span>
+      <button class="vb-tool" onclick="vbUndo()" title="Undo">↺ Undo</button>
+      <button class="vb-tool" onclick="vbRedo()" title="Redo">↻ Redo</button>
+      <span class="vb-tool-sep"></span>
+      <button class="vb-tool" onclick="vbFitToScreen()" title="Fit to screen">⌕ Fit</button>
+      <button class="vb-tool" onclick="vbZoom(0)" title="Zoom">${Math.round(diagramZoom*100)}% ▾</button>
+      <div class="vb-search-wrap">
+        <input class="vb-search" id="vbSearchInput" placeholder="Search node, ID, metadata, campaign, or connector label…" value="${diagramSearchTerm}" oninput="vbSearch(this.value)">
+      </div>
+    </div>
+    <div class="vb-main">
+      <div class="vb-canvas-wrap" id="vbCanvasWrap" onwheel="vbOnWheel(event)" onmousedown="vbOnCanvasMouseDown(event)">
+        <div class="vb-canvas" id="vbCanvasEl" style="transform:translate(${diagramPan.x}px,${diagramPan.y}px) scale(${diagramZoom})">
+          <svg class="vb-edges-svg" id="vbEdgesSvg"></svg>
+          <div class="vb-nodes" id="vbNodesEl"></div>
+        </div>
+        <div class="vb-empty-overlay" id="vbEmptyOverlay" style="display:${empty?'flex':'none'}">
+          <div style="font-size:1.6rem">🗺️</div>
+          <div>Describe your campaign journey.</div>
+          <span>The AI Diagram Editor will generate the initial diagram from your description.</span>
+          <div class="vb-empty-example">Example:
+
+Create an HCP onboarding journey with
+3 emails
+2 decision points
+1 SMS reminder</div>
+        </div>
+        <div class="vb-legend">
+          ${DIAGRAM_LEGEND.map(l=>`<div class="vb-legend-chip" style="background:${l.color};border-color:${l.border}">${l.label}</div>`).join('')}
+        </div>
+        <div class="vb-node-meta" id="vbNodeMeta" style="display:none"></div>
+        <div class="vb-minimap-wrap">
+          <svg class="vb-minimap" id="vbMinimap"></svg>
+          <div class="vb-minimap-tools">
+            <button class="vb-mm-btn" onclick="vbZoom(0.15)" title="Zoom in">+</button>
+            <button class="vb-mm-btn" onclick="vbZoom(-0.15)" title="Zoom out">−</button>
+            <button class="vb-mm-btn" onclick="vbFitToScreen()" title="Fit to screen">⛶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="vb-statusbar">
+      <span>☁ Connected to Google Drive</span>
+      <span>·</span>
+      <span>File: Visio_Diagram_${((currentRequest&&currentRequest.brand)||'Campaign').replace(/[^a-zA-Z0-9]/g,'')}.vsdx (simulated)</span>
+      <span>·</span>
+      <span id="vbLastSaved">${diagramLastSavedAt ? 'All changes autosaved' : 'Not saved yet'}</span>
+      <span class="vb-statusbar-spacer"></span>
+      <button class="vb-link-btn" id="vbVersionBtn" onclick="vbToggleVersionHistory()">Version history</button>
+    </div>
+    <div class="vb-version-panel" id="vbVersionPanel" style="display:none"></div>
+  </div>`;
 }
 
 // These are the Generic/Overview pre-planning fields — required at intake so
@@ -3860,6 +4849,7 @@ function confirmNewRequest(){
   const wantsEmail = document.getElementById('newReqChannelEmail').checked;
   const wantsSms = document.getElementById('newReqChannelSms').checked;
   const channels = wantsEmail && wantsSms ? 'Email + SMS' : wantsEmail ? 'Email only' : wantsSms ? 'SMS only' : 'Email + SMS';
+  const formId = document.getElementById('newReqForm').value || 'form-default';
 
   const id = tactplanId;
   const ic = brand.charAt(0).toUpperCase() || 'N';
@@ -3872,7 +4862,7 @@ function confirmNewRequest(){
     'Branded/unbranded':brandedUnbranded, 'Audience':audience, 'Campaign Name':campaignName };
 
   const req = {
-    id, name:campaignName, brand, agency, indication, channels, ic, color, seed,
+    id, name:campaignName, brand, agency, indication, channels, ic, color, seed, formId,
     phase:'preplan', phaseLabel:'Pre-planning', updated:'just now',
     owners:['aor'], action:{aor:'me',xm:'wait',mds:'wait',cep:'wait',ops:'wait'},
     actionText:{aor:'Start intake',xm:'—',mds:'—',cep:'—',ops:'—'}, mineTo:['aor'],
@@ -4088,7 +5078,7 @@ function renderOpsSectionCards(){
         <div class="sec-r"><div class="sec-toggle">›</div></div>
       </div>
       ${visioBuilderOpen ? `<div class="sec-body">
-        <iframe class="visio-pdf-frame" src="visio.pdf" title="Visio journey diagram"></iframe>
+        ${visioBuilderMarkup()}
       </div>` : ''}
     </div>`;
 }
@@ -4125,7 +5115,7 @@ function renderOpsDetailCard(id){
       <div class="sm-detail-sub">Journey diagram (Visio) — stays open alongside the chat.</div>
     </div>
     <div class="sm-detail-body">
-      <iframe class="visio-pdf-frame" src="visio.pdf" title="Visio journey diagram"></iframe>
+      ${visioBuilderMarkup()}
     </div>
   </div>`;
 }
@@ -4495,7 +5485,14 @@ function renderCrfViewTabs(groups){
     const persona = PERSONAS[CRF_NAV_COLOR[t.key] || 'aor'];
     return `<button class="crf-tab${active?' active':''}" onclick="${t.onclick}" style="--sh:${persona.color}"><span class="crf-tab-num">${i+1}</span>${t.label}</button>`;
   });
-  return `<div class="crf-view-tabs">${tabs.join('')}</div>`;
+  // Small fixed (non-scrolling) area to the right of the scrollable tab
+  // strip — sticky same as the bar it lives in, opens the project-level
+  // conversation drawer. Badge count comes from the same unread-mentions
+  // data the notification bell uses.
+  const unreadCount = unreadNotifications().length;
+  const badge = unreadCount ? `<span class="crf-comments-badge">${unreadCount}</span>` : '';
+  const commentsBtn = `<button class="crf-comments-trigger" onclick="openCommentsDrawer()" title="Project conversation">Conversations${badge}</button>`;
+  return `<div class="crf-view-tabs">${tabs.join('')}</div>${commentsBtn}`;
 }
 
 // ============ SECTION MASTER/DETAIL — a list of sections on the left, the
@@ -4606,13 +5603,10 @@ function renderSectionListRows(rows){
           ? '<span class="sm-row-dot sm-dot-mine"></span>'
           : `<span class="sm-row-dot sm-dot-${st.statusClass==='prog'?'prog':'ns'}"></span>`;
     }
-    const unread = ops ? 0 : unreadMentionCountForSection(s.id);
-    const unreadBadge = unread ? `<span class="sm-row-comment-badge" title="${unread} new mention${unread>1?'s':''}">💬 ${unread}</span>` : '';
     return `<button class="sm-row ${isOpen?'on':''} ${indent?'sm-row-indent':''}" onclick="selectDetailSection('${s.id}')">
       <span class="sm-row-num">${s.num||''}</span>
       <span class="sm-row-ic">${s.ic}</span>
       <span class="sm-row-name">${s.name}</span>
-      ${unreadBadge}
       ${icon}
       <span class="sm-row-chev">›</span>
     </button>`;
@@ -4747,7 +5741,11 @@ function renderSections(){
       : `<div class="sm-detail-empty">No sections to show yet.</div>`;
   }
 
-  if(openSectionId==='ops-visio-builder' && visioBuilderOpen) renderFlowCanvas();
+  if(document.querySelector('.vb-root')){
+    const firstOpen = !vbHasFitOnce;
+    vbRenderAll();
+    if(firstOpen){ vbHasFitOnce = true; setTimeout(vbFitToScreen, 30); }
+  }
   setupFloatSaveBar();
 }
 
@@ -4947,13 +5945,6 @@ function renderSectionDetailCard(s){
   const d = computeSectionRenderData(s);
   const st = sectionStatus(s);
   const mineTag = d.mine ? '<span class="sm-status-pill sm-status-prog">Your input needed</span>' : '';
-  const tab = sectionDetailTab[s.id] || 'fields';
-  const comments = commentsForSection(s.id);
-  const tabsHtml = `<div class="sd-tabs">
-    <button class="sd-tab${tab==='fields'?' active':''}" onclick="setSectionDetailTab('${s.id}','fields')">Fields</button>
-    <button class="sd-tab${tab==='conversation'?' active':''}" onclick="setSectionDetailTab('${s.id}','conversation')">Conversation${comments.length?` (${comments.length})`:''}</button>
-  </div>`;
-  const bodyHtml = tab==='fields' ? `<div class="sm-detail-body">${d.body}${d.submitRow}</div>` : renderConversationPanel(s.id, comments);
 
   return `<div class="sm-detail-card ${d.isSubmitted?'submitted':''}" data-id="${s.id}">
     <div class="sm-detail-head">
@@ -4969,18 +5960,24 @@ function renderSectionDetailCard(s){
         <span class="sm-count">${st.applicable ? `${st.filled} / ${st.total} fields` : '—'}</span>
       </div>
     </div>
-    ${tabsHtml}
-    ${bodyHtml}
+    <div class="sm-detail-body">${d.body}${d.submitRow}</div>
   </div>`;
 }
 
-// ============ SECTION CONVERSATIONS — per-section @mention comment threads
-// (server: schema.prisma Comment model). Separate from the requirement-
-// gathering chat panel: this is a real multi-stakeholder discussion log
-// attached to one section of one campaign request, not the AI agent.
+// ============ PROJECT CONVERSATIONS — one @mention comment thread per whole
+// campaign request (server: schema.prisma Comment model), not per section —
+// opened via a drawer that slides in over the page from a small sticky
+// trigger next to the CPF/BU Setup/CRF details pill nav. Separate from the
+// requirement-gathering chat panel: this is a real multi-stakeholder
+// discussion log for the request as a whole, not the AI agent. `sectionId`
+// is still stored on each row (server/schema unchanged) so existing demo
+// comments keep their original section context label, but new comments are
+// always posted as sectionId:"project" — request-level, not tied to any one
+// section anymore.
+const PROJECT_COMMENT_SECTION = 'project';
 let COMMENTS = [];
-let sectionDetailTab = {}; // sectionId -> 'fields' | 'conversation', default 'fields'
-let commentDraftMentions = {}; // sectionId -> [personaKey, ...] tagged in the in-progress draft
+let projectDrawerOpen = false;
+let commentDraftMentions = []; // [personaKey, ...] tagged in the in-progress draft — one composer now, no per-section keying needed
 
 async function loadComments(tactplanId){
   try{
@@ -4990,19 +5987,15 @@ async function loadComments(tactplanId){
   }catch(e){
     COMMENTS = []; // comments just won't show if the API is unreachable — same fallback posture as nudge rules
   }
-  renderSections(); // picks up Conversation tab counts now that COMMENTS is populated
+  if(projectDrawerOpen) renderProjectDrawer();
   maybeAnnounceNewMentions();
   renderNotifBadge();
 }
 
-function commentsForSection(sectionId){
-  return COMMENTS.filter(c => c.sectionId === sectionId);
-}
-
-function setSectionDetailTab(sectionId, tab){
-  sectionDetailTab[sectionId] = tab;
-  if(tab === 'conversation') mentionSeenStorageMark(sectionId);
-  renderSections();
+function sectionLabelForComment(c){
+  if(c.sectionId === PROJECT_COMMENT_SECTION) return 'General';
+  const section = SECTIONS.find(s=>s.id===c.sectionId);
+  return section ? section.name.replace(/^↳\s*/,'') : c.sectionId;
 }
 
 function timeAgo(iso){
@@ -5019,86 +6012,112 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-function renderConversationPanel(sectionId, comments){
-  const list = comments.length ? comments.map(c=>{
+// Drawer slides in from the right on top of the page content (backdrop +
+// panel, both fixed-position) rather than living inline in a section card —
+// there's only ever one project-level thread per request, so no per-section
+// id-keying needed anywhere below.
+function renderProjectDrawer(){
+  const list = COMMENTS.length ? COMMENTS.map(c=>{
     const p = PERSONAS[c.authorPersona] || {name:c.authorPersona, role:'', color:'#818B9A', abbr:'?'};
     const mentionsHtml = (c.mentions||[]).map(m=>`<span class="cm-mention">@${(PERSONAS[m]||{name:m}).name.split(' ')[0]}</span>`).join('');
     return `<div class="cm-item">
       <span class="cm-av" style="background:${gradFor(p.color)}">${p.abbr}</span>
       <div class="cm-body">
         <div class="cm-meta"><b>${p.name}</b><span class="cm-role">${p.role}</span><span class="cm-time">${timeAgo(c.createdAt)}</span></div>
+        <div class="cm-section-tag">${escapeHtml(sectionLabelForComment(c))}</div>
         <div class="cm-text">${escapeHtml(c.body)}</div>
         ${mentionsHtml?`<div class="cm-mentions">${mentionsHtml}</div>`:''}
       </div>
     </div>`;
-  }).join('') : `<div class="cm-empty">No comments yet on this section — start the conversation.</div>`;
+  }).join('') : `<div class="cm-empty">No comments yet on this request — start the conversation.</div>`;
 
-  const tagged = commentDraftMentions[sectionId] || [];
-  const taggedHtml = tagged.map(k=>{
-    const p = PERSONAS[k];
-    return `<span class="cm-tag-chip">@${p.name.split(' ')[0]}<button onclick="untagMention('${sectionId}','${k}')">✕</button></span>`;
-  }).join('');
+  document.getElementById('projectDrawerBody').innerHTML = `<div class="cm-list">${list}</div>`;
+  document.getElementById('projectDrawerCompose').innerHTML = `
+    <textarea class="cm-input" id="cm-input-project" placeholder="Comment… type @ to tag someone" oninput="handleCommentInput(this)"></textarea>
+    <div class="cm-mention-picker" id="cm-picker-project" style="display:none"></div>
+    <div class="cm-compose-foot">
+      ${renderTaggedChips()}
+      <button class="btn-primary btn-sm" onclick="submitComment()">Post</button>
+    </div>`;
+}
 
-  return `<div class="cm-panel">
-    <div class="cm-list">${list}</div>
-    <div class="cm-compose">
-      <textarea class="cm-input" id="cm-input-${sectionId}" placeholder="Comment… type @ to tag someone" oninput="handleCommentInput('${sectionId}', this)"></textarea>
-      <div class="cm-mention-picker" id="cm-picker-${sectionId}" style="display:none"></div>
-      <div class="cm-compose-foot">
-        <div class="cm-tagged" id="cm-tagged-${sectionId}">${taggedHtml}</div>
-        <button class="btn-primary btn-sm" onclick="submitComment('${sectionId}')">Post</button>
-      </div>
-    </div>
-  </div>`;
+// Anchors the panel directly below the "Conversations" trigger — recomputed
+// on open, and kept in sync on scroll/resize while open, since the trigger
+// itself lives inside a sticky bar whose on-screen position changes as you
+// scroll past the threshold where it engages.
+function positionProjectDrawer(){
+  const trigger = document.querySelector('.crf-comments-trigger');
+  const panel = document.querySelector('.project-drawer');
+  if(!trigger || !panel) return;
+  const r = trigger.getBoundingClientRect();
+  panel.style.top = Math.round(r.bottom + 8) + 'px';
+  panel.style.right = Math.round(window.innerWidth - r.right) + 'px';
+  panel.style.left = 'auto';
+}
+function openCommentsDrawer(){
+  projectDrawerOpen = true;
+  document.getElementById('projectDrawerWrap').classList.add('open');
+  positionProjectDrawer();
+  renderProjectDrawer();
+  markCommentsSeen(COMMENTS.map(c=>c.id));
+  markNotifSeen(COMMENTS.map(c=>c.id));
+  renderNotifBadge();
+  window.addEventListener('scroll', positionProjectDrawer, {passive:true});
+  window.addEventListener('resize', positionProjectDrawer);
+  setTimeout(()=>{ const list = document.getElementById('projectDrawerBody'); if(list) list.scrollTop = list.scrollHeight; }, 50);
+}
+function closeCommentsDrawer(){
+  projectDrawerOpen = false;
+  document.getElementById('projectDrawerWrap').classList.remove('open');
+  window.removeEventListener('scroll', positionProjectDrawer);
+  window.removeEventListener('resize', positionProjectDrawer);
 }
 
 // Typing "@" opens a picker of the 6 personas right above the compose box —
 // picking one inserts "@Name " into the text and tags them in mentionsJson,
 // same taggable set PERSONAS already defines everywhere else in the app
 // (ownership, ownership matrix, persona switcher) rather than free-text.
-function handleCommentInput(sectionId, el){
-  const picker = document.getElementById(`cm-picker-${sectionId}`);
+function handleCommentInput(el){
+  const picker = document.getElementById('cm-picker-project');
   const trailingAt = /(^|\s)@(\w*)$/.test(el.value.slice(0, el.selectionStart));
   if(!trailingAt){ picker.style.display = 'none'; return; }
   picker.innerHTML = Object.entries(PERSONAS).map(([k,p])=>
-    `<button class="cm-picker-item" onclick="pickMention('${sectionId}','${k}')"><span class="p-av" style="background:${gradFor(p.color)};width:22px;height:22px;font-size:.6rem">${p.abbr}</span>${p.name} <span style="color:var(--ink3);font-weight:600">· ${p.role}</span></button>`
+    `<button class="cm-picker-item" onclick="pickMention('${k}')"><span class="p-av" style="background:${gradFor(p.color)};width:22px;height:22px;font-size:.6rem">${p.abbr}</span>${p.name} <span style="color:var(--ink3);font-weight:600">· ${p.role}</span></button>`
   ).join('');
   picker.style.display = 'block';
 }
 
-function pickMention(sectionId, personaKey){
-  const el = document.getElementById(`cm-input-${sectionId}`);
+function pickMention(personaKey){
+  const el = document.getElementById('cm-input-project');
   el.value = el.value.replace(/(^|\s)@(\w*)$/, `$1@${PERSONAS[personaKey].name.split(' ')[0]} `);
-  document.getElementById(`cm-picker-${sectionId}`).style.display = 'none';
-  if(!commentDraftMentions[sectionId]) commentDraftMentions[sectionId] = [];
-  if(!commentDraftMentions[sectionId].includes(personaKey)) commentDraftMentions[sectionId].push(personaKey);
-  document.getElementById(`cm-tagged-${sectionId}`).outerHTML = renderTaggedChips(sectionId);
+  document.getElementById('cm-picker-project').style.display = 'none';
+  if(!commentDraftMentions.includes(personaKey)) commentDraftMentions.push(personaKey);
+  document.getElementById('cm-tagged-project').outerHTML = renderTaggedChips();
   el.focus();
 }
 
-function renderTaggedChips(sectionId){
-  const tagged = commentDraftMentions[sectionId] || [];
-  const html = tagged.map(k=>{
+function renderTaggedChips(){
+  const html = commentDraftMentions.map(k=>{
     const p = PERSONAS[k];
-    return `<span class="cm-tag-chip">@${p.name.split(' ')[0]}<button onclick="untagMention('${sectionId}','${k}')">✕</button></span>`;
+    return `<span class="cm-tag-chip">@${p.name.split(' ')[0]}<button onclick="untagMention('${k}')">✕</button></span>`;
   }).join('');
-  return `<div class="cm-tagged" id="cm-tagged-${sectionId}">${html}</div>`;
+  return `<div class="cm-tagged" id="cm-tagged-project">${html}</div>`;
 }
 
-function untagMention(sectionId, personaKey){
-  commentDraftMentions[sectionId] = (commentDraftMentions[sectionId]||[]).filter(k=>k!==personaKey);
-  document.getElementById(`cm-tagged-${sectionId}`).outerHTML = renderTaggedChips(sectionId);
+function untagMention(personaKey){
+  commentDraftMentions = commentDraftMentions.filter(k=>k!==personaKey);
+  document.getElementById('cm-tagged-project').outerHTML = renderTaggedChips();
 }
 
-async function submitComment(sectionId){
-  const el = document.getElementById(`cm-input-${sectionId}`);
+async function submitComment(){
+  const el = document.getElementById('cm-input-project');
   const body = el.value.trim();
   if(!body) return;
-  const mentions = commentDraftMentions[sectionId] || [];
+  const mentions = commentDraftMentions;
   try{
     const res = await fetch('/api/comments', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ tactplanId: currentRequest.id, sectionId, authorPersona: currentPersona, body, mentions }),
+      body: JSON.stringify({ tactplanId: currentRequest.id, sectionId: PROJECT_COMMENT_SECTION, authorPersona: currentPersona, body, mentions }),
     });
     if(!res.ok){ toast('Could not post comment.'); return; }
     const data = await res.json();
@@ -5107,16 +6126,18 @@ async function submitComment(sectionId){
     toast('Could not post comment.');
     return;
   }
-  commentDraftMentions[sectionId] = [];
-  renderSections();
+  commentDraftMentions = [];
+  renderProjectDrawer();
+  const list = document.getElementById('projectDrawerBody');
+  if(list) list.scrollTop = list.scrollHeight;
 }
 
 // Surfaces unread @mentions of the CURRENT persona into the chat feed —
 // same .checkpoint bubble style the CMA/CPF milestone callouts already use,
-// with a "Reply" button that jumps straight to that section's Conversation
-// tab. "Unread" is tracked client-side per (persona, comment id) in
-// localStorage, since there's no real auth/session system to hang read-
-// state off of server-side in this mock.
+// with a "Reply" button that opens the project conversation drawer.
+// "Unread" is tracked client-side per (persona, comment id) in localStorage,
+// since there's no real auth/session system to hang read-state off of
+// server-side in this mock.
 function mentionSeenKey(){ return `commentsSeen:${currentPersona}`; }
 function getSeenCommentIds(){
   try{ return new Set(JSON.parse(localStorage.getItem(mentionSeenKey())||'[]')); }catch(e){ return new Set(); }
@@ -5126,15 +6147,6 @@ function markCommentsSeen(ids){
   ids.forEach(id=>seen.add(id));
   localStorage.setItem(mentionSeenKey(), JSON.stringify([...seen]));
 }
-function mentionSeenStorageMark(sectionId){
-  markCommentsSeen(commentsForSection(sectionId).map(c=>c.id));
-}
-// Small 💬 count badge on a section's row in the list, so an unread mention
-// is visible without opening every section's Conversation tab to check.
-function unreadMentionCountForSection(sectionId){
-  const seen = getSeenCommentIds();
-  return commentsForSection(sectionId).filter(c => c.authorPersona !== currentPersona && (c.mentions||[]).includes(currentPersona) && !seen.has(c.id)).length;
-}
 function maybeAnnounceNewMentions(){
   const seen = getSeenCommentIds();
   const unread = COMMENTS.filter(c => c.authorPersona !== currentPersona && (c.mentions||[]).includes(currentPersona) && !seen.has(c.id));
@@ -5143,10 +6155,8 @@ function maybeAnnounceNewMentions(){
   if(!body) return;
   unread.forEach(c=>{
     const author = PERSONAS[c.authorPersona] || {name:c.authorPersona};
-    const section = SECTIONS.find(s=>s.id===c.sectionId);
-    const sectionName = section ? section.name.replace(/^↳\s*/,'') : c.sectionId;
-    postCheckpointCallout(`💬 <b>${author.name}</b> mentioned you on <b>${escapeHtml(sectionName)}</b>: “${escapeHtml(c.body)}”
-      <div class="sec-submit"><button class="btn-primary" onclick="selectDetailSection('${c.sectionId}'); setSectionDetailTab('${c.sectionId}','conversation')">Reply</button></div>`, 'nudge');
+    postCheckpointCallout(`💬 <b>${author.name}</b> mentioned you on <b>${escapeHtml(sectionLabelForComment(c))}</b>: “${escapeHtml(c.body)}”
+      <div class="sec-submit"><button class="btn-primary" onclick="openCommentsDrawer()">Reply</button></div>`, 'nudge');
   });
   markCommentsSeen(unread.map(c=>c.id));
   renderNotifBadge();
@@ -5187,13 +6197,11 @@ function renderNotifMenu(){
   const unread = unreadNotifications();
   const items = unread.map(c=>{
     const p = PERSONAS[c.authorPersona] || {name:c.authorPersona, role:'', color:'#818B9A', abbr:'?'};
-    const section = SECTIONS.find(s=>s.id===c.sectionId);
-    const sectionName = section ? section.name.replace(/^↳\s*/,'') : c.sectionId;
-    return `<button class="notif-item" onclick="openNotification('${c.id}','${c.sectionId}')">
+    return `<button class="notif-item" onclick="openNotification('${c.id}')">
       <span class="p-av" style="background:${gradFor(p.color)}">${p.abbr}</span>
       <div class="notif-item-body">
         <b>${p.name}</b> <span style="color:var(--ink3);font-weight:600;font-size:.72rem">mentioned you</span>
-        <div class="notif-item-sec">${escapeHtml(sectionName)}</div>
+        <div class="notif-item-sec">${escapeHtml(sectionLabelForComment(c))}</div>
         <div class="notif-item-text">${escapeHtml(c.body)}</div>
         <div class="notif-item-time">${timeAgo(c.createdAt)}</div>
       </div>
@@ -5202,12 +6210,11 @@ function renderNotifMenu(){
   el.innerHTML = `<div class="notif-menu-h"><span>Notifications</span>${unread.length?'<button onclick="markAllNotificationsRead()">Mark all read</button>':''}</div>`
     + (items || `<div class="notif-empty">You're all caught up.</div>`);
 }
-function openNotification(commentId, sectionId){
+function openNotification(commentId){
   markNotifSeen([commentId]);
   document.getElementById('notifWrap').classList.remove('open');
   renderNotifBadge();
-  selectDetailSection(sectionId);
-  setSectionDetailTab(sectionId, 'conversation');
+  openCommentsDrawer();
 }
 function markAllNotificationsRead(){
   markNotifSeen(unreadNotifications().map(c=>c.id));
@@ -5285,18 +6292,26 @@ function dbSectionToBaseSection(s){
 // Per-tactic fan-out (Email #N/SMS #N/MDS Suppression #N/Automatrix #N/Touch
 // Point #N) stays generated in code (touchpointSection() etc., computeSections())
 // — it's inherently dynamic per campaign, not static admin-editable data; only
-// the static base sections this array holds are schema-driven now.
-async function loadFormSchemaFromDb(){
+// the static base sections this array holds are schema-driven now. Tracks
+// which Form is currently loaded into BASE_SECTIONS, since with Form
+// Management there can be more than one — openRequest() reloads this
+// whenever the request it's opening belongs to a different Form.
+let loadedSchemaFormId = 'form-default';
+async function loadFormSchemaFromDb(formId){
   try{
-    const res = await fetch('/api/schema');
+    const res = await fetch(`/api/schema?formId=${encodeURIComponent(formId || 'form-default')}`);
     const data = await res.json();
-    const sections = (data.sections || []).map(dbSectionToBaseSection);
-    if(sections.length){
-      BASE_SECTIONS = sections;
-      SECTIONS = computeSections();
-    }
+    // A genuinely empty Form (0 sections so far — e.g. just created in
+    // Manage Forms, nothing added yet) is a real, valid result, not a
+    // failure: it must actually clear BASE_SECTIONS down to empty rather
+    // than silently keep whichever OTHER form's sections happened to be
+    // loaded before, which would make every new Form look identical to
+    // form-default until it has content. Only a thrown fetch/parse error
+    // below (DB actually unreachable) keeps the previous BASE_SECTIONS.
+    BASE_SECTIONS = (data.sections || []).map(dbSectionToBaseSection);
+    SECTIONS = computeSections();
   }catch(e){
-    // DB unreachable — keep the hardcoded BASE_SECTIONS fallback so the form still works
+    // DB unreachable — keep whatever BASE_SECTIONS already had so the form still works
   }
 }
 // phase_complete rules fire once per phase per session, not on every
@@ -5705,6 +6720,7 @@ function scrollToSection(id){
   else if(id.startsWith('ops-')) activeCrfView = 'details'; // BU Setup/Visio Builder aren't real SECTIONS entries, but only render in the CRF-details view
   if(id==='ops-visio-builder' && !visioBuilderOpen){ visioBuilderOpen = true; loadVisioBuilderData(); }
   renderSections();
+  if(id==='ops-visio-builder' && visioBuilderOpen) vbRenderAll();
   const el = document.querySelector(`[data-id="${id}"]`);
   if(!el) return;
   scrollBelowHeader(el);
@@ -6230,6 +7246,16 @@ function sendChat(text){
   const input = document.getElementById('chatInput');
   body.innerHTML += `<div class="msg usr">${text}</div>`;
   input.value = '';
+  body.scrollTop = body.scrollHeight;
+  // While Visio Builder is open, this same pane/input routes to the
+  // diagram agent instead of the form-fill agent — same look (.msg bubbles,
+  // same #chatBody), different backend. None of the form-fill keyword
+  // shortcuts below are relevant here, so branch off before reaching them.
+  const inDiagramMode = visioBuilderOpen && (sectionsViewMode === 'sections' || openSectionId === 'ops-visio-builder');
+  if(inDiagramMode){
+    handleDiagramCommand(text, body);
+    return;
+  }
   // Only a few pre-existing scripted demo branches are kept as exact-keyword
   // shortcuts; everything else — including plain chit-chat like "hello" —
   // goes to the real agent (server/server.js /api/agent-fill), same as
@@ -6625,7 +7651,7 @@ function acknowledgeChange(driveKey, value){
 // from the database (if reachable) before anything reads SECTIONS, not
 // swapped in after the user's already looking at the hardcoded fallback.
 (async function init(){
-  await loadFormSchemaFromDb();
+  await loadFormSchemaFromDb(currentAdminFormId);
   await loadTacticTemplatesFromDb();
   SECTIONS = computeSections(); // recompute now that both sections and tactic templates are DB-sourced, whichever finished loading last
   renderPersonaMenu();

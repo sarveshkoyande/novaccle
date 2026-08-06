@@ -59,6 +59,24 @@ model AgentSkill {
   createdAt DateTime @default(now())
 }
 
+// A named form/flow — the layer above sections, requested by the customer
+// so future flows (FormB, FormC, ...) don't have to be shoehorned into the
+// one hardcoded requirement-gathering structure. Each FormSection now
+// belongs to exactly one Form (independent section pools per form, not a
+// shared pool with subsets — simpler mental model, and admin manages one
+// Form's sections at a time same as today). The existing 12 sections were
+// migrated into one default Form ("Requirement Gathering Form") so nothing
+// about existing requests changes; new Forms show up as additional options
+// in the New Campaign Request modal's "Which form?" picker.
+model Form {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  active      Boolean       @default(true)
+  order       Int
+  sections    FormSection[]
+}
+
 // The form's structure itself, finally in the database instead of a
 // hardcoded JS array (BASE_SECTIONS) baked into the frontend. Mirrors that
 // array's shape field-for-field so the migration script is a mechanical
@@ -68,6 +86,8 @@ model AgentSkill {
 // static admin-editable data.
 model FormSection {
   id           String      @id // e.g. "generic", "email", "mds" — matches the existing section id scheme
+  formId       String
+  form         Form        @relation(fields: [formId], references: [id], onDelete: Cascade)
   num          String
   name         String
   icon         String
@@ -77,6 +97,8 @@ model FormSection {
   needsJson    String      // {"preplan":["aor"],"plan":["aor","xm"],"exec":[]}
   order        Int
   fields       FormField[]
+
+  @@index([formId])
 }
 
 model FormField {
