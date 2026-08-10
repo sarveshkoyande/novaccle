@@ -1,0 +1,33 @@
+(function (drupalSettings) {
+  const config = drupalSettings.cookiepro;
+  if (config.uuid) {
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = "https://cdn.cookielaw.org/consent/" + config.uuid + "/OtAutoBlock.js";
+    script.type = 'text/javascript';
+    script.setAttribute("charset", "UTF-8");
+    document.getElementsByTagName('head')[0].appendChild(script);
+
+    const script1 = document.createElement('script');
+    script1.async = true;
+    script1.src = "https://cdn.cookielaw.org/scripttemplates/otSDKStub.js";
+    script1.type = 'text/javascript';
+    const language = document.createAttribute("data-document-language");
+
+    // The setAttributeNode method is used to add an attribute node to an element:
+    language.value = "true";
+    script1.setAttributeNode(language);
+    const domain = document.createAttribute("data-domain-script");
+
+    // Set the value to domain of uuid:
+    domain.value = config.uuid;
+
+    // Add the domain to attribute node to an element:
+    script1.setAttributeNode(domain);
+
+    // Add the charset attribute with a value of "UTF-8" to the script1 element.
+    script1.setAttribute("charset", "UTF-8");
+    document.getElementsByTagName('head')[0].appendChild(script1);
+  }
+
+})(drupalSettings);

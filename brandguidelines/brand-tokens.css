@@ -1,0 +1,150 @@
+/* =========================================================
+   Novartis brand tokens — website UI
+   Two colors, no gradients, square corners, black→orange hover.
+   Drop this file in and swap your existing color/button rules
+   to reference these variables.
+   ========================================================= */
+
+:root {
+  /* Core palette (only two UI colors + one interaction accent) */
+  --color-black: #161616;   /* Novartis Warm Black — primary text, default surfaces */
+  --color-white: #FCFCFC;   /* Novartis Soft White — backgrounds, text on dark */
+  --color-accent: #FF4E00;  /* Novartis Space Orange — hover/active/highlight ONLY */
+
+  /* Semantic aliases */
+  --color-text: var(--color-black);
+  --color-text-inverse: var(--color-white);
+  --color-bg: var(--color-white);
+  --color-bg-inverse: var(--color-black);
+  --color-border: var(--color-black);
+
+  /* Typography */
+  --font-family: "Volta Modern Display", Arial, Helvetica, sans-serif;
+  --font-weight-headline: 500;   /* Medium */
+  --font-weight-body: 400;       /* Roman */
+  --font-weight-highlight: 500;  /* Medium, used inline for emphasis */
+
+  /* Type scale (digital, px) — doubling = hierarchy */
+  --text-min: 14px;      /* 12–16px range */
+  --text-body: 20px;
+  --text-intro: 40px;
+  --text-subhead: 80px;
+  --text-headline: 140px; /* 120–160px range */
+
+  /* Shape — square corners everywhere, no exceptions */
+  --radius: 0;
+
+  /* Motion */
+  --transition-fast: 150ms ease;
+}
+
+/* Base type */
+body {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-body);
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  font-size: var(--text-body);
+}
+
+h1, .headline {
+  font-weight: var(--font-weight-headline);
+  font-size: var(--text-headline);
+  color: var(--color-text);
+}
+
+h2, .subhead {
+  font-weight: var(--font-weight-body);
+  font-size: var(--text-subhead);
+  color: var(--color-text);
+}
+
+.intro {
+  font-size: var(--text-intro);
+}
+
+/* Space Orange text — accent only. Never drop below the brand's
+   19pt/24px minimum, and never use for large blocks. */
+.highlight,
+.text-accent {
+  color: var(--color-accent);
+  font-weight: var(--font-weight-highlight);
+  font-size: max(var(--text-body), 24px);
+}
+
+/* =========================================================
+   Buttons
+   ========================================================= */
+
+.btn {
+  display: inline-block;
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-highlight);
+  font-size: 16px;
+  line-height: 1;
+  padding: 16px 32px;
+  border-radius: var(--radius); /* square — no rounding */
+  border: 2px solid transparent;
+  cursor: pointer;
+  background-image: none; /* explicitly no gradients */
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+/* Primary: black by default, orange on hover */
+.btn-primary {
+  background-color: var(--color-black);
+  color: var(--color-white);
+  border-color: var(--color-black);
+}
+
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+/* Secondary: outline, fills on hover */
+.btn-secondary {
+  background-color: transparent;
+  color: var(--color-black);
+  border-color: var(--color-black);
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus-visible {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   Links — same black→orange interaction pattern
+   ========================================================= */
+
+a {
+  color: var(--color-black);
+  text-decoration: underline;
+  transition: color var(--transition-fast);
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--color-accent);
+}
+
+/* =========================================================
+   Inputs / cards — keep corners square, no gradients
+   ========================================================= */
+
+input, textarea, select, .card {
+  border-radius: var(--radius);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-black);
+  background-image: none;
+}
