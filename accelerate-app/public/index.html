@@ -153,11 +153,11 @@ input,select,textarea,button{border-radius:0}
 /* Selected/hover fill spans the FULL header height (top to bottom of the
    appbar), not just the text's own line box — display:flex + height:100%
    inside a stretched .top-nav container. */
-.top-nav a{height:100%;padding:0 14px;display:inline-flex;align-items:center;border-radius:0;font-size:16px;font-weight:var(--fw-body);color:var(--ink);text-decoration:none;border-left:4px solid transparent;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.top-nav a{height:100%;padding:0 14px;display:inline-flex;align-items:center;border-radius:0;font-size:16px;font-weight:var(--fw-body);color:var(--ink);text-decoration:none;border-bottom:4px solid transparent;box-sizing:border-box;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
 .top-nav a:hover,.top-nav a:focus-visible{background:var(--nv-grey-surface);color:var(--nv-space-orange)}
 /* Only ONE nav item is ever "on" at a time — spec §2: solid Warm Black,
    white text, orange left border. */
-.top-nav a.on{color:var(--nv-soft-white);background:var(--nv-warm-black);font-family:var(--font-medium);font-weight:var(--fw-medium);border-left-color:var(--nv-space-orange)}
+.top-nav a.on{color:var(--nv-soft-white);background:var(--nv-warm-black);font-family:var(--font-medium);font-weight:var(--fw-medium);border-bottom-color:var(--nv-space-orange)}
 .top-nav a.on:hover{color:var(--nv-soft-white);background:var(--nv-warm-black)}
 .appbar-right{margin-left:auto;display:flex;align-items:center;gap:14px}
 .appbar-icon{width:36px;height:36px;border-radius:0;display:grid;place-items:center;color:var(--nv-warm-black);font-size:1rem;transition:background-color .15s ease,color .15s ease;position:relative}
@@ -978,6 +978,11 @@ input,select,textarea,button{border-radius:0}
 .cp-tab.recording{background:var(--nv-orange);color:#fff}
 .cp-tab:disabled{opacity:.5;cursor:default}
 .cp-input{display:flex;gap:8px;align-items:center}
+.cp-icon-btn{width:32px;height:32px;flex-shrink:0;border-radius:0;background:transparent;color:var(--nv-warm-black);display:grid;place-items:center;transition:color .15s,background .15s}
+.cp-icon-btn:hover{color:var(--nv-space-orange);background:var(--nv-grey-surface)}
+.cp-icon-btn svg{width:18px;height:18px}
+.cp-icon-btn.recording{color:var(--nv-space-orange)}
+.cp-icon-btn:disabled{opacity:.5;cursor:default}
 .cp-input input{flex:1;border:1px solid var(--line);border-bottom:2px solid var(--line);border-radius:0;padding:8px 14px;font-size:.8rem;background:var(--surface2);transition:border-color .15s ease,background-color .15s ease}
 .cp-input input:hover{border-color:#CCCCCC;border-bottom-color:#CCCCCC}
 .cp-input input:focus{outline:none;border-color:var(--line);background:var(--surface);border-bottom:2px solid var(--nv-space-orange)}
@@ -1018,7 +1023,7 @@ input,select,textarea,button{border-radius:0}
 .vb-root{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line2);border-radius:0;background:var(--surface2);padding:10px}
 .vb-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 2px 0}
 .vb-tool-group{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:3px}
-.vb-tool{height:30px;min-width:30px;padding:0 10px;border-radius:0;background:transparent;color:var(--ink2);font-size:.76rem;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.vb-tool{height:30px;min-width:30px;padding:0 10px;border-radius:0;background:transparent;color:var(--ink2);font-size:.76rem;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer;text-decoration:none}
 .vb-tool:hover{background:var(--surface2)}
 .vb-tool.on{background:var(--brand-tint);color:var(--brand)}
 .vb-tool:disabled{opacity:.35;cursor:default}
@@ -1085,7 +1090,63 @@ input,select,textarea,button{border-radius:0}
 .vb-meta-action:hover{text-decoration:underline}
 .vb-empty-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;color:var(--ink3);font-weight:700;font-size:.95rem;pointer-events:none;z-index:4}
 .vb-empty-overlay span{font-weight:500;font-size:.78rem;max-width:320px}
+.vb-empty-overlay button{pointer-events:auto}
+/* view-only pre-generation panel — no absolutely-positioned overlay to break
+   out of here, so centering has to come from the wrap itself */
+.vb-canvas-wrap-empty{display:flex;align-items:center;justify-content:center}
+.vb-hourglass{width:34px;height:34px;color:var(--nv-warm-black)}
 .vb-empty-example{font-weight:600;font-size:.74rem;color:var(--ink2);background:var(--surface2);border:1px solid var(--line2);border-radius:0;padding:8px 12px;text-align:left;white-space:pre-line;max-width:320px}
+/* ---------- pre-generation clarification cards (in-chat Q&A) ---------- */
+.vb-cq{padding:12px 14px;box-sizing:border-box;max-width:100%}
+.vb-cq-num{font-size:.66rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.vb-cq-q{font-size:.85rem;font-weight:700;color:var(--ink);margin-bottom:10px}
+.vb-cq-opts{display:flex;flex-direction:column;gap:6px;width:100%}
+.vb-cq-opt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left;background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:9px 11px;font-size:.8rem;font-weight:600;color:var(--ink);cursor:pointer;transition:border-color .15s,color .15s;width:100%;box-sizing:border-box}
+.vb-cq-opt:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.vb-cq-opt-label{flex:1 1 auto;min-width:0;white-space:normal;word-break:break-word;text-align:left}
+.vb-cq-rec{font-size:.6rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--nv-space-orange);border:1px solid var(--nv-space-orange);padding:1px 6px;flex-shrink:0}
+.vb-cq-hint{font-size:.72rem;font-weight:500;color:var(--ink3);margin-top:8px;font-style:italic}
+.vb-cq-answer{font-size:.8rem;font-weight:700;color:var(--nv-space-orange);word-break:break-word}
+.vb-cq-generate{padding:4px 14px 14px}
+.vb-cq-generate button{width:100%;box-sizing:border-box}
+/* ---------- generating / pdf states (replace canvas entirely) ---------- */
+.vb-generating{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:420px;color:var(--ink3);font-weight:700}
+.vb-generating-spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line2);border-top-color:var(--nv-space-orange);animation:vbSpin .8s linear infinite}
+@keyframes vbSpin{to{transform:rotate(360deg)}}
+.vb-generating-txt{font-size:.9rem}
+/* visio-cropped.pdf (see vbVisioFileUrl()) IS already page 1 cropped to the
+   vertical 10%-60% band — a real MediaBox/CropBox edit, done once, not a
+   runtime CSS/zoom crop layered on the original file. Tried two runtime
+   approaches first (pdf.js rasterizing to canvas — hung indefinitely on
+   this specific file's vector content; then `#zoom=100` iframe math) before
+   landing on "just ship the already-cropped file" — simpler and immune to
+   both problems. This is a plain, un-cropped embed of that file now. */
+.vb-pdf-wrap{width:100%;aspect-ratio:2340/1908;min-height:360px;border:1px solid var(--line2);background:var(--surface2)}
+.vb-pdf-frame{width:100%;height:100%;border:0}
+/* ---------- approval workflow (demo) ---------- */
+.vb-approval-panel{border:1px solid var(--line2);border-radius:0;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.vb-approval-status{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+/* Stacked, not side by side — two full-width buttons side by side kept
+   overflowing the chat panel's narrow width. */
+.vb-approval-actions{display:flex;flex-direction:column;gap:6px;width:100%}
+.vb-approval-actions button{width:100%;box-sizing:border-box}
+.vb-approval-note{font-size:.78rem;color:var(--ink3);font-weight:500}
+.vb-approver-rows{display:flex;flex-direction:column;gap:8px;width:100%}
+.vb-approver-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line2)}
+.vb-approver-row:first-child{border-top:none;padding-top:0}
+.vb-approver-name{font-size:.8rem;font-weight:700;flex-shrink:0;min-width:90px}
+.vb-suggest-box{display:flex;flex-direction:column;gap:8px;width:100%}
+.vb-suggest-box textarea{width:100%;box-sizing:border-box;min-height:64px;padding:9px 11px;font-size:.8rem;border:1px solid var(--line2);border-radius:0;background:var(--surface2);color:var(--ink);font-family:inherit;resize:vertical}
+.vb-suggest-box button{width:100%;box-sizing:border-box}
+/* ---------- version history (demo) ---------- */
+.vb-version-history{border:1px solid var(--line2);border-radius:0;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.vb-version-history-head{font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
+.vb-version-row{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line2)}
+.vb-version-row:first-child{border-top:none;padding-top:0}
+.vb-version-num{font-size:.72rem;font-weight:800;color:var(--nv-space-orange);flex-shrink:0;width:26px}
+.vb-version-body{flex:1;min-width:0}
+.vb-version-change{font-size:.8rem;font-weight:600;color:var(--ink)}
+.vb-version-meta{font-size:.7rem;font-weight:600;color:var(--ink3);margin-top:2px}
 /* ---------- canvas header / sub-tabs above the toolbar ---------- */
 .vb-canvas-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 0}
 .vb-canvas-head-l{display:flex;align-items:center;gap:8px}
@@ -1095,6 +1156,20 @@ input,select,textarea,button{border-radius:0}
 .vb-visio-link{font-size:.74rem;font-weight:700;color:var(--brand);margin-left:6px;padding:3px 9px;border-radius:0;background:var(--brand-tint)}
 .vb-visio-link:hover{text-decoration:underline}
 .vb-canvas-head-r{display:flex;align-items:center;gap:8px}
+/* Same bordered black/orange-hover language as .btn-ghost elsewhere in the
+   app, just compact — .vb-tool's plain borderless look is right for the
+   legacy diagram-editor's tool palette, but these are the same kind of
+   real, brand-visible action buttons as everywhere else (Save/Share/etc). */
+.vb-pdf-action{height:30px;padding:0 12px;border-radius:0;background:transparent;color:var(--nv-warm-black);border:2px solid var(--nv-warm-black);font-size:.74rem;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer;text-decoration:none;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.vb-pdf-action:hover,.vb-pdf-action:focus-visible{background:var(--nv-space-orange);border-color:var(--nv-space-orange);color:var(--nv-soft-white)}
+.vb-zoom-group{display:flex;align-items:center;border:2px solid var(--nv-warm-black)}
+.vb-zoom-btn{height:26px;min-width:26px;padding:0 8px;font-weight:800;border:0;background:transparent;color:var(--nv-warm-black);cursor:pointer;transition:background-color .15s ease,color .15s ease}
+.vb-zoom-btn:hover{background:var(--nv-space-orange);color:var(--nv-soft-white)}
+.vb-zoom-pct{font-size:.72rem;font-weight:700;color:var(--nv-warm-black);min-width:34px;text-align:center}
+.vb-dl-dropdown{position:relative}
+.vb-dl-menu{position:absolute;top:calc(100% + 4px);right:0;background:var(--surface);border:1px solid var(--line2);border-radius:0;min-width:100px;z-index:20;box-shadow:0 4px 14px rgba(22,22,22,.12)}
+.vb-dl-menu a{display:block;padding:8px 12px;font-size:.76rem;font-weight:600;color:var(--ink);text-decoration:none}
+.vb-dl-menu a:hover{background:var(--nv-grey-surface);color:var(--nv-space-orange)}
 .vb-canvas-head-r .btn-ghost,.vb-canvas-head-r .btn-primary{height:32px;padding:0 14px;font-size:.76rem}
 .vb-toggle-wrap{display:flex;align-items:center;gap:7px;font-size:.74rem;font-weight:700;color:var(--ink2);cursor:pointer}
 .vb-toggle-wrap input{display:none}
@@ -1470,21 +1545,16 @@ input,select,textarea,button{border-radius:0}
     <div class="cp-av">✦</div>
     <div>
       <h3>Campaign Navigator</h3>
-      <p>Online · knows TactPlan, brand strategy, playbooks</p>
     </div>
   </div>
   <div class="cp-body" id="chatBody">
     <div class="msg bot you-focus-msg" id="youFocus"></div>
   </div>
   <div class="cp-input-card" id="cpAssistantInputCard">
-    <div class="cp-input-tabs">
-      <button class="cp-tab on" id="cpTabAsk" onclick="document.getElementById('chatInput').focus()">💬 Ask</button>
-      <button class="cp-tab" id="cpTabUpload" title="Upload a PDF, Word, or Excel file" onclick="document.getElementById('chatFileInput').click()">📎 Upload</button>
-      <button class="cp-tab" onclick="pasteIntoChatInput()">📋 Paste</button>
-      <button class="cp-tab" id="cpTabSpeak" onclick="toggleVoiceInput()">🎤 Speak</button>
-    </div>
     <div class="cp-input">
       <input type="file" id="chatFileInput" accept=".pdf,.docx,.doc,.xlsx,.xls,.csv" style="display:none" onchange="handleChatFileUpload(this)">
+      <button class="cp-icon-btn" id="cpTabUpload" title="Upload a PDF, Word, or Excel file" onclick="document.getElementById('chatFileInput').click()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M12 4 7 9M12 4l5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></button>
+      <button class="cp-icon-btn" id="cpTabSpeak" title="Speak" onclick="toggleVoiceInput()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v3"/></svg></button>
       <input id="chatInput" placeholder="Ask anything or paste content…" onkeydown="if(event.key==='Enter')sendChat(this.value)">
       <button class="send" onclick="sendChat(document.getElementById('chatInput').value)"><svg viewBox="0 0 24 24" fill="var(--nv-orange)" xmlns="http://www.w3.org/2000/svg"><path d="M12 3.2 20.5 19c.35.66-.34 1.38-1.02 1.05L12 16.7l-7.48 3.35c-.68.33-1.37-.39-1.02-1.05L12 3.2Z"/></svg></button>
     </div>
@@ -1647,7 +1717,18 @@ const PERSONAS = {
   cep: {name:'Tomás Okafor', role:'CEP · Platform / DC', color:'#5B6B7A', abbr:'TO', scope:'4 fields · MCI reporting'},
   ops: {name:'Derek Lin',    role:'Campaign Ops', color:'#0A3D7A', abbr:'DL', scope:'orchestration · 6 build-time fields'},
   dca: {name:'Priya Nair',   role:'Data Cloud Architect', color:'#1E8E5A', abbr:'PN', scope:'6 fields · Data Cloud details'},
+  // Visio approvers — same Campaign Ops team as Derek, but their only job is
+  // reviewing/approving the generated Visio, not owning build-time fields.
+  // Real PERSONAS entries (not a bolted-on local toggle) so switching
+  // between them goes through the app's one real persona switcher/dropdown,
+  // and each gets its own isolated chat thread via chatStateByPersona —
+  // instead of a second, redundant "viewing as" control that kept pushing
+  // extra messages into whichever chat happened to be on screen.
+  ops2: {name:'Alex Kim',    role:'Campaign Ops · Approver', color:'#8B5CF6', abbr:'AK', scope:'Visio approver'},
+  ops3: {name:'Sofia Reyes', role:'Campaign Ops · Approver', color:'#1E8E5A', abbr:'SR', scope:'Visio approver'},
 };
+const VB_APPROVER_KEYS = ['ops2','ops3'];
+function vbIsApproverPersona(k){ return VB_APPROVER_KEYS.includes(k); }
 
 const REQUESTS = [
   {id:'TP-88213', name:'Kisqali HCP Adjuvant — Q3 Wave 2 (eBC)', brand:'Kisqali', ic:'K', color:'#E74A21',
@@ -4234,17 +4315,455 @@ let visioBuilderOpen = false;
 // so switching requests re-fits instead of keeping a stale zoom/pan.
 let vbHasFitOnce = false;
 
-function diagramStorageKey(){ return `visioDiagram:${campaignConfig.tactplanId || 'default'}`; }
-function diagramVersionsKey(){ return `visioDiagramVersions:${campaignConfig.tactplanId || 'default'}`; }
+// ============ Pre-generation clarifications ============
+// Before any diagram exists, the canvas is blank and Chat asks a short,
+// fixed set of questions pulled straight from this campaign's own documents
+// (see flow_planner_clarifications_mockup.html) — no filler, just the
+// question and the answer options. Only once every question is answered
+// does a "Generate Visio" control appear; clicking it swaps the blank canvas
+// for a 5s "Generating diagram…" state and then the campaign's actual Visio
+// PDF, replacing the node/edge canvas entirely for this flow.
+const VB_CLARIFY_QUESTIONS = [
+  { id:'segment', q:'Which source should we use for the segment?',
+    options:[
+      { value:'ZOL_SMAshing_my_limits_UB', label:'ZOL_SMAshing_my_limits_UB', recommended:true },
+      { value:'custom', label:'Enter it myself', freeText:true, placeholder:'Enter the segment name' },
+    ] },
+  { id:'cutoff', q:'When does the audience for this send close?',
+    options:[
+      { value:'15 Aug 2026', label:'15 Aug 2026 — three days before the send', recommended:true },
+      { value:'18 Aug 2026', label:'18 Aug 2026 — the send date itself' },
+      { value:'custom', label:'A different date', freeText:true, placeholder:'Enter a date' },
+    ] },
+  { id:'lastTouch', q:'Which send should be shown as the last touch?',
+    options:[
+      { value:'2026 Kick Off Email (FA-11630163_1001A)', label:'2026 Kick Off Email — FA-11630163_1001A', recommended:true },
+      { value:'Travel Partnerships and Resources (FA-11642220_1001A)', label:'Travel Partnerships and Resources — FA-11642220_1001A' },
+      { value:'Welcome Email (FA-11409681_1001A)', label:'Welcome Email — FA-11409681_1001A' },
+      { value:'none', label:'Do not show a last touch' },
+    ] },
+  { id:'fulfilmentCode', q:'What is the fulfilment campaign code?',
+    options:[
+      { value:'20252054', label:'Same as source code — 20252054', recommended:true },
+      { value:'custom', label:'Enter a different code', freeText:true, placeholder:'Enter the fulfilment campaign code' },
+    ] },
+];
+let vbClarifyAnswers = {};
+let vbClarifyStep = 0;
+let vbClarifyIntroPosted = false;
+let vbGenerating = false;
+let vbVisioReady = false;
+// A manually uploaded replacement PDF — kept as an in-memory object URL only
+// (not persisted; this is a demo stand-in for a real file upload/storage
+// backend), so it resets on reload back to the generated visio-cropped.pdf.
+let vbUploadedFileUrl = null;
+let vbUploadedFileName = null;
+// visio-cropped.pdf is a real, pre-cropped single-page PDF (generated once
+// from the original visio.pdf's page 1, MediaBox/CropBox set to the exact
+// vertical 10%-60% band — see the sibling visio-cropped.pdf next to
+// visio.pdf at the project root) — not the original file with a CSS/zoom
+// crop layered on top. Every viewer, including a plain <iframe>, just shows
+// what's actually in the file: one page, already the right region, no
+// zoom-percentage math or pdf.js rasterization needed at all.
+function vbVisioFileUrl(){ return vbUploadedFileUrl || 'visio-cropped.pdf'; }
+function vbHandleUpload(file){
+  if(!file) return;
+  if(vbUploadedFileUrl) URL.revokeObjectURL(vbUploadedFileUrl);
+  vbUploadedFileUrl = URL.createObjectURL(file);
+  vbUploadedFileName = file.name;
+  vbPdfZoom = 'fit'; // a replacement file's page size is unknown, don't carry over a stale zoom %
+  renderSections();
+  vbRenderAll();
+  toast(`Replaced with ${file.name}.`);
+}
 
-// First-ever open for a campaign seeds the example journey (diagramDefaultGraph)
-// so the editor never opens to a blank canvas that looks broken — subsequent
-// opens load whatever's actually been saved (including a real empty graph, if
-// the user explicitly cleared it, which is why this checks for the key's
-// presence rather than truthiness of its contents).
+// PDF zoom — 'fit' (view=FitH, the default) until +/- is used, then an
+// explicit percentage (view=FitH and zoom=N conflict in Chrome's PDF
+// viewer, so only one is ever in the fragment at a time).
+let vbPdfZoom = 'fit';
+function vbPdfFrameSrc(){
+  const zoomParam = vbPdfZoom === 'fit' ? 'view=FitH' : `zoom=${vbPdfZoom}`;
+  return `${vbVisioFileUrl()}#toolbar=0&${zoomParam}`;
+}
+function vbPdfZoomBy(delta){
+  vbPdfZoom = vbPdfZoom === 'fit' ? 100 + delta : Math.max(25, Math.min(400, vbPdfZoom + delta));
+  const frame = document.getElementById('vbPdfFrame');
+  // Changing just the #fragment on an already-loaded PDF iframe does NOT
+  // re-apply zoom in Chrome — the PDF plugin only reads open-parameters at
+  // initial load. Forcing a real reload (blank first, then the new src on
+  // the next tick) is the only reliable way to make +/- actually take
+  // effect without a manual page refresh.
+  if(frame){
+    const next = vbPdfFrameSrc();
+    frame.src = 'about:blank';
+    setTimeout(()=>{ frame.src = next; }, 0);
+  }
+  const pct = document.getElementById('vbZoomPct');
+  if(pct) pct.textContent = vbPdfZoom === 'fit' ? 'Fit' : vbPdfZoom + '%';
+}
+
+function vbToggleDownloadMenu(){
+  const menu = document.getElementById('vbDlMenu');
+  if(!menu) return;
+  menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+function vbCloseDownloadMenu(){
+  const menu = document.getElementById('vbDlMenu');
+  if(menu) menu.style.display = 'none';
+}
+document.addEventListener('click', (e) => {
+  const dd = document.getElementById('vbDlDropdown');
+  if(dd && !dd.contains(e.target)) vbCloseDownloadMenu();
+});
+
+// campaignConfig.tactplanId is only ever set by the "new request" intake
+// flow — every request opened via openRequest() (i.e. all seeded REQUESTS)
+// leaves it undefined, which would collapse every campaign onto the same
+// "default" storage key and leak one campaign's generated Visio/answers
+// into every other one. currentRequest.id is reliably set on open, so it's
+// the real per-campaign identity here.
+function vbCampaignKeyId(){ return campaignConfig.tactplanId || (currentRequest && currentRequest.id) || 'default'; }
+// "v2:" namespace bump — orphans any pre-existing visioClarify state (from
+// earlier testing or a stale browser session) so every campaign genuinely
+// starts back at "waiting for clarifications" rather than depending on
+// someone having manually cleared localStorage first.
+function vbClarifyKey(){ return `visioClarify:v2:${vbCampaignKeyId()}`; }
+
+function loadVbClarifyState(){
+  const saved = localStorage.getItem(vbClarifyKey());
+  const state = saved ? JSON.parse(saved) : { answers:{}, ready:false };
+  vbClarifyAnswers = state.answers || {};
+  vbClarifyStep = VB_CLARIFY_QUESTIONS.findIndex(q => !(q.id in vbClarifyAnswers));
+  if(vbClarifyStep === -1) vbClarifyStep = VB_CLARIFY_QUESTIONS.length;
+  vbVisioReady = !!state.ready;
+  vbGenerating = false;
+  vbClarifyIntroPosted = false;
+}
+
+function saveVbClarifyState(){
+  localStorage.setItem(vbClarifyKey(), JSON.stringify({ answers:vbClarifyAnswers, ready:vbVisioReady }));
+}
+
+function vbClarifyAllAnswered(){ return vbClarifyStep >= VB_CLARIFY_QUESTIONS.length; }
+
+function vbClarifyQuestionCardHtml(qIndex){
+  const q = VB_CLARIFY_QUESTIONS[qIndex];
+  // Free-text isn't its own boxed input+button here — that duplicated the
+  // real chat input right below it for no reason. Typing an answer into the
+  // main chat box already routes to this exact question (see sendChat's
+  // inDiagramMode branch), so a freeText option just becomes a one-line hint
+  // instead of a second, redundant text field.
+  const hasFreeText = q.options.some(o=>o.freeText);
+  const opts = q.options.filter(o=>!o.freeText).map(o =>
+    `<button class="vb-cq-opt" onclick="vbAnswerClarify('${q.id}','${o.value.replace(/'/g,"\\'")}','${o.label.replace(/'/g,"\\'")}')"><span class="vb-cq-opt-label">${o.label}</span>${o.recommended?'<span class="vb-cq-rec">Recommended</span>':''}</button>`
+  ).join('');
+  return `<div class="msg bot vb-cq" id="vb-cq-${q.id}">
+    <div class="vb-cq-num">Question ${qIndex+1} of ${VB_CLARIFY_QUESTIONS.length}</div>
+    <div class="vb-cq-q">${q.q}</div>
+    <div class="vb-cq-opts">${opts}</div>
+    ${hasFreeText ? `<div class="vb-cq-hint">Or type your own answer in the chat box below.</div>` : ''}
+  </div>`;
+}
+
+// Posts the intro + first unanswered question once per page load per
+// campaign — loadVisioBuilderData() runs on every open, but re-asking
+// already-answered questions (or re-posting the intro) every time someone
+// reopens the same session would just spam the chat.
+function vbPostClarifyIntroIfNeeded(){
+  if(vbVisioReady || vbClarifyIntroPosted) return;
+  vbClarifyIntroPosted = true;
+  const body = document.getElementById('chatBody');
+  if(!body) return;
+  if(vbClarifyAllAnswered()){
+    vbRenderGenerateButton(body);
+    return;
+  }
+  body.innerHTML += `<div class="msg bot"><b>Waiting for your inputs.</b> Before the Visio can be generated, a few things aren't in this campaign's documents and need your call — just the questions, straight from the source docs.</div>`;
+  body.innerHTML += vbClarifyQuestionCardHtml(vbClarifyStep);
+  body.scrollTop = body.scrollHeight;
+}
+
+function vbAnswerClarify(qid, value, label){
+  const card = document.getElementById(`vb-cq-${qid}`);
+  const body = document.getElementById('chatBody');
+  if(card) card.outerHTML = `<div class="msg bot vb-cq resolved"><div class="vb-cq-q">${VB_CLARIFY_QUESTIONS.find(q=>q.id===qid).q}</div><div class="vb-cq-answer">${label || value}</div></div>`;
+  vbClarifyAnswers[qid] = { value, label: label || value };
+  vbClarifyStep = VB_CLARIFY_QUESTIONS.findIndex(q => !(q.id in vbClarifyAnswers));
+  if(vbClarifyStep === -1) vbClarifyStep = VB_CLARIFY_QUESTIONS.length;
+  saveVbClarifyState();
+  if(vbClarifyAllAnswered()){
+    body.innerHTML += `<div class="msg bot">All set — every open question is answered.</div>`;
+    vbRenderGenerateButton(body);
+  } else {
+    body.innerHTML += vbClarifyQuestionCardHtml(vbClarifyStep);
+  }
+  body.scrollTop = body.scrollHeight;
+  renderSections();
+  vbRenderAll();
+}
+
+function vbRenderGenerateButton(body){
+  body.innerHTML += `<div class="msg bot vb-cq-generate">
+    <button class="btn-primary" onclick="vbGenerateVisio()">Generate Visio</button>
+  </div>`;
+  body.scrollTop = body.scrollHeight;
+}
+
+function vbGenerateVisio(){
+  if(vbGenerating || vbVisioReady) return;
+  vbGenerating = true;
+  renderSections();
+  vbRenderAll();
+  setTimeout(()=>{
+    vbGenerating = false;
+    vbVisioReady = true;
+    saveVbClarifyState();
+    vbPushVersion('derek', 'Initial diagram generated from clarification answers.');
+    saveVbApprovalState();
+    renderSections();
+    vbRenderAll();
+    const body = document.getElementById('chatBody');
+    if(body){
+      body.innerHTML += `<div class="msg bot">Visio generated. Every answer above is on record with who chose it, in case it needs revisiting.</div>`;
+      body.scrollTop = body.scrollHeight;
+    }
+  }, 5000);
+}
+
+// ============ Approval workflow (demo/mock) ============
+// Approvers are real PERSONAS entries (ops2/ops3, see PERSONAS above) — you
+// switch into their seat through the app's one real persona dropdown, same
+// as any other role, instead of a second local "viewing as" control. Each
+// persona already keeps its own isolated chat thread (chatStateByPersona,
+// see switchPersona()); vbNotifyPersona() below writes into a target
+// persona's thread directly when they're not the one currently on screen.
+//
+// Alex Kim and Sofia Reyes are two INDEPENDENT approvers, not one shared
+// decision — each gets their own {status, comment} so one approving doesn't
+// lock the other out of also approving/requesting changes. vbApprovalSent
+// just tracks whether the round is open at all.
+let vbApprovalSent = false;
+let vbApprovalDecisions = {};        // { ops2:{status:'pending'|'approved'|'changes_requested', comment}, ops3:{...} }
+let vbVersions = [];                 // [{v, ts, authorId, change}] — authorId is a persona key
+let vbShowSuggestBox = {};           // { ops2:bool, ops3:bool }
+
+function vbFreshDecisions(){
+  const d = {};
+  VB_APPROVER_KEYS.forEach(k=>{ d[k] = { status:'pending', comment:'' }; });
+  return d;
+}
+function vbApprovalKey(){ return `visioApproval:v3:${vbCampaignKeyId()}`; }
+function loadVbApprovalState(){
+  const saved = localStorage.getItem(vbApprovalKey());
+  const state = saved ? JSON.parse(saved) : { sent:false, decisions:vbFreshDecisions(), versions:[] };
+  vbApprovalSent = !!state.sent;
+  vbApprovalDecisions = state.decisions || vbFreshDecisions();
+  vbVersions = state.versions || [];
+  vbShowSuggestBox = {};
+}
+function saveVbApprovalState(){
+  localStorage.setItem(vbApprovalKey(), JSON.stringify({
+    sent: vbApprovalSent, decisions: vbApprovalDecisions, versions: vbVersions,
+  }));
+}
+function vbPushVersion(authorId, change){
+  vbVersions.push({ v: vbVersions.length + 1, ts: Date.now(), authorId, change });
+}
+// Writes a message into a persona's chat thread — live #chatBody if that
+// persona is on screen right now, otherwise straight into their saved
+// chatStateByPersona entry so it's there waiting the next time they switch
+// to it (exactly what "reflect back on Derek's chat" needs, without also
+// dumping every viewer-switch into the log).
+function vbNotifyPersona(personaKey, html){
+  const msg = `<div class="msg bot">${html}</div>`;
+  if(personaKey === currentPersona){
+    const body = document.getElementById('chatBody');
+    if(body){ body.innerHTML += msg; body.scrollTop = body.scrollHeight; }
+    return;
+  }
+  const existing = chatStateByPersona[personaKey];
+  if(existing) existing.html += msg;
+  else chatStateByPersona[personaKey] = { html: `<div class="msg bot you-focus-msg" id="youFocus"></div>${msg}`, agentHistory: [] };
+}
+
+// The actionable review card posted into an approver's OWN chat thread —
+// real Approve/Suggest modifications buttons right there in chat, not just
+// a text note pointing them at the panel.
+function vbApprovalChatCardHtml(approverKey){
+  return `<div class="msg bot vb-cq" id="vb-approval-card-${approverKey}">
+    <div class="vb-cq-q"><b>Visio generated and pending your review.</b></div>
+    <div class="vb-approval-actions">
+      <button class="btn-primary" onclick="vbApprovalApprove('${approverKey}')">Approve</button>
+      <button class="btn-ghost" onclick="vbApprovalToggleSuggestBox('${approverKey}',true)">Suggest modifications</button>
+    </div>
+    <div class="vb-suggest-box" id="vb-approval-suggest-${approverKey}" style="display:none">
+      <textarea id="vbSuggestText-${approverKey}" class="ta" placeholder="What needs to change?"></textarea>
+      <button class="btn-primary" onclick="vbApprovalSubmitSuggestion('${approverKey}')">Submit</button>
+    </div>
+  </div>`;
+}
+// Swaps a chat card (in whichever persona's thread it lives in — possibly
+// not the live DOM right now) into its resolved state, same pattern as the
+// clarification cards use.
+function vbResolveApprovalChatCard(approverKey, resolvedHtml){
+  const id = `vb-approval-card-${approverKey}`;
+  const live = document.getElementById(id);
+  if(live){ live.outerHTML = resolvedHtml; return; }
+  Object.keys(chatStateByPersona).forEach(k=>{
+    const st = chatStateByPersona[k];
+    if(st && st.html.includes(`id="${id}"`)){
+      const re = new RegExp(`<div class="msg bot vb-cq" id="${id}">[\\s\\S]*?<\\/div>\\s*<\\/div>\\s*<\\/div>`);
+      st.html = st.html.replace(re, resolvedHtml);
+    }
+  });
+}
+
+function vbSendForApproval(){
+  if(!vbVisioReady || vbApprovalSent) return;
+  vbApprovalSent = true;
+  vbApprovalDecisions = vbFreshDecisions();
+  vbPushVersion('ops', 'Sent for approval.');
+  saveVbApprovalState();
+  const names = VB_APPROVER_KEYS.map(k=>PERSONAS[k].name).join(' and ');
+  vbNotifyPersona('ops', `Visio sent for approval to <b>${names}</b>. You'll see each of their decisions here as they respond.`);
+  VB_APPROVER_KEYS.forEach(k=>vbNotifyPersona(k, vbApprovalChatCardHtml(k)));
+  renderSections();
+  vbRenderAll();
+}
+
+function vbApprovalApprove(approverKey){
+  const a = PERSONAS[approverKey];
+  vbApprovalDecisions[approverKey] = { status:'approved', comment:'' };
+  vbShowSuggestBox[approverKey] = false;
+  vbPushVersion(approverKey, `Approved by ${a.name}.`);
+  saveVbApprovalState();
+  vbResolveApprovalChatCard(approverKey, `<div class="msg bot vb-cq resolved"><div class="vb-cq-q">Visio review</div><div class="vb-cq-answer">✓ You approved the Visio.</div></div>`);
+  vbNotifyPersona('ops', `✓ <b>${a.name}</b> approved the Visio.`);
+  renderSections();
+  vbRenderAll();
+}
+
+function vbApprovalToggleSuggestBox(approverKey, show){
+  vbShowSuggestBox[approverKey] = show;
+  const box = document.getElementById(`vb-approval-suggest-${approverKey}`);
+  if(box){ box.style.display = show ? 'flex' : 'none'; return; } // chat card — toggle in place, no full re-render needed
+  renderSections();
+  vbRenderAll();
+}
+
+function vbApprovalSubmitSuggestion(approverKey){
+  const ta = document.getElementById(`vbSuggestText-${approverKey}`) || document.getElementById('vbSuggestText');
+  const note = (ta?.value || '').trim();
+  if(!note){ toast('Add a note describing the change first.'); return; }
+  const a = PERSONAS[approverKey];
+  vbApprovalDecisions[approverKey] = { status:'changes_requested', comment: note };
+  vbShowSuggestBox[approverKey] = false;
+  vbPushVersion(approverKey, `Changes requested by ${a.name}: "${note}"`);
+  saveVbApprovalState();
+  vbResolveApprovalChatCard(approverKey, `<div class="msg bot vb-cq resolved"><div class="vb-cq-q">Visio review</div><div class="vb-cq-answer">✎ You requested changes: "${note}"</div></div>`);
+  vbNotifyPersona('ops', `✎ <b>${a.name}</b> requested changes: <i>"${note}"</i>`);
+  renderSections();
+  vbRenderAll();
+}
+
+function vbResendForApproval(){
+  vbApprovalSent = true;
+  vbApprovalDecisions = vbFreshDecisions();
+  vbPushVersion('ops', 'Re-sent for approval.');
+  saveVbApprovalState();
+  vbNotifyPersona('ops', `Re-sent for approval.`);
+  VB_APPROVER_KEYS.forEach(k=>vbNotifyPersona(k, vbApprovalChatCardHtml(k)));
+  renderSections();
+  vbRenderAll();
+}
+
+function vbApprovalPanelHtml(){
+  const isApprover = vbIsApproverPersona(currentPersona);
+  let body;
+  if(!vbApprovalSent){
+    body = isApprover
+      ? `<span class="vb-approval-note">Not sent for approval yet.</span>`
+      : `<button class="btn-primary" onclick="vbSendForApproval()">Send for Approval</button>`;
+  } else if(isApprover){
+    // The current approver's own independent decision — unaffected by
+    // whatever the other approver has done.
+    const mine = vbApprovalDecisions[currentPersona] || { status:'pending', comment:'' };
+    if(mine.status === 'pending'){
+      body = `<span class="sm-status-pill sm-status-prog">Your review is pending</span>
+        <div class="vb-approval-actions">
+          <button class="btn-primary" onclick="vbApprovalApprove('${currentPersona}')">Approve</button>
+          <button class="btn-ghost" onclick="vbApprovalToggleSuggestBox('${currentPersona}',${!vbShowSuggestBox[currentPersona]})">Suggest modifications</button>
+        </div>
+        ${vbShowSuggestBox[currentPersona] ? `<div class="vb-suggest-box">
+          <textarea id="vbSuggestText" class="ta" placeholder="What needs to change?"></textarea>
+          <button class="btn-primary" onclick="vbApprovalSubmitSuggestion('${currentPersona}')">Submit</button>
+        </div>` : ''}`;
+    } else if(mine.status === 'approved'){
+      body = `<span class="sm-status-pill sm-status-done">You approved this</span>`;
+    } else {
+      body = `<span class="sm-status-pill sm-status-mine">You requested changes</span><span class="vb-approval-note">"${mine.comment}"</span>`;
+    }
+  } else {
+    // Requester (Derek) view — both approvers' independent decisions, side
+    // by side, plus a Resend once anyone has asked for changes.
+    const rows = VB_APPROVER_KEYS.map(k=>{
+      const d = vbApprovalDecisions[k] || { status:'pending', comment:'' };
+      const a = PERSONAS[k];
+      const pill = d.status==='approved' ? `<span class="sm-status-pill sm-status-done">Approved</span>`
+        : d.status==='changes_requested' ? `<span class="sm-status-pill sm-status-mine">Changes requested</span>`
+        : `<span class="sm-status-pill sm-status-prog">Pending</span>`;
+      return `<div class="vb-approver-row">
+        <span class="vb-approver-name" style="color:${a.color}">${a.name}</span>
+        ${pill}
+        ${d.status==='changes_requested' ? `<span class="vb-approval-note">"${d.comment}"</span>` : ''}
+      </div>`;
+    }).join('');
+    const anyChanges = VB_APPROVER_KEYS.some(k=>vbApprovalDecisions[k]?.status==='changes_requested');
+    body = `<div class="vb-approver-rows">${rows}</div>
+      ${anyChanges ? `<button class="btn-primary" onclick="vbResendForApproval()">Resend for approval</button>` : ''}`;
+  }
+  return `<div class="vb-approval-panel">
+    <div class="vb-approval-status">${body}</div>
+  </div>`;
+}
+
+function vbVersionHistoryHtml(){
+  if(!vbVersions.length) return '';
+  const rows = [...vbVersions].reverse().map(v=>{
+    const a = PERSONAS[v.authorId] || { name:v.authorId, color:'var(--ink3)' };
+    const d = new Date(v.ts);
+    const when = d.toLocaleDateString(undefined,{month:'short',day:'numeric'}) + ' · ' + d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+    return `<div class="vb-version-row">
+      <span class="vb-version-num">v${v.v}</span>
+      <div class="vb-version-body">
+        <div class="vb-version-change">${v.change}</div>
+        <div class="vb-version-meta"><span style="color:${a.color}">${a.name}</span> · ${when}</div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="vb-version-history">
+    <div class="vb-version-history-head">Version history</div>
+    ${rows}
+  </div>`;
+}
+
+function diagramStorageKey(){ return `visioDiagram:v2:${vbCampaignKeyId()}`; }
+function diagramVersionsKey(){ return `visioDiagramVersions:v2:${vbCampaignKeyId()}`; }
+
+// Opening Visio Builder for a campaign starts blank — Chat asks its fixed
+// clarification questions (see VB_CLARIFY_QUESTIONS above) before anything
+// is generated. Once generated, this campaign shows its actual Visio PDF
+// rather than seeding the old example node/edge journey.
 function loadVisioBuilderData(){
-  const saved = localStorage.getItem(diagramStorageKey());
-  diagramGraph = saved ? JSON.parse(saved) : diagramDefaultGraph();
+  loadVbClarifyState();
+  loadVbApprovalState();
+  vbPdfZoom = 'fit';
+  // Ignore any diagramGraph saved under the old pre-clarification flow (or
+  // from manual saves/undo history) until this campaign has actually been
+  // generated — otherwise a stale saved graph pops the canvas straight to
+  // "done" and skips the waiting/clarify state entirely.
+  const saved = vbVisioReady ? localStorage.getItem(diagramStorageKey()) : null;
+  diagramGraph = saved ? JSON.parse(saved) : (vbVisioReady ? diagramDefaultGraph() : null);
   const savedVersions = localStorage.getItem(diagramVersionsKey());
   diagramVersions = savedVersions ? JSON.parse(savedVersions) : [];
   diagramLastSavedAt = diagramVersions[0]?.ts || null;
@@ -4275,14 +4794,14 @@ function toggleVisioBuilder(){
   visioBuilderOpen = !visioBuilderOpen;
   if(visioBuilderOpen) loadVisioBuilderData();
   renderSections();
-  if(visioBuilderOpen) vbRenderAll();
+  if(visioBuilderOpen){ vbRenderAll(); vbPostClarifyIntroIfNeeded(); }
 }
 
 // The Visio Diagram flow-map cell (top of page) links here — the card only
 // exists in the section list for Campaign Ops, so switch personas first if
 // needed rather than silently doing nothing.
 function goToVisioBuilder(){
-  if(currentPersona !== 'ops'){
+  if(currentPersona !== 'ops' && !vbIsApproverPersona(currentPersona)){
     toast('Visio Builder is on the Campaign Ops view — switch personas (top right) to open it.');
     return;
   }
@@ -4535,6 +5054,11 @@ function vbRenderMinimap(){
   svg.innerHTML = rects + `<rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" class="vb-mm-viewport"></rect>`;
 }
 function vbRenderAll(){
+  // The generating/pdf/waiting-for-inputs states (visioBuilderMarkup()) all
+  // replace the canvas markup entirely with a placeholder/PDF preview —
+  // none of #vbNodesEl/#vbEdgesSvg/#vbMinimap exist in any of them anymore.
+  if(vbVisioReady) return; // visio-cropped.pdf renders itself, nothing to size/compute
+  if(!document.getElementById('vbNodesEl')) return;
   vbRenderNodes();
   vbRenderEdges();
   vbRenderMinimap();
@@ -4920,84 +5444,77 @@ let vbCanvasSubtab = 'Canvas';
 function visioBuilderMarkup(){
   const empty = !diagramGraph || !diagramGraph.nodes.length;
   const subtabs = ['Canvas','Layout','Style','Export'];
+  if(vbGenerating){
+    return `<div class="vb-root">
+      <div class="vb-canvas-head">
+        <div class="vb-canvas-head-l">
+          <span class="vb-canvas-head-title">Visio Builder</span>
+        </div>
+      </div>
+      <div class="vb-generating">
+        <div class="vb-generating-spin"></div>
+        <div class="vb-generating-txt">Generating diagram…</div>
+      </div>
+    </div>`;
+  }
+  if(vbVisioReady){
+    return `<div class="vb-root">
+      <div class="vb-canvas-head">
+        <div class="vb-canvas-head-l">
+          <span class="vb-canvas-head-title">Visio Builder</span>
+        </div>
+        <div class="vb-canvas-head-r">
+          <div class="vb-zoom-group">
+            <button class="vb-zoom-btn" onclick="vbPdfZoomBy(-25)" title="Zoom out">−</button>
+            <span class="vb-zoom-pct" id="vbZoomPct">${vbPdfZoom === 'fit' ? 'Fit' : vbPdfZoom + '%'}</span>
+            <button class="vb-zoom-btn" onclick="vbPdfZoomBy(25)" title="Zoom in">+</button>
+          </div>
+          <button class="vb-pdf-action" onclick="window.open('${vbVisioFileUrl()}','_blank')" title="Open in new tab">⤢ Open</button>
+          <div class="vb-dl-dropdown" id="vbDlDropdown">
+            <button class="vb-pdf-action" onclick="vbToggleDownloadMenu()" title="Download">⭳ Download ▾</button>
+            <div class="vb-dl-menu" id="vbDlMenu" style="display:none">
+              <a href="${vbVisioFileUrl()}" download="Visio_Diagram_${((currentRequest&&currentRequest.brand)||'Campaign').replace(/[^a-zA-Z0-9]/g,'')}.pdf" onclick="vbCloseDownloadMenu()">PDF</a>
+              <a href="#" onclick="event.preventDefault(); vbCloseDownloadMenu(); toast('Demo only — no real .vsdx file is connected.');">.vsdx</a>
+            </div>
+          </div>
+          <button class="vb-pdf-action" onclick="document.getElementById('vbUploadInput').click()" title="Upload a replacement">⭱ Upload</button>
+          <input type="file" id="vbUploadInput" accept="application/pdf" style="display:none" onchange="vbHandleUpload(this.files[0])">
+        </div>
+      </div>
+      <div class="vb-canvas-sub"><span class="vb-saved-dot">●</span> Current Visio version${vbUploadedFileName ? ` · Replaced with ${vbUploadedFileName}` : ''}</div>
+      <div class="vb-pdf-wrap" id="vbPdfWrap">
+        <iframe class="vb-pdf-frame" id="vbPdfFrame" src="${vbPdfFrameSrc()}" title="Visio diagram"></iframe>
+      </div>
+      ${vbApprovalPanelHtml()}
+      ${vbVersionHistoryHtml()}
+    </div>`;
+  }
+  // Nothing to edit, save, lay out, or search yet — no diagram exists until
+  // every clarifying question is answered and Generate Visio is clicked, so
+  // the whole editor toolbar (subtabs/tools/save-status/zoom) is dead weight
+  // here. This is a view-only placeholder, not the editor shell.
   return `<div class="vb-root">
     <div class="vb-canvas-head">
       <div class="vb-canvas-head-l">
-        <span class="vb-canvas-head-badge">OPS</span>
-        <span class="vb-canvas-head-ic">🔲</span>
         <span class="vb-canvas-head-title">Visio Builder</span>
-        <a class="vb-visio-link" href="#" onclick="event.preventDefault(); toast('Demo only — no real Visio file is connected.');">⧉ View in Visio</a>
-      </div>
-      <div class="vb-canvas-head-r">
-        <label class="vb-toggle-wrap"><span>Auto-layout</span><input type="checkbox" id="vbAutoLayoutToggle" onchange="if(this.checked) vbAutoLayout()"><span class="vb-toggle-track"><span class="vb-toggle-knob"></span></span></label>
-        <button class="btn-ghost" onclick="vbManualSave()">Save</button>
-        <button class="btn-primary" onclick="toast('Share is a demo stub — no real link generated.')">Share</button>
-        <button class="vb-tool" onclick="vbToggleVersionHistory()" title="More">⋯</button>
-      </div>
-    </div>
-    <div class="vb-canvas-sub"><span class="vb-saved-dot">●</span> <span id="vbCanvasSubText">${diagramLastSavedAt ? `Saved to Drive · Last saved ${diagramLastSavedText().replace('✓ Saved to Drive ','')}` : 'Not saved yet'}</span></div>
-    <div class="vb-subtabs">
-      ${subtabs.map(t=>`<button class="vb-subtab ${vbCanvasSubtab===t?'on':''}" onclick="${t==='Canvas'?`vbSubtabStub('Canvas')`:`vbSubtabStub('${t}'); toast('${t} view is not part of this demo — Canvas is the only live view.')`}">${t}</button>`).join('')}
-    </div>
-    <div class="vb-toolbar">
-      <button class="vb-tool on" onclick="vbManualToolStub('Select')" title="Select">↖ Select</button>
-      <button class="vb-tool" onclick="vbManualToolStub('Pan')" title="Pan">✋ Pan</button>
-      <button class="vb-tool" onclick="vbManualToolStub('Connector')" title="Connector">⤳ Connector</button>
-      <button class="vb-tool" onclick="vbManualToolStub('Text')" title="Text">T Text</button>
-      <button class="vb-tool" onclick="vbManualToolStub('Shape')" title="Shape">◇ Shape</button>
-      <button class="vb-tool" onclick="vbManualToolStub('Sticky')" title="Sticky">▤ Sticky</button>
-      <button class="vb-tool" onclick="vbManualToolStub('Delete')" title="Delete">🗑 Delete</button>
-      <span class="vb-tool-sep"></span>
-      <button class="vb-tool" onclick="vbUndo()" title="Undo">↺ Undo</button>
-      <button class="vb-tool" onclick="vbRedo()" title="Redo">↻ Redo</button>
-      <span class="vb-tool-sep"></span>
-      <button class="vb-tool" onclick="vbFitToScreen()" title="Fit to screen">⌕ Fit</button>
-      <button class="vb-tool" onclick="vbZoom(0)" title="Zoom">${Math.round(diagramZoom*100)}% ▾</button>
-      <div class="vb-search-wrap">
-        <input class="vb-search" id="vbSearchInput" placeholder="Search node, ID, metadata, campaign, or connector label…" value="${diagramSearchTerm}" oninput="vbSearch(this.value)">
       </div>
     </div>
     <div class="vb-main">
-      <div class="vb-canvas-wrap" id="vbCanvasWrap" onwheel="vbOnWheel(event)" onmousedown="vbOnCanvasMouseDown(event)">
-        <div class="vb-canvas" id="vbCanvasEl" style="transform:translate(${diagramPan.x}px,${diagramPan.y}px) scale(${diagramZoom})">
-          <svg class="vb-edges-svg" id="vbEdgesSvg"></svg>
-          <div class="vb-nodes" id="vbNodesEl"></div>
-        </div>
-        <div class="vb-empty-overlay" id="vbEmptyOverlay" style="display:${empty?'flex':'none'}">
-          <div style="font-size:1.6rem">🗺️</div>
-          <div>Describe your campaign journey.</div>
-          <span>The AI Diagram Editor will generate the initial diagram from your description.</span>
-          <div class="vb-empty-example">Example:
-
-Create an HCP onboarding journey with
-3 emails
-2 decision points
-1 SMS reminder</div>
-        </div>
-        <div class="vb-legend">
-          ${DIAGRAM_LEGEND.map(l=>`<div class="vb-legend-chip" style="background:${l.color};border-color:${l.border}">${l.label}</div>`).join('')}
-        </div>
-        <div class="vb-node-meta" id="vbNodeMeta" style="display:none"></div>
-        <div class="vb-minimap-wrap">
-          <svg class="vb-minimap" id="vbMinimap"></svg>
-          <div class="vb-minimap-tools">
-            <button class="vb-mm-btn" onclick="vbZoom(0.15)" title="Zoom in">+</button>
-            <button class="vb-mm-btn" onclick="vbZoom(-0.15)" title="Zoom out">−</button>
-            <button class="vb-mm-btn" onclick="vbFitToScreen()" title="Fit to screen">⛶</button>
-          </div>
+      <div class="vb-canvas-wrap vb-canvas-wrap-empty" id="vbCanvasWrap">
+        <div class="vb-empty-overlay" id="vbEmptyOverlay" style="display:flex;position:static;pointer-events:auto">
+          ${vbClarifyAllAnswered() ? `
+          <div style="font-size:1.6rem">✓</div>
+          <div>All inputs collected.</div>
+          <span>Every clarifying question has an answer — generate the Visio when you're ready.</span>
+          <button class="btn-primary" style="margin-top:10px" onclick="vbGenerateVisio()">Generate Visio</button>
+          ` : `
+          <svg class="vb-hourglass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M7 2c0 5 3.2 6.8 5 8 1.8-1.2 5-3 5-8M7 22c0-5 3.2-6.8 5-8 1.8 1.2 5 3 5 8"/></svg>
+          <div>Waiting for your inputs.</div>
+          <span>Answer the questions in the chat panel — the Visio can't be generated until every one is resolved.</span>
+          `}
         </div>
       </div>
     </div>
-    <div class="vb-statusbar">
-      <span>☁ Connected to Google Drive</span>
-      <span>·</span>
-      <span>File: Visio_Diagram_${((currentRequest&&currentRequest.brand)||'Campaign').replace(/[^a-zA-Z0-9]/g,'')}.vsdx (simulated)</span>
-      <span>·</span>
-      <span id="vbLastSaved">${diagramLastSavedAt ? 'All changes autosaved' : 'Not saved yet'}</span>
-      <span class="vb-statusbar-spacer"></span>
-      <button class="vb-link-btn" id="vbVersionBtn" onclick="vbToggleVersionHistory()">Version history</button>
-    </div>
-    <div class="vb-version-panel" id="vbVersionPanel" style="display:none"></div>
   </div>`;
 }
 
@@ -5238,7 +5755,6 @@ function renderOpsSectionCards(){
   return `
     <div class="section ops-section ${buDone?'submitted':''}" data-id="ops-bu-setup">
       <div class="sec-h">
-        <div class="sec-num">OPS</div>
         <div class="sec-ic">${buDone?'✓':'◔'}</div>
         <div class="sec-title">
           <h3>BU Setup</h3>
@@ -5253,7 +5769,6 @@ function renderOpsSectionCards(){
     </div>
     <div class="section ops-section ${visioBuilderOpen?'open':''}" data-id="ops-visio-builder">
       <div class="sec-h" onclick="toggleVisioBuilder()">
-        <div class="sec-num">OPS</div>
         <div class="sec-ic">⛓</div>
         <div class="sec-title">
           <h3>Visio Builder</h3>
@@ -5277,7 +5792,6 @@ function renderOpsDetailCard(id){
     return `<div class="sm-detail-card" data-id="ops-bu-setup">
       <div class="sm-detail-head">
         <div class="sm-detail-head-top">
-          <span class="sm-detail-num">OPS</span>
           <span class="sm-detail-title">${buDone?'✓':'◔'} BU Setup</span>
           <span class="sm-status-pill ${buDone?'sm-status-done':'sm-status-ns'}">${buDone?'Completed':'Not started'}</span>
         </div>
@@ -5293,7 +5807,6 @@ function renderOpsDetailCard(id){
   return `<div class="sm-detail-card" data-id="ops-visio-builder">
     <div class="sm-detail-head">
       <div class="sm-detail-head-top">
-        <span class="sm-detail-num">OPS</span>
         <span class="sm-detail-title">⛓ Visio Builder</span>
       </div>
       <div class="sm-detail-sub">Journey diagram (Visio) — stays open alongside the chat.</div>
@@ -5802,12 +6315,14 @@ function renderSectionListRows(rows){
 
 function selectDetailSection(id){
   openSectionId = id;
-  if(id==='ops-visio-builder' && !visioBuilderOpen){
+  const openingVisio = id==='ops-visio-builder' && !visioBuilderOpen;
+  if(openingVisio){
     visioBuilderOpen = true;
     loadVisioBuilderData();
   }
   autoShrinkFlowMap();
   renderSections();
+  if(openingVisio){ vbRenderAll(); vbPostClarifyIntroIfNeeded(); }
   // Same scroll behavior as scrollToSection() — clicking a row in the list
   // should bring the detail panel's header fully below the sticky app bar
   // the same way clicking a Your Focus item does, not just swap content in
@@ -5835,8 +6350,8 @@ function setSectionsViewMode(mode){
 // section objects with just enough shape (id/num/ic/name) for the list
 // renderer; their status/detail rendering is special-cased since they
 // aren't FormField-backed sections.
-function opsBuSetupRow(){ return { id:'ops-bu-setup', num:'OPS', ic: isBuSetupComplete()?'✓':'◔', name:'BU Setup' }; }
-function opsVisioRow(){ return { id:'ops-visio-builder', num:'OPS', ic:'⛓', name:'Visio Builder' }; }
+function opsBuSetupRow(){ return { id:'ops-bu-setup', num:'', ic: isBuSetupComplete()?'✓':'◔', name:'BU Setup' }; }
+function opsVisioRow(){ return { id:'ops-visio-builder', num:'', ic:'⛓', name:'Visio Builder' }; }
 
 // A crfGroup section's own name is just "Email"/"SMS"/"MDS Suppression" —
 // identical to its base section's name — because the underlying generator
@@ -5894,7 +6409,7 @@ function renderSections(){
       // during preplan instead of invisible until Planning.
       SECTIONS.filter(k=>k.parentId===s.id && !(useViews && k.crfGroup)).forEach(k=>rows.push({ section: k, indent: true }));
     }
-    if(s.id==='generic' && inDetailsView && currentPersona==='ops'){
+    if(s.id==='generic' && inDetailsView && (currentPersona==='ops' || vbIsApproverPersona(currentPersona))){
       rows.push({ section: opsBuSetupRow(), indent:false, ops:true });
       rows.push({ section: opsVisioRow(), indent:false, ops:true });
     }
@@ -5913,7 +6428,7 @@ function renderSections(){
         const kids = SECTIONS.filter(k=>k.parentId===s.id && !(useViews && k.crfGroup));
         if(kids.length) html += `<div class="sec-indent-group">${kids.map(k=>renderSectionAccordionCard(k)).join('')}</div>`;
       }
-      if(s.id==='generic' && inDetailsView && currentPersona==='ops') html += renderOpsSectionCards();
+      if(s.id==='generic' && inDetailsView && (currentPersona==='ops' || vbIsApproverPersona(currentPersona))) html += renderOpsSectionCards();
       return html;
     });
     document.getElementById('legacySectionsWrap').innerHTML = parts.join('');
@@ -6943,9 +7458,11 @@ function scrollToSection(id){
   const target = SECTIONS.find(s=>s.id===id);
   if(target) activeCrfView = target.crfGroup || 'details';
   else if(id.startsWith('ops-')) activeCrfView = 'details'; // BU Setup/Visio Builder aren't real SECTIONS entries, but only render in the CRF-details view
-  if(id==='ops-visio-builder' && !visioBuilderOpen){ visioBuilderOpen = true; loadVisioBuilderData(); }
+  const openingVisio2 = id==='ops-visio-builder' && !visioBuilderOpen;
+  if(openingVisio2){ visioBuilderOpen = true; loadVisioBuilderData(); }
   renderSections();
   if(id==='ops-visio-builder' && visioBuilderOpen) vbRenderAll();
+  if(openingVisio2) vbPostClarifyIntroIfNeeded();
   const el = document.querySelector(`[data-id="${id}"]`);
   if(!el) return;
   scrollBelowHeader(el);
@@ -7309,8 +7826,8 @@ function toggleVoiceInput(){
   voiceRecognition.lang = 'en-US';
   voiceRecognition.interimResults = false;
   voiceRecognition.continuous = false;
-  voiceRecognition.onstart = () => { voiceActive = true; btn.classList.add('recording'); btn.textContent = '🎤 Listening…'; };
-  voiceRecognition.onend = () => { voiceActive = false; btn.classList.remove('recording'); btn.textContent = '🎤 Speak'; };
+  voiceRecognition.onstart = () => { voiceActive = true; btn.classList.add('recording'); btn.title = 'Listening…'; };
+  voiceRecognition.onend = () => { voiceActive = false; btn.classList.remove('recording'); btn.title = 'Speak'; };
   voiceRecognition.onerror = (e) => { toast(`Voice input error: ${e.error}`); };
   voiceRecognition.onresult = (e) => {
     const text = Array.from(e.results).map(r=>r[0].transcript).join(' ');
@@ -7478,6 +7995,22 @@ function sendChat(text){
   // shortcuts below are relevant here, so branch off before reaching them.
   const inDiagramMode = visioBuilderOpen && (sectionsViewMode === 'sections' || openSectionId === 'ops-visio-builder');
   if(inDiagramMode){
+    // Clarifications block the diagram agent entirely — nothing to generate
+    // yet, and typing here should answer the open question if it takes free
+    // text, not silently fall through to the AI diagram editor.
+    if(!vbVisioReady && !vbClarifyAllAnswered()){
+      const q = VB_CLARIFY_QUESTIONS[vbClarifyStep];
+      const freeOpt = q.options.find(o=>o.freeText);
+      if(freeOpt) vbAnswerClarify(q.id, freeOpt.value, text.trim());
+      else body.innerHTML += `<div class="msg bot">Pick one of the options above to answer "${q.q}"</div>`;
+      body.scrollTop = body.scrollHeight;
+      return;
+    }
+    if(!vbVisioReady){
+      body.innerHTML += `<div class="msg bot">Every question is answered — click <b>Generate Visio</b> above to build the diagram.</div>`;
+      body.scrollTop = body.scrollHeight;
+      return;
+    }
     handleDiagramCommand(text, body);
     return;
   }
