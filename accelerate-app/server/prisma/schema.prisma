@@ -44,6 +44,21 @@ model FieldEntry {
   @@index([tactplanId, phase])
 }
 
+// Whether a section has been submitted (and is therefore locked read-only).
+// Values already survive a reload via FieldEntry above, but lock state used to
+// live only in an in-memory Set, so reloading silently unlocked every section
+// and the form disagreed with itself across a refresh. One row per section per
+// request, same keying as FieldEntry.
+model SectionState {
+  id         Int      @id @default(autoincrement())
+  tactplanId String
+  sectionId  String
+  submitted  Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tactplanId, sectionId])
+}
+
 // A persisted behavioral correction — govex's skill-authoring pattern
 // (lib/skillAuthoring.ts / CustomSkill), scoped to "how the agent should
 // behave" rather than campaign data. The agent itself decides when a
@@ -116,6 +131,14 @@ model FormField {
   condJson         String?     // e.g. {"audience":"hcp"}
   drives           String?
   cascadeFromField String?
+  // Source this field's value can be inferred from, so the interview never asks
+  // for something already answered elsewhere. Holds the source field's
+  // fieldKey ("1.1.3"). Distinct from cascadeFromField: that one mirrors live
+  // and is excluded from every count, whereas a derived value is only ever
+  // PROPOSED (one batch, one Confirm) and becomes a normal editable value once
+  // accepted — the client requires defaults be approved, not silently applied.
+  // For metasheet sub-fields the target is addressed as "Group label: Field".
+  derivesFrom      String?
   locked           Boolean     @default(false)
   lockedValue      String?
   wide             Boolean     @default(false)

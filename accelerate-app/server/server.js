@@ -232,6 +232,45 @@ app.get('/api/entries', async (req, res) => {
   res.json({ entries: rows });
 });
 
+// GET /api/section-state?tactplanId= -> which sections are submitted (locked).
+// Values already persist via /api/entries above; without this the lock state
+// lived only in the browser's memory, so a reload silently reopened every
+// section the user had submitted.
+app.get('/api/section-state', async (req, res) => {
+  const { tactplanId } = req.query;
+  if (!tactplanId) return res.status(400).json({ error: 'tactplanId is required.' });
+  try {
+    const rows = await prisma.sectionState.findMany({
+      where: { tactplanId: tactplanId.toString(), submitted: true },
+      select: { sectionId: true },
+    });
+    res.json({ submitted: rows.map(r => r.sectionId) });
+  } catch (err) {
+    console.error('[server] section-state read failed:', err);
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
+// POST /api/section-state — upsert one section's submitted flag.
+app.post('/api/section-state', async (req, res) => {
+  const { tactplanId, sectionId, submitted } = req.body || {};
+  if (!tactplanId || !sectionId) {
+    return res.status(400).json({ error: 'tactplanId and sectionId are required.' });
+  }
+  const flag = Boolean(submitted);
+  try {
+    await prisma.sectionState.upsert({
+      where: { tactplanId_sectionId: { tactplanId, sectionId } },
+      update: { submitted: flag },
+      create: { tactplanId, sectionId, submitted: flag },
+    });
+    res.json({ ok: true, sectionId, submitted: flag });
+  } catch (err) {
+    console.error('[server] section-state write failed:', err);
+    res.status(500).json({ error: String(err.message || err) });
+  }
+});
+
 // ===========================================================================
 // Schema-driven form structure (FormSection/FormField) — replaces the
 // hardcoded BASE_SECTIONS array that used to be the only source of truth,
@@ -262,11 +301,11 @@ app.get('/api/admin/export', async (req, res) => {
     include: { section: true },
     orderBy: [{ section: { order: 'asc' } }, { order: 'asc' }],
   });
-  const header = ['sectionId', 'sectionName', 'fieldKey', 'phase', 'label', 'type', 'owner', 'bucket', 'source', 'options', 'cond', 'drives', 'cascadeFromField', 'locked', 'lockedValue', 'wide'];
+  const header = ['sectionId', 'sectionName', 'fieldKey', 'phase', 'label', 'type', 'owner', 'bucket', 'source', 'options', 'cond', 'drives', 'cascadeFromField', 'derivesFrom', 'locked', 'lockedValue', 'wide'];
   const rows = fields.map((f) => [
     f.sectionId, f.section.name, f.fieldKey, f.phase, f.label, f.type, f.owner,
     f.bucket || '', f.source || '', f.optionsJson || '', f.condJson || '',
-    f.drives || '', f.cascadeFromField || '', f.locked, f.lockedValue || '', f.wide,
+    f.drives || '', f.cascadeFromField || '', f.derivesFrom || '', f.locked, f.lockedValue || '', f.wide,
   ]);
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   ws['!cols'] = [{ wch: 12 }, { wch: 26 }, { wch: 14 }, { wch: 9 }, { wch: 40 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, { wch: 24 }, { wch: 24 }, { wch: 20 }, { wch: 12 }, { wch: 16 }, { wch: 7 }, { wch: 14 }, { wch: 6 }];
@@ -402,7 +441,7 @@ app.delete('/api/admin/sections/:id', async (req, res) => {
 });
 
 app.post('/api/admin/sections/:id/fields', async (req, res) => {
-  const { fieldKey, phase, label, type, owner, bucket, source, opts, cond, drives, cascadeFromField, locked, lockedValue, wide, order } = req.body || {};
+  const { fieldKey, phase, label, type, owner, bucket, source, opts, cond, drives, cascadeFromField, derivesFrom, locked, lockedValue, wide, order } = req.body || {};
   if (!fieldKey || !phase || !label || !type || !owner) {
     return res.status(400).json({ error: 'fieldKey, phase, label, type, and owner are required.' });
   }
@@ -414,6 +453,7 @@ app.post('/api/admin/sections/:id/fields', async (req, res) => {
         optionsJson: opts ? JSON.stringify(opts) : null,
         condJson: cond ? JSON.stringify(cond) : null,
         drives: drives || null, cascadeFromField: cascadeFromField || null,
+        derivesFrom: derivesFrom || null,
         locked: !!locked, lockedValue: lockedValue || null, wide: !!wide,
         order: order ?? (await prisma.formField.count({ where: { sectionId: req.params.id } })),
       },
@@ -425,7 +465,7 @@ app.post('/api/admin/sections/:id/fields', async (req, res) => {
 });
 
 app.put('/api/admin/fields/:id', async (req, res) => {
-  const { fieldKey, phase, label, type, owner, bucket, source, opts, cond, drives, cascadeFromField, locked, lockedValue, wide, order } = req.body || {};
+  const { fieldKey, phase, label, type, owner, bucket, source, opts, cond, drives, cascadeFromField, derivesFrom, locked, lockedValue, wide, order } = req.body || {};
   try {
     const field = await prisma.formField.update({
       where: { id: req.params.id },
@@ -441,6 +481,7 @@ app.put('/api/admin/fields/:id', async (req, res) => {
         ...(cond !== undefined ? { condJson: cond ? JSON.stringify(cond) : null } : {}),
         ...(drives !== undefined ? { drives } : {}),
         ...(cascadeFromField !== undefined ? { cascadeFromField } : {}),
+        ...(derivesFrom !== undefined ? { derivesFrom: derivesFrom || null } : {}),
         ...(locked !== undefined ? { locked: !!locked } : {}),
         ...(lockedValue !== undefined ? { lockedValue } : {}),
         ...(wide !== undefined ? { wide: !!wide } : {}),
@@ -692,6 +733,39 @@ Progress & Guided-Fill skill — three behaviors, always driven by you, never a 
 
 1. Status reviews. If the user asks a "what's left / how am I doing / what's still needed" question, OR the message is the literal sentinel [[system:review_progress]] (a silent check-in fired by the UI after something changed — never show that literal text to the user), call get_missing_fields for the current phase and report what's outstanding in your own words, naming a few actual field labels, not just a count. If nothing is missing, say so briefly in one sentence and don't call the tool for nothing to report.
 2. Fill-from-text. Unchanged — the existing match_section / propose_fill flow above, for messages that describe values in free text.
+THE REQUIREMENTS INTERVIEW — this is your main job, and these rules come from the customer directly. Follow them exactly.
+
+Call get_interview_state at the start of any turn where you are gathering requirements. It tells you the current stage, what is still open in each stage, the next questions to ask (already prioritised — ask these, in this order, and do not substitute your own), and how many fields could be filled from answers already given.
+
+The stages run in order: Objective, Audience, Trigger & scope, Journey, Content, Data & technical. The order is not arbitrary — a handful of answers (# of Emails, # of SMS, # of touch points, audience, channels, asset scope, enrollment) decide which sections and fields exist at all. Getting them early is what stops you asking about things that turn out not to apply.
+
+CRITICAL — how to route a message that contains field values. ALWAYS try to match those values against stageOpen FIRST (it is in every get_interview_state result, and each entry carries its own sectionId). If they match, call propose_fill with that sectionId and do NOT call match_section at all. Only fall back to match_section when the message explicitly names a part of the form ("fill the CMA sheet", "in the Journey section") or when nothing in stageOpen matches.
+
+This matters because match_section works by finding a section NAME in the message, and people describing their campaign say "brand is Cosentyx, agency is Ogilvy" — they never say "Generic/Overview". Leading with match_section there produces a no-match, and you then either ask a pointless disambiguation question or drop good answers. Neither is acceptable: the sectionId was already in your hand.
+
+When the user answers with more than you asked for, capture ALL of it in one propose_fill. Match each value against stageOpen (the full set of open fields in this stage) — not just the handful in nextQuestions. Anything that matches nothing in stageOpen, say so explicitly instead of silently discarding it.
+
+If something they volunteered maps to a field that exists but is not open yet — check the blocked list from get_missing_fields, which gives the reason — tell them the specific reason ("Therapy isn't editable until the Planning stage") and that they will be asked for it then. Do NOT promise to remember or park a value: nothing stores it, and the user will re-supply it when that field opens. Being straight about that is better than an assurance the platform cannot honour.
+
+FORMATTING — the chat renders markdown, so use it. This matters as much as the content: a five-field turn written as one solid paragraph is unreadable.
+- One short lead-in line, then the fields as a markdown bullet list — one bullet per field, never a run-on sentence listing them.
+- Start each bullet with the field name in **bold**, exactly as it appears in nextQuestions, then an em dash, then a short plain-English description of what's wanted. Put any "usually comes from X" hint in *italics* at the end. So: "- **Campaign Type** — is this a one-off send or an always-on program? *usually from the TactPlan brief*".
+- Bold field names, values and counts when you mention them in prose too. Keep paragraphs to two or three sentences and use a blank line between them.
+- Do not use markdown headings (#) or tables — the chat column is narrow. Bullets, bold, italics and short paragraphs only.
+
+How to conduct it:
+- Ask the questions in nextQuestions — a small group at a time, never more than what that list gives you.
+- Never ask about technical or tactical detail while an earlier stage is still open. If the user volunteers something out of order, take it — capture it with propose_fill — and then return to where you were. Steer, don't refuse.
+- Ask a follow-up ONLY when an answer is incomplete or ambiguous. A clear answer gets recorded and you move on.
+- When a stage's remaining count reaches zero, say so, summarise in two or three sentences what that stage established (name the actual values), and confirm before starting the next stage. Keep that summary cumulative — the user should always be able to see the requirements taking shape.
+- Flag missing or unknown information explicitly rather than quietly skipping it.
+- For per-tactic work, finish one tactic completely before starting the next. The queue already enforces this; don't fight it by jumping between Email #1 and Email #2.
+- Never invent a value, and never apply a default because it seems reasonable. If you think a default applies, propose it and let the user approve it.
+
+Derived values. When get_interview_state reports derivableCount above zero, those are fields whose answers follow from what the user has ALREADY told you (Brand is restated in OMS and several times inside the CMA sheet, and so on). Call propose_derived_fills to stage them all at once, tell the user plainly what you are filling and where it came from, and let them confirm. Do this as soon as the count is non-zero — it is the single biggest reduction in questions you can offer. Never ask for a field one at a time when it could have been derived.
+
+0. The remaining list is authoritative. get_missing_fields returns two things: "remaining" (fields that are blank AND actually fillable right now) and "blocked" (fields that are blank but that the form is currently rendering read-only, each with a reason). NEVER ask the user to fill, and never call propose_fill or record_quiz_answer for, anything that is not in "remaining" — the write will be refused and you will have asked for something impossible. Only "remaining" counts toward any number you report. If the user brings up a blocked field themselves, say plainly why it can't be edited right now (submitted and read-only / filled in automatically by the platform / belongs to a different stakeholder / its phase isn't open yet) and point them at the section's Edit button where that applies. Don't volunteer the blocked list unprompted.
+
 3. Guided quiz. Triggered when the user asks to get started, be walked through what's left, or asks you to ask them one by one. Call get_missing_fields first. Then ask about exactly ONE missing field per turn, in plain conversational English (the same style as your normal prose — mention where the value usually comes from if you have that context). Wait for their reply. If it's an answer, call record_quiz_answer with that exact field and value, then ask about the next missing field in the same reply. If they say skip/pass/not sure, move to the next field without recording anything. If they ask an unrelated question or issue a correction mid-quiz, handle it with the normal tools first, then resume asking about the next missing field — don't lose your place. When nothing is left, close with a short, freshly-worded wrap-up sentence, not a template.
 
 Rules:
@@ -808,6 +882,16 @@ function buildToolDeclarations() {
       },
     },
     {
+      name: 'get_interview_state',
+      description: "Where the requirements interview stands: the current stage, per-stage progress, the next small group of questions to ask (already prioritised and capped), and how many fields could be filled from answers already given. Start every interview turn with this.",
+      input_schema: { type: 'object', properties: {}, required: [] },
+    },
+    {
+      name: 'propose_derived_fills',
+      description: "Stage every field that can be inferred from answers already given (e.g. Brand restated across OMS and the CMA sheet) as ONE batch for the user to confirm. Does not write. Call when get_interview_state reports a non-zero derivable count.",
+      input_schema: { type: 'object', properties: {}, required: [] },
+    },
+    {
       name: 'record_quiz_answer',
       description: "Record one field's answer immediately during a guided quiz — no staging, no confirm step. Only for an answer to a question you just asked about that exact field.",
       input_schema: {
@@ -910,7 +994,25 @@ async function executeTool(name, args, ctx) {
   if (name === 'get_missing_fields') {
     const remaining = Array.isArray(ctx.remaining) ? ctx.remaining : [];
     const filtered = args.sectionId ? remaining.filter(r => r.sectionId === args.sectionId) : remaining;
-    return { remaining: filtered, count: filtered.length };
+    // `blocked` is empty-but-unfillable: fields the user owns that are still
+    // blank but that the form is currently rendering read-only. They are NOT
+    // part of the count — they exist so the reason can be explained if asked.
+    return { remaining: filtered, count: filtered.length, blocked: ctx.blocked || [] };
+  }
+  if (name === 'get_interview_state') {
+    if (!ctx.interview) return { error: 'No campaign request is open.' };
+    return ctx.interview;
+  }
+  if (name === 'propose_derived_fills') {
+    const derived = ctx.derived || [];
+    if (derived.length === 0) return { proposed: false, count: 0, note: 'Nothing can be derived yet.' };
+    // Grouped per section because the client's proposal card is per-section —
+    // one card each, all confirmable, rather than one mixed card that can't map
+    // its rows back to fields.
+    const bySection = {};
+    derived.forEach(d => { (bySection[d.sectionId] = bySection[d.sectionId] || { sectionId: d.sectionId, sectionName: d.sectionName, assignments: [] })
+      .assignments.push({ field: d.field, value: d.value }); });
+    return { proposed: true, derived: true, count: derived.length, groups: Object.values(bySection) };
   }
   if (name === 'record_quiz_answer') {
     const section = ctx.sections.find(s => s.id === args.sectionId);
@@ -989,7 +1091,7 @@ async function runAgentTurn({ system, tools, messages, execute, ctx, send, onRes
 // propose_fill result, ready for the client's existing Confirm/Cancel card),
 // "final" (closing text), "error".
 app.post('/api/agent-fill', async (req, res) => {
-  const { sections, text, history, tactplanId, remaining, persona, phase } = req.body || {};
+  const { sections, text, history, tactplanId, remaining, blocked, interview, derived, persona, phase } = req.body || {};
   if (!ai) return res.status(503).json({ error: 'ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not configured on the server.' });
   if (!Array.isArray(sections) || sections.length === 0 || !text) {
     return res.status(400).json({ error: 'sections[] and text are required.' });
@@ -1009,6 +1111,9 @@ app.post('/api/agent-fill', async (req, res) => {
   const ctx = {
     sections, originalText: text, tactplanId: tactplanId || null,
     remaining: Array.isArray(remaining) ? remaining : [],
+    blocked: Array.isArray(blocked) ? blocked : [],
+    interview: interview || null,
+    derived: Array.isArray(derived) ? derived : [],
     persona: persona || null, phase: phase || null,
   };
 
@@ -1029,6 +1134,11 @@ app.post('/api/agent-fill', async (req, res) => {
       send,
       onResult: (name, result) => {
         if (name === 'propose_fill' && result?.proposed) send('proposal', result);
+        // One card per section, each flagged `derived` so the client can label
+        // it as inferred rather than as something the user just typed.
+        if (name === 'propose_derived_fills' && result?.proposed) {
+          (result.groups || []).forEach(g => send('proposal', { ...g, derived: true }));
+        }
         if (name === 'learn_skill' && result?.learned) send('learned', result);
         if (name === 'navigate_stage' && result?.navigated) send('navigate', result);
         if (name === 'record_quiz_answer' && result?.applied) send('quiz_answer', result);
@@ -1042,6 +1152,84 @@ app.post('/api/agent-fill', async (req, res) => {
     console.error('[server] Agent turn failed:', err);
     send('error', { error: 'Agent turn failed.', detail: String(err.message || err) });
     res.end();
+  }
+});
+
+// ===========================================================================
+// Home agent — the assistant on the campaign-hub screen. No request is open
+// there, so it has no form to fill: its job is to answer across the whole
+// portfolio and to open the campaign the user is asking about. Deliberately a
+// single non-streaming turn rather than the SSE tool loop, because it reasons
+// over one small array the client already has in memory; there is nothing to
+// look up and nothing to stage, so streaming would add machinery for no gain.
+// ===========================================================================
+const HOME_SYSTEM_PROMPT = `You are the Novartis Accelerate assistant on the campaign hub — the screen listing every campaign request. If asked what you are, answer as the platform's assistant; never describe yourself as a large language model or name the vendor behind you.
+
+You are given the user's role and a JSON array of every campaign request: id (the TactPlan ID), name, brand, phase, assignedToMe, yourAction, owners. That array is ALL you know. It is portfolio-level only — it does NOT contain the individual form field values inside a campaign.
+
+What you do:
+- Answer questions about the portfolio: what needs their input, what's in which phase, what's assigned to them, which brands are in flight. Ground every answer in the array; never invent a campaign, a date, or a status.
+- When the user names or clearly points at one campaign ("open Kisqali", "the Cosentyx one", "TP-88213"), resolve it to that request's id and return it so the platform can open it.
+- If a question needs detail inside a campaign (specific field values, what's filled in), say plainly that you'd need to open that campaign first, and offer to open it.
+- If nothing matches what they asked for, say so rather than guessing at the nearest campaign.
+
+How to write:
+- The chat renders markdown. Use a short lead-in line, then a bullet list when naming more than two campaigns, with the campaign name in **bold**. Keep it to a few sentences plus the list. No headings, no tables.
+- Never use an em dash. Use a regular hyphen.
+
+NEW CAMPAIGN INTAKE. When an "intake" object is present, you are collecting the details needed to create a campaign request, and that is your only job for the turn. It gives you: fields (id, label, hint, options), values collected so far, derived (things the platform worked out itself), and missing (the field ids still needed).
+
+- Ask for the FIRST field in "missing", one field per turn. Name it in **bold**, add a short plain-English line about what it is. If it has options, list them.
+- Read the user's reply generously. If they answer more than you asked ("it's branded, for HCPs in oncology"), capture all of it. If their answer is unusable for the field you asked about, say why and ask again rather than guessing.
+- Put everything you understood into "captured", keyed by field id. For a field with options, the value MUST be one of those options verbatim. Never put a value in "captured" that the user did not give you.
+- If "derived" contains an entry, the platform already worked that field out. Say so in one short sentence with the reason given, do not ask for it, and move to the next missing field in the same reply.
+- When the message is the literal [[intake:start]], that is the user clicking "Start a new campaign", not something they typed. Open with one short line saying you'll take them through it, then ask the first field. Do not echo the sentinel.
+- Do not announce that the campaign has been created. The platform creates it once every field is in and tells the user itself.
+
+Reply with ONLY a JSON object, no prose around it, no code fence:
+{"text": "<your reply in markdown>", "open": "<TactPlan id to open, or null>", "captured": {"<field id>": "<value>"}}
+Set "open" only when the user actually wants to go to that campaign now, not merely because you mentioned it. Include "captured" only during an intake; leave it out otherwise.`;
+
+app.post('/api/home-agent', async (req, res) => {
+  const { text, history, requests, persona, intake } = req.body || {};
+  if (!ai) return res.status(503).json({ error: 'ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not configured on the server.' });
+  if (!text) return res.status(400).json({ error: 'text is required.' });
+
+  const list = Array.isArray(requests) ? requests : [];
+  const messages = (Array.isArray(history) ? history : []).concat([{
+    role: 'user',
+    content: `Viewing as: ${persona || 'unknown role'}\n`
+      + `Campaign requests:\n${JSON.stringify(list)}\n`
+      + (intake ? `\nintake:\n${JSON.stringify(intake)}\n` : '')
+      + `\nMessage: ${text}`,
+  }]);
+
+  try {
+    const response = await ai.messages.create({
+      model: MODEL, max_tokens: 1400, system: HOME_SYSTEM_PROMPT, messages,
+    });
+    const raw = (response.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+
+    // The model is asked for bare JSON, but occasionally wraps it in a fence or
+    // a sentence. Recover the object rather than failing the turn over syntax.
+    let parsed = null;
+    try { parsed = JSON.parse(raw); }
+    catch { const m = raw.match(/\{[\s\S]*\}/); if (m) { try { parsed = JSON.parse(m[0]); } catch {} } }
+
+    const reply = parsed && typeof parsed.text === 'string' ? parsed.text : raw;
+    // Only honour an id that actually exists in what the client sent — the
+    // model must never be able to navigate somewhere that isn't on this list.
+    const wanted = parsed && parsed.open ? String(parsed.open) : null;
+    const open = wanted && list.some(r => r.id === wanted) ? wanted : null;
+
+    res.json({
+      text: reply, open,
+      captured: parsed && parsed.captured && typeof parsed.captured === 'object' ? parsed.captured : null,
+      history: messages.concat([{ role: 'assistant', content: response.content }]),
+    });
+  } catch (err) {
+    console.error('[server] Home agent turn failed:', err);
+    res.status(500).json({ error: 'Agent turn failed.', detail: String(err.message || err) });
   }
 });
 

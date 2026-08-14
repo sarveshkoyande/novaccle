@@ -247,10 +247,106 @@ input,select,textarea,button{border-radius:0}
 .new-btn:active{background:var(--accent-active);border-color:var(--accent-active);transform:translateY(0)}
 .new-btn .plus{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:var(--t-14);line-height:1;font-weight:400}
 
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:16px 18px;box-shadow:none;transition:border-color .15s ease,transform .15s ease;animation:rt-row-in .3s ease backwards}
-.stat-card:nth-child(1){animation-delay:0ms} .stat-card:nth-child(2){animation-delay:40ms}
-.stat-card:nth-child(3){animation-delay:80ms} .stat-card:nth-child(4){animation-delay:120ms}
+/* ---- AGENT-FIRST HOME -------------------------------------------------
+   Agent on the left at the larger weight, portfolio numbers and campaign
+   list stacked down the right rail. Asymmetric on purpose: the agent is the
+   thing you're meant to reach for, the rail is reference. Collapses to a
+   single column below 1100px with the agent still first. */
+/* The home screen occupies the viewport under the app bar and does not scroll
+   as a page: the agent's composer has to be reachable the moment you land,
+   without hunting for it. Each column scrolls inside itself instead. Same
+   arrangement the campaign view already uses, where the chat is pinned
+   full-height beside a form that scrolls on its own. */
+body[data-view="landing"] .stage{padding:0;margin-right:0;height:calc(100dvh - 60px);overflow:hidden}
+/* .view.on is display:block with auto height, so .hm-grid's height:100% had
+   nothing to resolve against and the grid grew past the stage instead of
+   fitting inside it. On a 768px-tall laptop that pushed the composer below
+   the fold, which is the whole thing this layout exists to prevent. */
+body[data-view="landing"] #view-landing{height:100%;min-height:0}
+/* 45 / 55 in favour of the rail: the agent is the thing you act through, but
+   the numbers and the campaign list are what you scan, and scanning needs the
+   wider column. */
+.hm-grid{display:grid;grid-template-columns:minmax(0,45fr) minmax(420px,55fr);height:100%;min-height:0}
+.hm-rail{display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0;overflow-y:auto;padding:16px 18px}
+
+/* The agent panel borrows the campaign chat's chrome and gradient body
+   verbatim, so opening a campaign reads as the same window continuing
+   rather than a second, unrelated assistant. */
+/* Full-bleed, not a card: it runs from the app bar to the bottom of the
+   window and hard against the left edge, the way the campaign chat does.
+   A border and a gap here made it read as a widget sitting on a page. */
+.hm-agent{display:flex;flex-direction:column;min-height:0;background:var(--surface);border-right:1px solid var(--line)}
+.hm-agent-head{display:flex;align-items:center;gap:11px;padding:14px 22px;border-bottom:1px solid var(--line);background:var(--surface);flex-shrink:0}
+.hm-agent-mark{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;background:var(--ai-tint);color:var(--nv-space-orange);font-size:var(--t-15)}
+.hm-agent-head h3{font-size:var(--t-14);font-weight:800;letter-spacing:var(--tracking)}
+.hm-agent-head p{font-size:var(--t-12);color:var(--ink3);font-weight:600;margin-top:1px}
+.hm-agent-body{flex:1;min-height:0;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(rgba(252,252,252,.6),rgba(252,252,252,.6)),url('gradient-chat.jpg') center/cover fixed,var(--surface2)}
+/* flex-shrink:0 so the composer keeps its height and stays on screen no
+   matter how long the conversation above it grows. */
+.hm-agent-input{flex-shrink:0;border-top:1px solid var(--line);padding:12px 18px;background:var(--surface)}
+/* No attach/mic here (nothing to attach to without an open campaign), so the
+   lone send button is pushed right rather than left-floating under the field. */
+.hm-agent-input .cp-input-tools{justify-content:flex-end}
+
+/* Centred greeting. No avatar or mascot: the ✦ mark is the agent's identity
+   everywhere else in this app, and a character here would be the only one. */
+.hm-welcome{margin:auto 0;text-align:center;padding:8px 2px}
+.hm-welcome .hm-w-mark{width:44px;height:44px;margin:0 auto 14px;display:grid;place-items:center;background:var(--ai-tint);color:var(--nv-space-orange);font-size:var(--t-20)}
+.hm-welcome h4{font-family:var(--font-medium);font-weight:var(--fw-medium);font-size:var(--t-16);color:var(--ink);letter-spacing:var(--tracking)}
+.hm-welcome p{font-size:var(--t-13);line-height:1.6;color:var(--ink2);margin:8px auto 0;max-width:44ch;font-weight:var(--fw-body)}
+.hm-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:16px;text-align:left}
+.hm-action{background:var(--surface);border:1px solid var(--line);padding:11px 13px;cursor:pointer;
+  transition:border-color var(--dur-1) var(--ease-out),background-color var(--dur-1) var(--ease-out),transform var(--dur-1) var(--ease-out)}
+.hm-action:hover{border-color:var(--nv-space-orange);background:var(--ai-tint)}
+.hm-action:active{transform:scale(.985)}
+.hm-action b{display:block;font-size:var(--t-12);font-weight:800;color:var(--ink)}
+.hm-action span{display:block;font-size:var(--t-11);color:var(--ink3);margin-top:3px;font-weight:600;line-height:1.45}
+
+.hm-list{background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.hm-list-head{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.hm-list-head h4{font-size:var(--t-13);font-weight:800;letter-spacing:var(--tracking);white-space:nowrap}
+.hm-list-head .search-input{flex:1;min-width:0}
+.hm-list .filter-row{margin:0;padding:11px 16px;border-bottom:1px solid var(--line2);gap:6px;flex-wrap:wrap}
+/* Fixed page size, so no inner scroll: the list is exactly five rows tall and
+   the pager sits under it rather than below a scroll well. */
+.hm-list .req-table{border:none}
+
+.rp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid var(--line2);background:var(--surface)}
+.rp-count{font-size:var(--t-11);color:var(--ink3);font-weight:600}
+.rp-count b,.rp-page b{color:var(--ink);font-weight:800}
+.rp-page{margin-left:auto;font-size:var(--t-11);color:var(--ink3);font-weight:600}
+.rp-nav{display:flex;align-items:center;gap:3px}
+.rp-btn{min-width:26px;height:26px;padding:0 6px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);
+  font-size:var(--t-11);font-weight:700;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.rp-btn:hover:not(:disabled){border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.rp-btn:active:not(:disabled){transform:scale(.94)}
+.rp-btn.on{background:var(--nv-warm-black);border-color:var(--nv-warm-black);color:var(--nv-soft-white)}
+.rp-btn:disabled{opacity:.35;cursor:default}
+.rp-gap{padding:0 2px;font-size:var(--t-11);color:var(--ink4)}
+/* The rail is narrower than the old full-width table. The owner avatars are
+   the one column that repeats information the campaign already implies, so
+   they're dropped here rather than crushed; the header row goes with them
+   since three labelled columns don't need a header. */
+.hm-list .rt-head{display:none}
+.hm-list .rt-row{grid-template-columns:minmax(0,1.9fr) minmax(0,.95fr) minmax(0,1fr) 34px;gap:12px;padding:11px 16px}
+.hm-list .rt-row > .rt-owners{display:none}
+/* The id belongs to the campaign, so it sits under the name rather than beside
+   it: side by side in this width it wrapped mid-token ("TP-" / "87699"). */
+.hm-list .rt-camp{display:block;min-width:0}
+.hm-list .rt-camp .rt-id{font-size:var(--t-11);color:var(--ink3);margin-top:2px;font-weight:600}
+
+@media (max-width:1100px){
+  .hm-grid{grid-template-columns:1fr}
+  .hm-agent{min-height:420px}
+  .hm-list .req-table{max-height:none}
+}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:16px 18px;box-shadow:none;
+  transition:border-color var(--dur-1) var(--ease-out),transform var(--dur-1) var(--ease-out);
+  animation:rt-row-in var(--dur-3) var(--ease-out) backwards;animation-delay:calc(var(--i,0) * 40ms)}
 .stat-card:hover{border-color:var(--nv-space-orange);transform:translateY(-1px)}
 @media (prefers-reduced-motion:reduce){.stat-card{animation:none}}
 .stat-card .sc-lbl{font-size:var(--t-11);font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:6px}
@@ -597,6 +693,7 @@ input,select,textarea,button{border-radius:0}
 .admin-drawer-grid label.wide{grid-column:1/-1}
 .admin-drawer-actions{display:flex;gap:8px;margin-top:14px}
 .admin-drawer-check{flex-direction:row!important;align-items:center;gap:8px!important}
+.admin-hint{display:block;margin-top:4px;font-size:11px;line-height:1.5;color:var(--ink2);font-weight:400}
 /* Narrow single-column layout for the side edit panel (30vw, same slot the
    Requirement agent chat normally occupies) — the 3-column drawer grid used
    inline in the fields table is too cramped at that width. */
@@ -629,9 +726,15 @@ input,select,textarea,button{border-radius:0}
 .admin-cond-add:hover{border-color:var(--brand);color:var(--brand)}
 
 .req-table{background:var(--surface);border:1px solid var(--line);border-radius:0;overflow:hidden;box-shadow:none}
-.rt-head,.rt-row{display:grid;grid-template-columns:2.4fr 1fr 1.3fr 1.2fr 1.4fr 60px;gap:16px;padding:12px 20px;align-items:center;min-height:52px}
+.rt-head,.rt-row{display:grid;grid-template-columns:minmax(0,2.4fr) 1.2fr 1.2fr 1.4fr 60px;gap:16px;padding:12px 20px;align-items:center;min-height:52px}
 .rt-head{background:var(--surface2);border-bottom:1px solid var(--line);font-size:var(--t-11);font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);min-height:36px}
-.rt-row{border-bottom:1px solid var(--line2);border-left:1px solid transparent;cursor:pointer;transition:background .15s ease,border-color .15s ease;animation:rt-row-in .25s ease backwards}
+/* Was `transition:background .15s ease` + `animation:.25s ease`: bare `ease`
+   starts slow, which on a row you hover dozens of times a session reads as
+   lag. Same curves and durations the rest of the app already uses, and the
+   row entrance staggers off --i rather than a per-child nth-child list. */
+.rt-row{border-bottom:1px solid var(--line2);border-left:1px solid transparent;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out);
+  animation:rt-row-in var(--dur-2) var(--ease-out) backwards;animation-delay:calc(var(--i,0) * 28ms)}
 .rt-empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:var(--t-14);font-weight:600}
 .rt-row:last-child{border-bottom:none}
 .rt-row:hover{background:var(--surface2);border-left-color:var(--nv-space-orange)}
@@ -842,7 +945,9 @@ input,select,textarea,button{border-radius:0}
 .you-focus-msg .yf-i:hover{background:var(--line2)}
 .you-focus-msg .yf-i .yf-n{width:18px;height:18px;border-radius:50%;background:var(--ai-tint);color:var(--ai-dk);display:grid;place-items:center;font-size:10px;font-weight:800;flex-shrink:0}
 .you-focus-msg .yf-i .yf-c{margin-left:auto;font-size:11px;background:transparent;border:1px solid transparent;padding:2px 8px;border-radius:0;font-weight:700;color:var(--nv-space-orange)}
-.you-focus-msg.stale{opacity:.45;pointer-events:none}
+/* `.stale` is gone with the copies it existed to dim: there is one live Your
+   Focus card now, moved to the end of the thread on repost rather than
+   duplicated, so no recap can fall out of date behind a newer one. */
 .yf-crf-block{display:flex;flex-direction:column;gap:4px}
 .yf-crf-sub{font-size:11px;color:var(--ink3);line-height:1.5;padding:4px 10px 2px}
 .yf-crf-sub b{color:var(--ink2);display:block;margin-bottom:3px}
@@ -997,6 +1102,32 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .msg.bot{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--nv-space-orange);color:var(--ink);align-self:flex-start}
 .msg.usr{background:var(--nv-warm-black);color:var(--nv-soft-white);align-self:flex-end}
 .msg b{font-weight:800}
+/* ---- Rich agent replies -------------------------------------------------
+   The model writes markdown. Until this existed it went into innerHTML raw,
+   so "**24 fields**" rendered with the asterisks showing and a six-question
+   turn arrived as one unbroken paragraph. renderBotMarkdown() converts it;
+   these rules give the result a readable shape: questions as an indented
+   list, the field name visually separated from the prose around it. */
+.msg.bot p{margin:0 0 9px}
+.msg.bot p:last-child{margin-bottom:0}
+.msg.bot ul,.msg.bot ol{margin:8px 0 10px;padding-left:0;list-style:none}
+.msg.bot ul:last-child,.msg.bot ol:last-child{margin-bottom:2px}
+/* Each asked field is its own indented row with an orange tick in the gutter,
+   so a group of five reads as five things to answer rather than a paragraph. */
+.msg.bot li{position:relative;margin:0 0 7px;padding-left:16px;line-height:1.55}
+.msg.bot li:last-child{margin-bottom:0}
+.msg.bot li::before{content:'';position:absolute;left:2px;top:.55em;width:5px;height:5px;background:var(--nv-space-orange);opacity:.55}
+.msg.bot ol{counter-reset:botstep}
+.msg.bot ol li{counter-increment:botstep;padding-left:22px}
+.msg.bot ol li::before{content:counter(botstep);top:0;left:0;width:auto;height:auto;background:none;opacity:1;font-size:11px;font-weight:800;color:var(--nv-space-orange)}
+/* The field being asked about — the one thing to scan for. */
+.msg.bot strong{font-weight:800;color:var(--ink)}
+.msg.bot li strong:first-child{display:inline-block;color:var(--nv-space-orange);letter-spacing:.01em}
+/* Supporting description / where the value comes from — deliberately quieter
+   than the field name so the two never read as the same weight of thing. */
+.msg.bot em{font-style:normal;color:var(--ink3);font-size:12px}
+.msg.bot code{font-family:var(--font-mono,ui-monospace,monospace);font-size:11.5px;background:var(--surface3);padding:1px 5px;color:var(--ink2)}
+.msg.bot hr{border:none;border-top:1px solid var(--line2);margin:10px 0}
 .msg.bot.thinking{background:transparent;border:none;color:var(--ink3);font-style:italic;font-size:12px;padding:2px 14px;box-shadow:none}
 /* Shown between hitting send and the first streamed event — a few seconds on
    every turn, so it stays quiet: three small dots on a stagger, no spinner,
@@ -1805,48 +1936,82 @@ body[data-view="request"][data-list="compact"] .sm-detail-panel{top:calc(60px + 
 
 <!-- ============ VIEW: LANDING ============ -->
 <div class="view on" id="view-landing">
-  <div class="hero">
-    <div class="hero-l">
-      <h1 id="heroTitle">Campaign requests</h1>
-    </div>
-    <div class="hero-r">
-      <button class="new-btn" onclick="startNewRequest()">
-        <span class="plus">+</span>
-        <span>New campaign request</span>
-      </button>
+  <!-- No page title or hero action here on purpose: the agent introduces the
+       screen by name, and "Start a new campaign" is one of its quick actions,
+       so a heading and a button repeating both would only push the agent down
+       the page. The screen fills the viewport under the app bar instead. -->
+
+  <!-- Agent-first home. The agent is the primary surface (left, larger), with
+       the portfolio numbers and the campaign list stacked down the right rail.
+       The agent panel deliberately reuses the campaign chat's window chrome and
+       gradient body so moving from here into a campaign feels like the same
+       object continuing, not a different product. -->
+  <div class="hm-grid">
+
+    <section class="hm-agent" id="hmAgent" aria-label="Campaign agent">
+      <div class="hm-agent-head">
+        <span class="hm-agent-mark" aria-hidden="true">✦</span>
+        <div>
+          <h3>Campaign Navigator</h3>
+          <p>Ask across every campaign, or start a new one</p>
+        </div>
+      </div>
+      <div class="hm-agent-body" id="hmAgentBody">
+        <div class="hm-welcome" id="hmWelcome"></div>
+      </div>
+      <div class="hm-agent-input">
+        <div class="cp-input">
+          <textarea id="hmInput" rows="1" placeholder="Ask about your campaigns, or name one to open it…"
+            oninput="autoGrowChatInput(this)"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendHomeChat(this.value)}"></textarea>
+          <div class="cp-input-tools">
+            <button class="send" id="hmSendBtn" onclick="sendHomeChat(document.getElementById('hmInput').value)" aria-label="Send" disabled>▲</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="hm-rail">
+      <div class="stats" id="hmStats">
+        <div class="stat-card" style="--i:0">
+          <div class="sc-lbl"><span class="sc-ico sc-a">◆</span><span>Total active</span></div>
+          <div class="sc-num">14</div><div class="sc-sub">across 6 brands</div>
+        </div>
+        <div class="stat-card" style="--i:1">
+          <!-- Counts REQUESTS assigned to this persona (r.mineTo), not fields.
+               A field-level number here would mean loading every request's values;
+               the label says requests so it stops implying a count it can't compute. -->
+          <div class="sc-lbl"><span class="sc-ico sc-b">⏱</span><span>Requests assigned to me</span></div>
+          <div class="sc-num" id="statMine">3</div><div class="sc-sub" id="statMineSub">2 planning · 1 execution</div>
+        </div>
+        <div class="stat-card" style="--i:2">
+          <div class="sc-lbl"><span class="sc-ico sc-d">✦</span><span>AI-drafted values</span></div>
+          <div class="sc-num">327</div><div class="sc-sub">this quarter · 82% confirmed unchanged</div>
+        </div>
+        <div class="stat-card" style="--i:3">
+          <div class="sc-lbl"><span class="sc-ico sc-c">✓</span><span>Live campaigns</span></div>
+          <div class="sc-num">28</div><div class="sc-sub">Q3 2026 · avg cycle 21 days</div>
+        </div>
+      </div>
+
+      <section class="hm-list" aria-label="Campaigns">
+        <div class="hm-list-head">
+          <h4>Campaigns</h4>
+          <div class="search-input"><input id="reqSearch" placeholder="Search brand, TactPlan ID, name…" oninput="reqPage=1;renderRequestsTable()"></div>
+        </div>
+        <div class="filter-row">
+          <button class="filt on" onclick="setFilt(this,'all')">All <span class="n" id="filtAll">14</span></button>
+          <button class="filt" onclick="setFilt(this,'mine')">Assigned to me <span class="n" id="filtMine">3</span></button>
+          <button class="filt" onclick="setFilt(this,'preplan')">Pre-planning <span class="n" id="filtPreplan">4</span></button>
+          <button class="filt" onclick="setFilt(this,'plan')">Planning <span class="n" id="filtPlan">7</span></button>
+          <button class="filt" onclick="setFilt(this,'exec')">Execution <span class="n" id="filtExec">3</span></button>
+          <button class="filt" onclick="setFilt(this,'completed')">Completed <span class="n" id="filtCompleted">2</span></button>
+        </div>
+        <div class="req-table" id="reqTable"></div>
+        <div class="rp-bar" id="reqPager"></div>
+      </section>
     </div>
   </div>
-
-  <div class="stats">
-    <div class="stat-card">
-      <div class="sc-lbl"><span class="sc-ico sc-a">◆</span><span>Total active</span></div>
-      <div class="sc-num">14</div><div class="sc-sub">across 6 brands</div>
-    </div>
-    <div class="stat-card">
-      <div class="sc-lbl"><span class="sc-ico sc-b">⏱</span><span>Needing my input</span></div>
-      <div class="sc-num" id="statMine">3</div><div class="sc-sub" id="statMineSub">2 planning · 1 execution</div>
-    </div>
-    <div class="stat-card">
-      <div class="sc-lbl"><span class="sc-ico sc-d">✦</span><span>AI-drafted values</span></div>
-      <div class="sc-num">327</div><div class="sc-sub">this quarter · 82% confirmed unchanged</div>
-    </div>
-    <div class="stat-card">
-      <div class="sc-lbl"><span class="sc-ico sc-c">✓</span><span>Live campaigns</span></div>
-      <div class="sc-num">28</div><div class="sc-sub">Q3 2026 · avg cycle 21 days</div>
-    </div>
-  </div>
-
-  <div class="filter-row">
-    <button class="filt on" onclick="setFilt(this,'all')">All <span class="n" id="filtAll">14</span></button>
-    <button class="filt" onclick="setFilt(this,'mine')">Needing my input <span class="n" id="filtMine">3</span></button>
-    <button class="filt" onclick="setFilt(this,'preplan')">Pre-planning <span class="n" id="filtPreplan">4</span></button>
-    <button class="filt" onclick="setFilt(this,'plan')">Planning <span class="n" id="filtPlan">7</span></button>
-    <button class="filt" onclick="setFilt(this,'exec')">Execution <span class="n" id="filtExec">3</span></button>
-    <button class="filt" onclick="setFilt(this,'completed')">Completed <span class="n" id="filtCompleted">2</span></button>
-    <div class="search-input"><input id="reqSearch" placeholder="Search by brand, TactPlan ID, campaign name…" oninput="renderRequestsTable()"></div>
-  </div>
-
-  <div class="req-table" id="reqTable"></div>
 </div>
 
 <!-- ============ VIEW: REQUEST DETAIL ============ -->
@@ -2211,6 +2376,213 @@ function renderChatWelcome(){
 function focusChatInput(){
   const input = document.getElementById('chatInput');
   if(input) input.focus();
+}
+
+/* ============ HOME AGENT ============
+   The home screen's agent. Same window chrome and gradient as the campaign
+   chat so the two read as one assistant, but a different job: there is no
+   open request here, so it answers across the portfolio (REQUESTS, already
+   in memory) and opens campaigns, rather than filling fields. */
+function buildHomeWelcomeHTML(){
+  const p = PERSONAS[currentPersona] || { name: 'there' };
+  const mine = REQUESTS.filter(r => r.mineTo.includes(currentPersona)).length;
+  return `<div class="hm-welcome" id="hmWelcome">
+      <div class="hm-w-mark" aria-hidden="true">✦</div>
+      <h4>Hello, ${escapeHtml(p.name)}</h4>
+      <p>${mine
+        ? `You have <b>${mine}</b> campaign${mine>1?'s':''} assigned to you. Ask me anything about them, or start something new.`
+        : `Nothing is assigned to you right now. Ask me about any campaign, or start something new.`}</p>
+      <div class="hm-actions">
+        <button class="hm-action" onclick="startCampaignIntake()">
+          <b>Start a new campaign</b><span>I'll ask you for the details</span></button>
+        <button class="hm-action" onclick="sendHomeChat('What needs my input right now?')">
+          <b>What needs my input</b><span>Across every campaign</span></button>
+        <button class="hm-action" onclick="sendHomeChat('Summarise where my campaigns stand')">
+          <b>Where things stand</b><span>A quick portfolio read</span></button>
+      </div>
+    </div>`;
+}
+
+function renderHomeWelcome(){
+  const body = document.getElementById('hmAgentBody');
+  if(body) body.innerHTML = buildHomeWelcomeHTML();
+}
+
+// Compact portfolio snapshot — what the agent is allowed to reason over.
+// Deliberately only what's already in memory: no per-campaign field values,
+// so opening the home screen stays instant.
+function buildHomePayload(){
+  return REQUESTS.map(r => ({
+    id: r.id, name: r.name, brand: r.brand, phase: r.phaseLabel,
+    assignedToMe: r.mineTo.includes(currentPersona),
+    yourAction: (r.actionText && r.actionText[currentPersona]) || '',
+    owners: (r.owners||[]).map(o => (PERSONAS[o]||{}).role || o),
+  }));
+}
+
+/* ---- CONVERSATIONAL INTAKE ---------------------------------------------
+   The New Campaign Request modal's questions, asked one at a time in the
+   chat instead. The field list, the validation and the creation stay here on
+   the client; the agent only conducts the conversation. That split matters:
+   the model is good at reading "it's branded, for HCPs" as two answers, and
+   bad at being the thing that decides a record is complete enough to create. */
+const INTAKE_FIELDS = [
+  { id:'tactplanId',      label:'TactPlan ID',        hint:'the identifier from TactPlan, e.g. TP-88500' },
+  { id:'agency',          label:'Agency',             hint:'the agency running this campaign' },
+  { id:'brand',           label:'Brand',              hint:'the product this campaign is for' },
+  { id:'indication',      label:'Indication',         hint:'the disease or condition being addressed' },
+  { id:'brandedUnbranded',label:'Branded / Unbranded',options:['Branded','Unbranded'] },
+  { id:'audience',        label:'Audience',           hint:'who it targets, e.g. HCP - Medical oncology' },
+  { id:'assetScopeLabel', label:'Asset Scope',        options:['Update Existing Campaign','New Brand Launch','New Indication Launch'] },
+  { id:'campaignName',    label:'Campaign Name',      hint:'what this campaign is called' },
+  { id:'channels',        label:'Channel Type',       options:['Email + SMS','Email only','SMS only'] },
+];
+
+let intake = null;   // { values:{}, derived:{} } while an intake is running
+
+function startCampaignIntake(){
+  intake = { values:{}, derived:{} };
+  sendHomeChat('[[intake:start]]');
+}
+
+function cancelCampaignIntake(){
+  intake = null;
+  homeAgentHistory = [];
+  renderHomeWelcome();
+}
+
+// Asset Scope is the one answer the platform can work out rather than ask:
+// brand + indication already on record means this is an update, a known brand
+// with a new indication is an indication launch, an unknown brand is a new
+// brand launch. Same lookup the modal uses for its own inference.
+async function deriveAssetScope(){
+  if(!intake || intake.values.assetScopeLabel) return;
+  const { brand, indication } = intake.values;
+  if(!brand || !indication) return;
+  try{
+    const res = await fetch(`/api/brand-lookup?brand=${encodeURIComponent(brand)}&indication=${encodeURIComponent(indication)}`);
+    if(!res.ok) return;
+    const { brandKnown, indicationKnown } = await res.json();
+    const scope = !brandKnown ? 'New Brand Launch' : indicationKnown ? 'Update Existing Campaign' : 'New Indication Launch';
+    intake.values.assetScopeLabel = scope;
+    intake.derived.assetScopeLabel = !brandKnown
+      ? `${brand} isn't on the brand master yet`
+      : indicationKnown ? `${brand} and ${indication} are both already on record`
+      : `${brand} is on record but ${indication} is new for it`;
+  }catch(e){ /* leave it to be asked normally */ }
+}
+
+function intakeMissing(){
+  return INTAKE_FIELDS.filter(f => !intake.values[f.id]);
+}
+
+// Everything collected: create it, say so, and hand the user a clean slate.
+function finishCampaignIntake(){
+  const v = intake.values;
+  const req = createCampaignRequest({
+    tactplanId: v.tactplanId, agency: v.agency, brand: v.brand, indication: v.indication,
+    brandedUnbranded: v.brandedUnbranded, audience: v.audience,
+    assetScopeLabel: v.assetScopeLabel, campaignName: v.campaignName,
+    channelEmail: v.channels !== 'SMS only', channelSms: v.channels !== 'Email only',
+    formId: (document.getElementById('newReqForm') || {}).value || 'form-default',
+  }, { open:false });
+
+  intake = null;
+  const body = document.getElementById('hmAgentBody');
+  if(body){
+    body.innerHTML += `<div class="msg bot"><b>${escapeHtml(req.name)}</b> has been created as <b>${escapeHtml(req.id)}</b> and is now in your campaign list, in Pre-planning.
+      <div class="cp-suggest">
+        <button onclick="openRequest('${req.id}')">Open it now</button>
+        <button onclick="cancelCampaignIntake()">Start over</button>
+      </div></div>`;
+    body.scrollTop = body.scrollHeight;
+  }
+  // Reset the thread so the next question starts clean rather than carrying
+  // the whole intake transcript as context.
+  homeAgentHistory = [];
+}
+
+let homeAgentHistory = [];
+let homeAgentBusy = false;
+
+async function sendHomeChat(text){
+  const raw = (text || '').trim();
+  if(!raw || homeAgentBusy) return;
+  const body = document.getElementById('hmAgentBody');
+  const input = document.getElementById('hmInput');
+  if(!body) return;
+
+  const welcome = document.getElementById('hmWelcome');
+  if(welcome) welcome.remove();          // first real turn retires the greeting
+  if(input){ input.value = ''; autoGrowChatInput(input); }
+
+  // The kickoff sentinel is what the "Start a new campaign" button sends; it
+  // tells the agent to open the intake, and is never shown as something the
+  // user typed.
+  const isKickoff = raw === '[[intake:start]]';
+  if(!isKickoff) body.innerHTML += `<div class="msg usr">${escapeHtml(raw)}</div>`;
+  body.scrollTop = body.scrollHeight;
+  homeAgentBusy = true;
+  const thinking = postThinking(body);
+
+  try{
+    const res = await fetch('/api/home-agent', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: raw, history: homeAgentHistory,
+        requests: buildHomePayload(), persona: (PERSONAS[currentPersona]||{}).role || currentPersona,
+        intake: intake ? {
+          fields: INTAKE_FIELDS,
+          values: intake.values,
+          derived: intake.derived,
+          missing: intakeMissing().map(f => f.id),
+        } : null }),
+    });
+    thinking.remove();
+    if(!res.ok){
+      body.innerHTML += `<div class="msg bot">The agent backend returned ${res.status}.</div>`;
+      return;
+    }
+    const data = await res.json();
+
+    if(intake && data.captured && typeof data.captured === 'object'){
+      // Only accept keys that are real intake fields, and for the ones with a
+      // fixed option list only a value actually on that list — the model must
+      // not be able to invent an Asset Scope the form has no option for.
+      Object.entries(data.captured).forEach(([k, val])=>{
+        const f = INTAKE_FIELDS.find(x => x.id === k);
+        if(!f || val == null || String(val).trim() === '') return;
+        const v = String(val).trim();
+        if(f.options && !f.options.includes(v)) return;
+        intake.values[k] = v;
+      });
+      await deriveAssetScope();
+    }
+
+    if(data.open){
+      // The model resolved the message to a campaign. Say so, then navigate —
+      // announcing first means the view change is explained, not abrupt.
+      body.innerHTML += `<div class="msg bot">${renderBotMarkdown(data.text || 'Opening that campaign.')}</div>`;
+      body.scrollTop = body.scrollHeight;
+      setTimeout(()=>openRequest(data.open), 500);
+    } else {
+      body.innerHTML += `<div class="msg bot">${renderBotMarkdown(data.text || '')}</div>`;
+    }
+    homeAgentHistory = data.history || homeAgentHistory;
+
+    // Creation is the client's call, not the model's: the moment every field
+    // has a value we build the request, regardless of whether the agent
+    // thought it was finished.
+    if(intake && intakeMissing().length === 0){
+      body.scrollTop = body.scrollHeight;
+      setTimeout(finishCampaignIntake, 400);
+    }
+  } catch(e){
+    thinking.remove();
+    body.innerHTML += `<div class="msg bot">Couldn't reach the agent backend. <span style="font-size:11px"><code>${escapeHtml(String(e.message||e))}</code></span></div>`;
+  } finally {
+    homeAgentBusy = false;
+    body.scrollTop = body.scrollHeight;
+  }
 }
 
 /* ============ COLOR HELPERS ============
@@ -2975,6 +3347,10 @@ function switchPersona(k){
   renderPersonaMenu();
   renderRequestsTable();
   updateStatsForPersona();
+  // The home greeting names the persona and counts their campaigns; reset the
+  // thread too, so one person's questions don't sit in another's window.
+  homeAgentHistory = [];
+  renderHomeWelcome();
   if(document.getElementById('view-request').classList.contains('on')){
     renderSections();
     renderYouFocus();
@@ -3009,12 +3385,38 @@ function filteredSortedRequests(){
   return rows;
 }
 
+// The rail shows one page at a time rather than all 16 rows: the list is
+// reference material next to the agent, not the main event, and an unbounded
+// list would push the rail into a scroll race with the agent beside it.
+const REQ_PAGE_SIZE = 5;
+let reqPage = 1;
+
+function reqPageCount(total){ return Math.max(1, Math.ceil(total / REQ_PAGE_SIZE)); }
+
+function setReqPage(n){
+  const total = filteredSortedRequests().length;
+  reqPage = Math.min(Math.max(1, n), reqPageCount(total));
+  renderRequestsTable();
+  // Jump back to the top of the list, not the top of the rail: paging with
+  // the first row off-screen looks like nothing happened.
+  const t = document.getElementById('reqTable');
+  if(t) t.scrollTop = 0;
+}
+
 function renderRequestsTable(){
   const el = document.getElementById('reqTable');
-  const rows = filteredSortedRequests();
+  const all = filteredSortedRequests();
+  const pages = reqPageCount(all.length);
+  // A filter or search that shrinks the result set can strand you on a page
+  // that no longer exists; clamp before slicing rather than rendering empty.
+  if(reqPage > pages) reqPage = pages;
+  const start = (reqPage - 1) * REQ_PAGE_SIZE;
+  const rows = all.slice(start, start + REQ_PAGE_SIZE);
+  renderReqPager(all.length, pages, start, rows.length);
+  // TactPlan ID moved under the campaign name (it belongs to it, and the rail
+  // is too narrow for a column that only ever holds "TP-88213").
   el.innerHTML = `<div class="rt-head">
-    <div>Campaign</div><div>TactPlan ID</div><div>Phase</div><div>Owners</div>
-    <div>Your action</div><div></div>
+    <div>Campaign</div><div>Phase</div><div>Owners</div><div>Your action</div><div></div>
   </div>` + (rows.length ? rows.map((r,i)=>{
     const isMine = r.mineTo.includes(currentPersona);
     const act = r.action[currentPersona];
@@ -3022,10 +3424,12 @@ function renderRequestsTable(){
     const actCls = act==='me'?'act-me':act==='block'?'act-block':'act-wait';
     const pdotCls = r.phase==='preplan'?'pdot-pp':r.phase==='plan'?'pdot-p':r.phase==='exec'?'pdot-e':'pdot-m';
     const ownersHtml = r.owners.map(o=>`<span class="p-av" style="border-color:${PERSONAS[o].color}" title="${PERSONAS[o].name}">${PERSONAS[o].abbr}</span>`).join('');
-    return `<div class="rt-row ${isMine?'mine':''}" style="animation-delay:${Math.min(i,10)*25}ms" onclick="openRequest('${r.id}')">
+    // Stagger index caps at 10: past that the delay outruns the eye and the
+    // last rows just look late. The delay itself lives in CSS off --i.
+    return `<div class="rt-row ${isMine?'mine':''}" style="--i:${Math.min(i,10)}" onclick="openRequest('${r.id}')">
       <div class="rt-camp">
-        <div class="rt-name"><b>${r.name}</b></div></div>
-      <div class="rt-id">${r.id}</div>
+        <div class="rt-name"><b>${r.name}</b></div>
+        <div class="rt-id">${r.id}</div></div>
       <div class="rt-phase"><span class="pdot ${pdotCls}"></span>${r.phaseLabel}</div>
       <div class="rt-owners">${ownersHtml}</div>
       <div><span class="rt-action ${actCls}">${actText}</span></div>
@@ -3034,10 +3438,47 @@ function renderRequestsTable(){
   }).join('') : `<div class="rt-empty">No requests match this filter.</div>`);
 
   document.getElementById('filtAll').textContent = REQUESTS.length;
+  document.getElementById('filtMine').textContent = REQUESTS.filter(r=>r.mineTo.includes(currentPersona)).length;
   document.getElementById('filtPreplan').textContent = REQUESTS.filter(r=>r.phase==='preplan'&&r.status!=='completed').length;
   document.getElementById('filtPlan').textContent = REQUESTS.filter(r=>r.phase==='plan'&&r.status!=='completed').length;
   document.getElementById('filtExec').textContent = REQUESTS.filter(r=>r.phase==='exec'&&r.status!=='completed').length;
   document.getElementById('filtCompleted').textContent = REQUESTS.filter(r=>r.status==='completed').length;
+}
+
+// Page numbers, windowed around the current page so a 20-page list doesn't
+// render 20 buttons in a 380px rail. First and last are always reachable,
+// with an ellipsis standing in for the stretch that's skipped.
+function reqPageNumbers(current, pages){
+  if(pages <= 7) return Array.from({length:pages}, (_,i)=>i+1);
+  const out = [1];
+  const from = Math.max(2, current - 1), to = Math.min(pages - 1, current + 1);
+  if(from > 2) out.push('…');
+  for(let i = from; i <= to; i++) out.push(i);
+  if(to < pages - 1) out.push('…');
+  out.push(pages);
+  return out;
+}
+
+function renderReqPager(total, pages, start, shown){
+  const el = document.getElementById('reqPager');
+  if(!el) return;
+  if(total === 0){ el.innerHTML = ''; return; }
+  const from = start + 1, to = start + shown;
+  const btn = (label, page, opts={}) =>
+    `<button class="rp-btn${opts.on?' on':''}" ${opts.disabled?'disabled':''}
+      ${opts.disabled?'':`onclick="setReqPage(${page})"`}
+      ${opts.label?`aria-label="${opts.label}"`:''}>${label}</button>`;
+
+  el.innerHTML = `
+    <div class="rp-count">Showing <b>${from}-${to}</b> of <b>${total}</b></div>
+    <div class="rp-nav">
+      ${btn('‹', reqPage-1, {disabled: reqPage===1, label:'Previous page'})}
+      ${reqPageNumbers(reqPage, pages).map(n =>
+        n === '…' ? '<span class="rp-gap">…</span>' : btn(n, n, {on: n===reqPage})
+      ).join('')}
+      ${btn('›', reqPage+1, {disabled: reqPage===pages, label:'Next page'})}
+    </div>
+    <div class="rp-page">Page <b>${reqPage}</b> of <b>${pages}</b></div>`;
 }
 
 function updateStatsForPersona(){
@@ -3056,6 +3497,7 @@ function setFilt(el, key){
   document.querySelectorAll('.filt').forEach(f=>f.classList.remove('on'));
   el.classList.add('on');
   currentReqFilter = key;
+  reqPage = 1;   // a new filter is a new list; page 3 of the old one is meaningless
   renderRequestsTable();
 }
 
@@ -3088,7 +3530,12 @@ async function openRequest(id){
   openSectionId = null;
   seedValues = r.seed || {};
   fieldValues = {};
+  // Cleared here, then repopulated from the server (see loadSectionState below)
+  // so a submitted section is still submitted after a reload — the values were
+  // always persisted, but this state used to die with the page.
   submittedSections = new Set();
+  phaseAutoAdvanced.clear();   // per-request, like submittedSections above
+  loadSectionState(r.id);
   if(r.channels) campaignConfig.channels = r.channels;
   campaignConfig.touchpointCount = 2;
   // Reset per-request — otherwise a previously opened request's # of
@@ -3504,6 +3951,7 @@ function renderAdminFieldDrawer(f){
       <label class="wide">Condition (only show this field when…)<div id="admin-cond-container-${f.id}">${renderAdminCondBuilder()}</div></label>
       <label>Drives (campaignConfig key)<input id="af-drives-${f.id}" value="${f.drives||''}"></label>
       <label>Cascade from field key<input id="af-cascade-${f.id}" value="${f.cascadeFromField||''}"></label>
+      <label>Derives from field key<input id="af-derives-${f.id}" value="${f.derivesFrom||''}" placeholder="e.g. 1.1.3"><span class="admin-hint">The interview proposes this field's value from that one instead of asking. Unlike cascade, it stays editable and is confirmed by the user first.</span></label>
       <label class="admin-drawer-check"><input type="checkbox" id="af-locked-${f.id}" ${f.locked?'checked':''}> Locked (read-only, auto-filled)</label>
       <label>Locked value (if locked)<input id="af-lockedvalue-${f.id}" value="${f.lockedValue||''}"></label>
       <label class="admin-drawer-check"><input type="checkbox" id="af-wide-${f.id}" ${f.wide?'checked':''}> Wide (full-width field)</label>
@@ -3543,6 +3991,7 @@ function adminReadDrawerValues(fieldId){
     bucket: v('bucket') || null, source: v('source') || null,
     opts: opts.length ? opts : undefined, cond: draftToCond(adminCondDraft || {logic:'and',rules:[]}),
     drives: v('drives') || null, cascadeFromField: v('cascade') || null,
+    derivesFrom: v('derives') || null,
     locked: checked('locked'), lockedValue: v('lockedvalue') || null, wide: checked('wide'),
   };
 }
@@ -5923,7 +6372,7 @@ async function handleDiagramCommand(text, body){
       } else if(event === 'proposal'){
         vbRenderPreviewCard(body, data.summary, data.operations || []);
       } else if(event === 'final'){
-        if(data.text) body.innerHTML += `<div class="msg bot">${data.text}</div>`;
+        if(data.text) body.innerHTML += `<div class="msg bot">${renderBotMarkdown(data.text)}</div>`;
         body.scrollTop = body.scrollHeight;
       } else if(event === 'history'){
         diagramAgentHistory = data.history || diagramAgentHistory;
@@ -6057,18 +6506,30 @@ function confirmNewRequest(){
     return;
   }
 
-  const tactplanId = document.getElementById('newReqTactplan').value.trim();
-  const agency = document.getElementById('newReqAgency').value.trim();
-  const brand = document.getElementById('newReqBrandName').value.trim();
-  const indication = document.getElementById('newReqIndication').value.trim();
-  const brandedUnbranded = document.getElementById('newReqBrandedUnbranded').value;
-  const audience = document.getElementById('newReqAudience').value.trim();
-  const assetScopeLabel = document.getElementById('newReqAssetScope').value;
-  const campaignName = document.getElementById('newReqCampaignName').value.trim();
-  const wantsEmail = document.getElementById('newReqChannelEmail').checked;
-  const wantsSms = document.getElementById('newReqChannelSms').checked;
+  createCampaignRequest({
+    tactplanId: document.getElementById('newReqTactplan').value.trim(),
+    agency: document.getElementById('newReqAgency').value.trim(),
+    brand: document.getElementById('newReqBrandName').value.trim(),
+    indication: document.getElementById('newReqIndication').value.trim(),
+    brandedUnbranded: document.getElementById('newReqBrandedUnbranded').value,
+    audience: document.getElementById('newReqAudience').value.trim(),
+    assetScopeLabel: document.getElementById('newReqAssetScope').value,
+    campaignName: document.getElementById('newReqCampaignName').value.trim(),
+    channelEmail: document.getElementById('newReqChannelEmail').checked,
+    channelSms: document.getElementById('newReqChannelSms').checked,
+    formId: document.getElementById('newReqForm').value || 'form-default',
+  }, { closeModal: true, open: true });
+}
+
+// The actual creation, lifted out of the modal so the chat intake can create a
+// request the same way rather than reimplementing it (or worse, driving the
+// hidden modal's DOM). `open:false` leaves the user where they are, which is
+// what the chat flow wants: it announces the new campaign and stays home.
+function createCampaignRequest(v, opts = {}){
+  const { tactplanId, agency, brand, indication, brandedUnbranded, audience,
+          assetScopeLabel, campaignName, formId } = v;
+  const wantsEmail = v.channelEmail !== false, wantsSms = v.channelSms !== false;
   const channels = wantsEmail && wantsSms ? 'Email + SMS' : wantsEmail ? 'Email only' : wantsSms ? 'SMS only' : 'Email + SMS';
-  const formId = document.getElementById('newReqForm').value || 'form-default';
 
   const id = tactplanId;
   const ic = brand.charAt(0).toUpperCase() || 'N';
@@ -6093,17 +6554,29 @@ function confirmNewRequest(){
     channels, enrollment:'No', audience:'hcp', emailCount:'', smsCount:'', metadataSource:'New metadata',
   };
 
-  closeNewRequestModal();
+  if(opts.closeModal) closeNewRequestModal();
+  reqPage = 1;              // surface the new campaign on the first page
   renderRequestsTable();
   updateStatsForPersona();
+  if(!opts.open) return req;
+
   openRequest(id);
 
   // Generic/Overview is already fully answered by this form — submit it right
   // away and let the agent run the same checkpoint sequence Submit always runs.
-  submittedSections.add('generic');
+  // Goes through the same completeness gate as a manual Save rather than a bare
+  // add: if this modal ever stops covering every preplan field in the section,
+  // it must leave the section editable instead of locking it with gaps.
+  const genericSec = SECTIONS.find(x=>x.id==='generic');
+  const genericComplete = genericSec && sectionGapsRaw(genericSec, null, 'preplan').remaining === 0;
+  if(genericComplete){
+    submittedSections.add('generic');
+    saveSectionState('generic', true);
+  }
   openSectionId = null;
   renderAll();
-  runReactCheckpoint('generic', 'Generic/Overview');
+  if(genericComplete) runReactCheckpoint('generic', 'Generic/Overview');
+  return req;
 }
 
 /* ============ PROCESS MILESTONES — reconstructed from Discovery Session 1 ============
@@ -6147,7 +6620,15 @@ function autoUnlockOwnedSections(){
   SECTIONS.forEach(s=>{
     if(!submittedSections.has(s.id)) return;
     if(!(s.needs[currentPhase]||[]).includes(currentPersona)) return;
-    if(sectionRemainingForPersona(s, currentPersona).remaining > 0) submittedSections.delete(s.id);
+    // sectionGapsRaw, NOT sectionGaps: the submission-aware version reports 0
+    // remaining for precisely the submitted sections this loop is looking for,
+    // so asking it here could never return true and this function silently did
+    // nothing at all. The raw count ignores submission and answers the question
+    // actually being asked — "is there still work for me in here?".
+    if(sectionGapsRaw(s, currentPersona, currentPhase).remaining > 0){
+      submittedSections.delete(s.id);
+      saveSectionState(s.id, false); // or the reload would re-lock what we just reopened
+    }
   });
 }
 
@@ -6205,6 +6686,33 @@ function syncSectionEntries(section){
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ tactplanId: currentRequest.id, entries }),
   }).catch(()=>{});
+}
+
+// Lock state, persisted alongside the values above. Both are fire-and-forget
+// against the same tactplanId — a failed write leaves the in-memory state
+// intact for this session rather than blocking the user's Save.
+function saveSectionState(sectionId, submitted){
+  if(!currentRequest) return;
+  fetch('/api/section-state', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tactplanId: currentRequest.id, sectionId, submitted }),
+  }).catch(()=>{});
+}
+
+// Repopulates submittedSections after openRequest() cleared it. Async, so the
+// first paint can show a section as editable for a moment before it locks —
+// re-render once the real state lands rather than blocking the open.
+function loadSectionState(tactplanId){
+  fetch(`/api/section-state?tactplanId=${encodeURIComponent(tactplanId)}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if(!d || !Array.isArray(d.submitted)) return;
+      if(!currentRequest || currentRequest.id !== tactplanId) return; // user moved on
+      d.submitted.forEach(id => submittedSections.add(id));
+      if(d.submitted.length) renderAll();
+    })
+    .catch(()=>{});
 }
 
 // The header's "X / Y fields resolved" and readiness % used to be a static
@@ -6401,15 +6909,46 @@ function maybeRepostYouFocus(){
   // land Your Focus ahead of the evaluation it's summarizing. Landing it
   // after — like a pause once the dust settles — reads as a closing beat,
   // not something squeezed in before you've even seen what changed.
-  setTimeout(()=>{
-    // Older Your Focus recaps are redundant once a new one lands — dim them
-    // and disable their buttons so it's visually obvious only the latest is
-    // current, instead of several full-strength copies piling up in the feed.
-    body.querySelectorAll('.you-focus-msg').forEach(el=>el.classList.add('stale'));
-    const { empty, html } = buildYouFocusInner();
-    body.innerHTML += `<div class="msg bot you-focus-msg${empty?' empty':''}">${html}</div>`;
-    body.scrollTop = body.scrollHeight;
-  }, 320);
+  setTimeout(repostYouFocusCard, 320);
+}
+
+/* The Your Focus recap in the chat thread. There is exactly ONE of these and
+   it re-renders with everything else (see refreshYouFocusChatCard, called from
+   renderYouFocus), so its counts cannot drift.
+
+   It used to append a brand new `<div class="you-focus-msg">` on every repost.
+   Those were static snapshots — renderYouFocus only ever updates the pinned
+   #youFocus in the nav rail, and that one is hidden whenever a per-section
+   list is what's left to say. So the chat copy was the only place the
+   per-section counts ever rendered, and nothing kept it current: a card
+   reading "Generic/Overview - 7 fields remaining" sat next to a section row
+   reading 15 for the same section, both "correct" for different moments. */
+function repostYouFocusCard(){
+  const body = document.getElementById('chatBody');
+  if(!body) return;
+  const card = refreshYouFocusChatCard(true);
+  if(!card) return;
+  body.appendChild(card);   // move the existing node, never a second copy
+  body.scrollTop = body.scrollHeight;
+}
+
+// Re-renders the chat recap in place. `create` makes one if it isn't there
+// yet; without it this only updates a card that already exists, which is what
+// every ordinary render wants.
+function refreshYouFocusChatCard(create){
+  const body = document.getElementById('chatBody');
+  if(!body) return null;
+  let card = document.getElementById('youFocusChat');
+  if(!card){
+    if(!create) return null;
+    card = document.createElement('div');
+    card.id = 'youFocusChat';
+    body.appendChild(card);
+  }
+  const { empty, html } = buildYouFocusInner();
+  card.className = `msg bot you-focus-msg${empty ? ' empty' : ''}`;
+  card.innerHTML = html;
+  return card;
 }
 
 // Belt-and-suspenders on top of the signature-based repost above: every 10s,
@@ -6428,10 +6967,7 @@ function youFocusWatchdog(){
   const sectionStillOpenForEditing = openSectionId !== null && !submittedSections.has(openSectionId);
   if(sectionStillOpenForEditing || suspendYouFocusRepost) return;
   if(body.lastElementChild.classList.contains('you-focus-msg')) return; // already the latest message
-  body.querySelectorAll('.you-focus-msg').forEach(el=>el.classList.add('stale'));
-  const { empty, html } = buildYouFocusInner();
-  body.innerHTML += `<div class="msg bot you-focus-msg${empty?' empty':''}">${html}</div>`;
-  body.scrollTop = body.scrollHeight;
+  repostYouFocusCard();
   lastYouFocusSignature = youFocusSignature();
 }
 setInterval(youFocusWatchdog, 10000);
@@ -6778,20 +7314,15 @@ function renderCrfViewTabs(groups){
 // nothing about them is actually relevant yet.
 function sectionStatus(s){
   if(!sectionApplicable(s)) return {applicable:false, total:0, filled:0, statusClass:'ns', statusLabel:'Not applicable', pct:0};
-  let total=0, filled=0;
-  visibleFields(s.phases[currentPhase]||[]).filter(f=>!f.locked && !f.cascadeFromField).forEach(f=>{
-    if(f.type === 'metasheet'){
-      f.groups.forEach((g,gi)=>g.fields.forEach((fn,fi)=>{
-        total++;
-        if(fieldValues[`${f.id}-${gi}-${fi}`]) filled++;
-      }));
-    } else {
-      total++;
-      if(isFieldFilled(f)) filled++;
-    }
-  });
+  // All owners, current phase — the raw count, because a submitted section
+  // still has a real fill ratio worth showing; it just isn't "In Progress".
+  const { total, filled } = sectionGapsRaw(s, null, currentPhase);
   let statusClass, statusLabel;
-  if(total===0 || filled===0){ statusClass='ns'; statusLabel='Not started'; }
+  // A submitted section is read-only in every phase. Reporting it as "In
+  // Progress" next to groups labelled "Submitted — read-only" was the badge
+  // contradicting the thing it sits on top of.
+  if(submittedSections.has(s.id)){ statusClass='done'; statusLabel='Submitted'; }
+  else if(total===0 || filled===0){ statusClass='ns'; statusLabel='Not started'; }
   else if(filled===total){ statusClass='done'; statusLabel='Completed'; }
   else { statusClass='prog'; statusLabel='In Progress'; }
   return { applicable:true, total, filled, statusClass, statusLabel, pct: total ? Math.round(filled/total*100) : 0 };
@@ -7250,6 +7781,13 @@ function computeSectionRenderData(s){
   // set of fields.
   const shownFields = [...(showPreplan?preplanF:[]), ...(showPlan?planF:[]), ...(showExec?execF:[])];
   const filledCount = filledWeightedCount(shownFields);
+  // The bar counts every owner across every shown phase, which is a genuinely
+  // different question from "what's left for ME in the phase I'm in" — the
+  // number Your Focus, the row badge and the chat agent all report. Both are
+  // correct; showing them side by side unlabelled is what read as a
+  // contradiction, so each now says whose number it is.
+  const mineGaps = sectionGaps(s, currentPersona, currentPhase);
+  if(mineGaps.remaining > 0) meta.push(`<b>${mineGaps.remaining} still on you</b>`);
 
   // Any AOR-owned section should get a Save/Edit lock the same way
   // Generic/OMS/CMA/SMS already do — Journey, Email, and Automatrix were
@@ -7325,7 +7863,7 @@ function renderSectionDetailCard(s){
       <div class="sm-detail-sub">${d.meta.join(' · ')}</div>
       <div class="sm-detail-progress-row">
         <div class="sm-detail-bar"><div class="sm-detail-bar-fill sm-status-${st.statusClass}" style="width:${d.total ? Math.round(d.filled/d.total*100) : 0}%"></div></div>
-        <span class="sm-count">${d.applicable ? `${d.filled} / ${d.total} fields` : '—'}</span>
+        <span class="sm-count">${d.applicable ? `${d.filled} / ${d.total} filled · all owners` : '—'}</span>
       </div>
     </div>
     <div class="sm-detail-body">${d.body}${d.submitRow}</div>
@@ -7628,6 +8166,7 @@ function dbFieldToBaseField(f){
   if(f.cond) out.cond = f.cond;
   if(f.drives) out.drives = f.drives;
   if(f.cascadeFromField) out.cascadeFromField = f.cascadeFromField;
+  if(f.derivesFrom) out.derivesFrom = f.derivesFrom;
   if(f.locked) out.locked = true;
   if(f.lockedValue) out.lockedValue = f.lockedValue;
   if(f.wide) out.wide = true;
@@ -7652,10 +8191,26 @@ const METASHEET_SUBFIELD_KEY = /-g\d+-f\d+$/;
 
 function dbSectionToBaseSection(s){
   const phases = { preplan: [], plan: [], exec: [] };
+  // Those skipped sub-rows are still the only place a metasheet sub-field can
+  // carry its own metadata, so harvest derivesFrom off them on the way past and
+  // hang it on the parent as { "g0-f1": "1.4.8" } — keyed exactly like the
+  // fieldValues entries the sub-fields write to.
+  const subDerives = {};
   (s.fields || []).forEach(f => {
-    if(METASHEET_SUBFIELD_KEY.test(f.fieldKey)) return;
+    if(METASHEET_SUBFIELD_KEY.test(f.fieldKey)){
+      if(f.derivesFrom){
+        const m = f.fieldKey.match(/-(g\d+-f\d+)$/);
+        if(m) subDerives[m[1]] = f.derivesFrom;
+      }
+      return;
+    }
     (phases[f.phase] || (phases[f.phase] = [])).push(dbFieldToBaseField(f));
   });
+  if(Object.keys(subDerives).length){
+    Object.values(phases).forEach(list => list.forEach(f => {
+      if(f.type === 'metasheet') f.subDerives = subDerives;
+    }));
+  }
   const out = { id: s.id, num: s.num, name: s.name, ic: s.icon, phases, needs: withFieldOwnersInNeeds(phases, s.needs) };
   if(s.parentId) out.parentId = s.parentId;
   if(s.audienceGate) out.audienceGate = true;
@@ -7698,7 +8253,18 @@ let phaseCompleteAnnounced = new Set();
 
 function submitSectionForm(id){
   const s = SECTIONS.find(x=>x.id===id);
-  submittedSections.add(id);
+  // Saving always persists what's been typed, but the section only LOCKS once
+  // it is actually complete. Locking one that still has gaps is what produced
+  // the dead end this reconciliation exists to fix: a read-only section full
+  // of empty fields, invisible to Your Focus (which treats submitted as done)
+  // yet still being asked about by the agent. An incomplete save stays
+  // editable and keeps counting as outstanding everywhere.
+  const gaps = s ? sectionGapsRaw(s, null, currentPhase) : { remaining:0, names:[] };
+  const complete = gaps.remaining === 0;
+  if(complete){
+    submittedSections.add(id);
+    saveSectionState(id, true);
+  }
   // Stays selected in the detail panel (showing its new Completed/Edit
   // state) rather than closing to nothing — the old accordion model
   // collapsed the section on save, but there's no "nothing open" state in
@@ -7712,17 +8278,27 @@ function submitSectionForm(id){
   // touchpointCount branches, which deliberately don't rebuild SECTIONS).
   if(['journey','email','sms'].includes(id)) SECTIONS = computeSections();
   renderAll(); // also handles the You Focus repost now, via maybeRepostYouFocus()
-  runReactCheckpoint(id, s ? s.name : id);
-  if(id === 'cma') maybeAnnounceCmaComplete();
-  // Any preplan-relevant section could be the last one to clear (SMS's own
-  // per-instance preplan fields included), so check after every submit —
-  // not just CMA's — rather than assuming CMA is always last.
-  maybeAnnounceCpfComplete();
+  if(complete){
+    runReactCheckpoint(id, s ? s.name : id);
+    if(id === 'cma') maybeAnnounceCmaComplete();
+    // Any preplan-relevant section could be the last one to clear (SMS's own
+    // per-instance preplan fields included), so check after every submit —
+    // not just CMA's — rather than assuming CMA is always last.
+    maybeAnnounceCpfComplete();
+  } else {
+    // Name what is actually still open rather than only counting it — the
+    // whole point of not locking here is that the user can go straight back in.
+    const shown = gaps.names.slice(0, 4).map(n=>escapeHtml(n)).join(', ');
+    const more = gaps.names.length > 4 ? `, and ${gaps.names.length - 4} more` : '';
+    chatNotify(`<b>Saved.</b> ${gaps.remaining} field${gaps.remaining>1?'s':''} still open in <b>${escapeHtml(stripDeco(s ? s.name : id))}</b> — ${shown}${more}. It stays editable until those are filled in.`);
+  }
   if(s) syncSectionEntries(s);
+  setTimeout(maybeAdvancePhase, 200);
 }
 
 function reopenSectionForm(id){
   submittedSections.delete(id);
+  saveSectionState(id, false);
   openSectionId = id;
   renderAll();
   chatNotify(`<b>Editable again.</b> Make your changes and hit Save when you're done.`);
@@ -7866,54 +8442,110 @@ function isFieldFilled(f){
   return !!fieldValue(f);
 }
 
-// Names of the still-empty fields owned by `persona` in `s`, for the current
-// phase — used where a bare count isn't enough (chat CTA into a CRF #N tab
-// should say what's actually missing, not just "N fields remaining").
-function remainingFieldNames(s, persona){
-  if(!sectionApplicable(s) || submittedSections.has(s.id)) return [];
-  // cascadeFromField fields are excluded here too — the obligation to fill
-  // that value lives on its source field (e.g. Generic/Overview's Brand),
-  // not duplicated as "remaining" on every CRF tactic that mirrors it.
-  const fields = visibleFields(s.phases[currentPhase]||[]).filter(f => f.owner === persona && !f.locked && !f.cascadeFromField);
-  const names = [];
-  fields.forEach(f=>{
-    if(f.type === 'metasheet'){
-      f.groups.forEach((g,gi)=>g.fields.forEach((fn,fi)=>{
-        if(!fieldValues[`${f.id}-${gi}-${fi}`]) names.push(`${g.label}: ${fn}`);
-      }));
-    } else if(!isFieldFilled(f)){
-      names.push(f.n);
-    }
-  });
-  return names;
+/* ============ CANONICAL "CAN THIS BE FILLED / WHAT'S LEFT" ============
+   ONE definition, delegated to by every counter, badge, chat message and
+   agent tool in this file. Before this existed there were eleven independent
+   re-derivations of "needs input", each with a different subset of filters —
+   which is how the chat agent came to ask for six fields that the form was
+   rendering read-only while Your Focus said "All clear". If you need a count
+   of outstanding fields, call sectionGaps() below. Do not write another
+   .filter() chain over s.phases[...] anywhere else. */
+
+// Which phase group a field actually sits in. Editability is phase-gated, so
+// this has to be answered before we can say whether a field is writable.
+function fieldPhase(s, f){
+  if((s.phases.preplan||[]).includes(f)) return 'preplan';
+  if((s.phases.plan||[]).includes(f)) return 'plan';
+  if((s.phases.exec||[]).includes(f)) return 'exec';
+  return null;
 }
 
-function sectionRemainingForPersona(s, persona){
-  // A submitted section renders every field read-only (see preplanEdit/
-  // planEdit/execEdit in computeSectionRenderData) — nothing in it is
-  // actually fillable anymore, so it must not keep nudging the Your Focus
-  // sidebar / "mine" pill for fields the detail panel won't let you touch.
-  if(!sectionApplicable(s) || submittedSections.has(s.id)) return { total:0, filled:0, remaining:0 };
-  // cascadeFromField fields are excluded here too — the obligation to fill
-  // that value lives on its source field (e.g. Generic/Overview's Brand),
-  // not duplicated as "remaining" on every CRF tactic that mirrors it.
-  const fields = visibleFields(s.phases[currentPhase]||[]).filter(f => f.owner === persona && !f.locked && !f.cascadeFromField);
-  // A metasheet field (CMA) is one array entry standing in for many real
-  // sub-fields — count/fill status per sub-field, not as a single boolean,
-  // same weighting as fieldWeight()/isFieldFilled() use elsewhere.
+// Does `phase`'s group render editable right now? Mirrors preplanEdit/
+// planEdit/execEdit in computeSectionRenderData — execution fields unlock
+// together with Planning so people can fill what's already knowable.
+function phaseIsEditable(phase){
+  if(phase === 'preplan') return currentPhase === 'preplan';
+  if(phase === 'plan') return currentPhase === 'plan';
+  if(phase === 'exec') return currentPhase === 'exec' || currentPhase === 'plan';
+  return false;
+}
+
+// Why `persona` cannot type into this field right now, or null if they can.
+// Same rules renderField() applies when it decides `readonly`, hoisted here so
+// non-render code (counts, the chat, the agent) can ask the question too
+// instead of guessing.
+function fieldLockReason(s, f, persona){
+  if(!sectionApplicable(s)) return 'n/a';
+  if(submittedSections.has(s.id)) return 'submitted';
+  if(f.locked) return 'locked';
+  if(f.cascadeFrom) return 'cascade';
+  const phase = fieldPhase(s, f);
+  if(!phaseIsEditable(phase)) return 'wrong-phase';
+  // Per-field ownership is only enforced where a phase genuinely has more than
+  // one owner (e.g. MCI: CEP owns some fields, Ops others) — otherwise whoever
+  // has the section open could type into the other stakeholder's field.
+  if((s.needs[phase]||[]).length > 1 && f.owner !== persona) return 'not-yours';
+  return null;
+}
+
+const LOCK_REASON_TEXT = {
+  'n/a': 'this section does not apply to this campaign',
+  submitted: 'the section has been submitted and is read-only',
+  locked: 'it is filled in automatically by the platform',
+  cascade: 'it mirrors another field and cannot be edited here',
+  'wrong-phase': 'its phase is not open for editing right now',
+  'not-yours': 'it belongs to a different stakeholder',
+};
+
+// Outstanding fields in `s` for `persona` (null = any owner) in `phase`.
+// Deliberately IGNORES submission state: this answers "what is still unanswered
+// here", which is what decides whether a section is even allowed to lock. Using
+// the submission-aware sectionGaps() for that would be circular — that circle is
+// exactly what left autoUnlockOwnedSections() unable to ever fire.
+function sectionGapsRaw(s, persona, phase){
+  const empty = { total:0, filled:0, remaining:0, names:[] };
+  if(!sectionApplicable(s)) return empty;
+  const fields = visibleFields(s.phases[phase]||[])
+    .filter(f => (persona == null || f.owner === persona) && !f.locked && !f.cascadeFromField);
   let total = 0, filled = 0;
+  const names = [];
   fields.forEach(f=>{
+    // A metasheet (CMA) field is one array entry standing in for many real
+    // sub-fields — count per sub-field, not as a single boolean.
     if(f.type === 'metasheet'){
       f.groups.forEach((g,gi)=>g.fields.forEach((fn,fi)=>{
         total++;
-        if(fieldValues[`${f.id}-${gi}-${fi}`]) filled++;
+        if(fieldValues[`${f.id}-${gi}-${fi}`]) filled++; else names.push(`${g.label}: ${fn}`);
       }));
     } else {
       total++;
-      if(isFieldFilled(f)) filled++;
+      if(isFieldFilled(f)) filled++; else names.push(f.n);
     }
   });
-  return { total, filled, remaining: total - filled };
+  return { total, filled, remaining: total - filled, names };
+}
+
+// The submission-aware view — what every UI counter and the agent should use.
+// A submitted section renders every field read-only, so it must not keep
+// nudging Your Focus / the "mine" pill / the chat for fields nothing will let
+// you touch.
+function sectionGaps(s, persona, phase){
+  if(submittedSections.has(s.id)) return { total:0, filled:0, remaining:0, names:[] };
+  return sectionGapsRaw(s, persona, phase);
+}
+
+// Names of the still-empty fields owned by `persona` in `s`, for the current
+// phase — used where a bare count isn't enough (chat CTA into a CRF #N tab
+// should say what's actually missing, not just "N fields remaining").
+// cascadeFromField fields are excluded by sectionGaps — the obligation to fill
+// that value lives on its source field (e.g. Generic/Overview's Brand), not
+// duplicated as "remaining" on every CRF tactic that mirrors it.
+function remainingFieldNames(s, persona){
+  return sectionGaps(s, persona, currentPhase).names;
+}
+
+function sectionRemainingForPersona(s, persona){
+  return sectionGaps(s, persona, currentPhase);
 }
 
 // Total remaining fields across ALL owners for a phase — not just the
@@ -7936,6 +8568,35 @@ function phaseRemainingAcrossAllOwners(phase){
     });
   });
   return total;
+}
+
+/* Advance the phase on its own once nothing is left in it. Previously this
+   was a "Move to next phase" button buried in the Your Focus card, which meant
+   a finished phase just sat there looking finished until someone noticed the
+   button. Guarded per phase so it fires once, and only ever moves FORWARD —
+   it must never yank the user out of a phase they deliberately navigated back
+   into to review or correct something. */
+const phaseAutoAdvanced = new Set();
+const PHASE_ORDER = ['preplan','plan','exec','monitor'];
+
+function maybeAdvancePhase(){
+  const from = currentPhase;
+  const next = NEXT_MILESTONE_FOR_PHASE[from];
+  if(!next || phaseAutoAdvanced.has(from)) return false;
+  // "Complete" means complete for EVERY owner, not just the current persona —
+  // advancing because your own part is done would drag the whole request
+  // forward while someone else still owes fields in the phase behind you.
+  if(phaseRemainingAcrossAllOwners(from) !== 0) return false;
+
+  const target = MILESTONES.find(m => m.id === next);
+  if(!target || PHASE_ORDER.indexOf(target.phase) <= PHASE_ORDER.indexOf(from)) return false;
+
+  phaseAutoAdvanced.add(from);
+  setMilestone(next);
+  chatNotify(`<b>${PHASE_LABEL[from]} is complete</b> — every field in it is filled, for every owner.
+    Moving you on to <b>${escapeHtml(target.name)}</b>.
+    <div class="cp-suggest"><button onclick="sendChat('What do you need from me in this phase?')">What's needed here</button></div>`);
+  return true;
 }
 
 function youFocusSections(){
@@ -8104,8 +8765,14 @@ function renderYouFocus(){
   const requestOpen = document.getElementById('view-request').classList.contains('on');
   if(!requestOpen){
     el.style.display = 'none';
+    // Leaving a request retires the chat recap too — its counts belong to the
+    // request that was open, and a stale one is exactly the bug this fixes.
+    const chatCard = document.getElementById('youFocusChat');
+    if(chatCard) chatCard.remove();
     return;
   }
+  // Keep the posted recap in step with everything else this render touched.
+  refreshYouFocusChatCard(false);
   const { empty, html } = buildYouFocusInner();
   // The per-section list this card used to draw now lives on the section
   // rows themselves ("7 fields remaining" sits on Generic/Overview, not in
@@ -8257,16 +8924,24 @@ function parseAssignments(text){
 // actually applied to the form, gated behind an explicit user confirm.
 function matchAssignmentsToSection(sectionId, assignments){
   const s = SECTIONS.find(x=>x.id===sectionId);
-  if(!s) return { matched: [], unmatched: [] };
+  if(!s) return { matched: [], unmatched: [], blocked: [] };
   const fields = allFieldsForSection(s);
   const matched = [];
   const unmatched = [];
+  // Fields the message did resolve to, but that the form is currently
+  // rendering read-only. This search runs over ALL phases with no editability
+  // check, so without this bucket the chat could write into a submitted
+  // section, a platform-filled field, another stakeholder's field, or a phase
+  // that hasn't opened — bypassing every rule the form itself enforces.
+  const blocked = [];
   assignments.forEach(({label, value})=>{
     const nLabel = normLabel(label);
     const field = fields.find(f => normLabel(f.n) === nLabel)
       || fields.find(f => f.type !== 'metasheet' && (normLabel(f.n).includes(nLabel) || nLabel.includes(normLabel(f.n))));
     if(field){
-      matched.push({ kind:'field', field, label: field.n, value });
+      const reason = fieldLockReason(s, field, currentPersona);
+      if(reason) blocked.push({ label: field.n, value, reason, reasonText: LOCK_REASON_TEXT[reason] });
+      else matched.push({ kind:'field', field, label: field.n, value });
       return;
     }
     // Sub-field names inside the CMA metasheet repeat across groups ("Name",
@@ -8291,13 +8966,28 @@ function matchAssignmentsToSection(sectionId, assignments){
       if(candidates.length === 1) matchedSub = candidates[0];
     });
     if(matchedSub){
-      matched.push({ kind:'sub', ...matchedSub, label: `${matchedSub.f.n} → ${matchedSub.fn}`, value });
+      // Qualify with the group label — "Name" alone appears in half a dozen
+      // CMA groups, so an unqualified row leaves the user confirming values
+      // they can't tell apart ("→ Name" twice, meaning two different fields).
+      const subGroup = (matchedSub.f.groups || [])[matchedSub.gi];
+      const subLabel = `${subGroup ? subGroup.label + ': ' : ''}${matchedSub.fn}`;
+      const subReason = fieldLockReason(s, matchedSub.f, currentPersona);
+      if(subReason) blocked.push({ label: subLabel, value, reason: subReason, reasonText: LOCK_REASON_TEXT[subReason] });
+      else matched.push({ kind:'sub', ...matchedSub, label: subLabel, value });
       return;
     }
     unmatched.push(label);
   });
-  return { matched, unmatched };
+  return { matched, unmatched, blocked };
 }
+
+// These three answers don't just toggle visibility — they change the FIELD
+// UNIVERSE, fanning out N new sections each (Email #1..#N, SMS #1..#N, Touch
+// Point #1..#N). driveField deliberately defers that rebuild to Save so
+// sections don't materialize while someone is mid-keystroke in the form; a
+// value applied from chat is already committed, so it has to rebuild right
+// away or the agent has nothing to walk next.
+const SHAPE_DRIVER_KEYS = ['emailCount', 'smsCount', 'touchpointCount'];
 
 // Mutating half — actually writes matched assignments into fieldValues /
 // campaignConfig. Called only after the user confirms the proposal.
@@ -8312,6 +9002,9 @@ function applyMatchedAssignments(matched){
     });
   } finally {
     suspendRender = false;
+  }
+  if((matched||[]).some(m => m.kind === 'field' && SHAPE_DRIVER_KEYS.includes(m.field.drives))){
+    SECTIONS = computeSections();
   }
   return filled;
 }
@@ -8359,6 +9052,8 @@ const SKILL_DISPLAY_NAMES = {
   file_parse: 'Document Parsing',
   get_missing_fields: 'Progress Check',
   record_quiz_answer: 'Guided Answer',
+  get_interview_state: 'Interview Status',
+  propose_derived_fills: 'Derived Values',
 };
 function skillDisplayName(toolName){ return SKILL_DISPLAY_NAMES[toolName] || toolName; }
 
@@ -8376,6 +9071,51 @@ function postSkillStep(body, label, runningText){
     done(text){ el.innerHTML = `✓ <b>Skill: ${display}</b> — ${text}`; },
     failed(text){ el.innerHTML = `✗ <b>Skill: ${display}</b> — ${text}`; },
   };
+}
+
+/* The model writes markdown — bold field names, bulleted question lists,
+   paragraph breaks. That text used to be concatenated straight into
+   innerHTML, which had two consequences: the syntax showed through literally
+   ("**24 fields**" with the asterisks), and every turn collapsed into a
+   single unbroken block no matter how many separate things it asked.
+
+   This converts the small subset the agent actually uses. Everything is
+   HTML-escaped FIRST — the text is model output, and some of it is echoed
+   user input, so it must never be able to inject markup. */
+function renderBotMarkdown(text){
+  const esc = escapeHtml(String(text || '').trim());
+  if(!esc) return '';
+
+  const inline = (s) => s
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')   // **field name**
+    .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')    // *aside*
+    .replace(/(^|[\s(])_([^_\n]+)_/g, '$1<em>$2</em>')      // _aside_
+    .replace(/`([^`\n]+)`/g, '<code>$1</code>');            // `value`
+
+  const out = [];
+  let list = null;              // 'ul' | 'ol' while one is open
+  const closeList = () => { if(list){ out.push(`</${list}>`); list = null; } };
+
+  // Blank-line-separated blocks, but a list item ends the paragraph it sits
+  // under even without one — the model isn't consistent about that.
+  esc.split(/\n/).forEach(rawLine=>{
+    const line = rawLine.trim();
+    if(!line){ closeList(); return; }
+
+    const bullet = line.match(/^[-*•]\s+(.*)$/);
+    const numbered = line.match(/^(\d+)[.)]\s+(.*)$/);
+    if(bullet || numbered){
+      const want = bullet ? 'ul' : 'ol';
+      if(list !== want){ closeList(); out.push(`<${want}>`); list = want; }
+      out.push(`<li>${inline(bullet ? bullet[1] : numbered[2])}</li>`);
+      return;
+    }
+    if(/^---+$/.test(line)){ closeList(); out.push('<hr>'); return; }
+    closeList();
+    out.push(`<p>${inline(line)}</p>`);
+  });
+  closeList();
+  return out.join('');
 }
 
 // The model's own one-sentence narration ("Matching the message to a known
@@ -8397,11 +9137,31 @@ const pendingFillProposals = {};
 // Section metadata the agent's match_section/propose_fill tools need,
 // mirrored to the server per-request (server/server.js has no copy of
 // SECTIONS — it stays authoritative here and is just handed over).
+// SECTION_ALIASES only covers the 10 base sections, so the agent could never
+// resolve a fan-out section (email-t2, mds-t1, journey-tp3) and any per-tactic
+// instruction silently matched the base card instead. Generated here from the
+// same display name the UI shows.
+function aliasesForSection(s){
+  const out = (SECTION_ALIASES[s.id] || []).slice();
+  const base = stripDeco(s.name).toLowerCase();
+  if(s.crfGroup){
+    out.push(`${base} ${s.crfGroup}`, `crf ${s.crfGroup}`, `tactic ${s.crfGroup}`);
+    if(s.id.startsWith('mds-t')) out.push(`suppression ${s.crfGroup}`, `mds ${s.crfGroup}`);
+    if(s.id.startsWith('automx-t')) out.push(`automatrix ${s.crfGroup}`);
+  }
+  const tp = s.id.match(/^journey-tp(\d+)$/);
+  if(tp) out.push(`touch point ${tp[1]}`, `touchpoint ${tp[1]}`, `tp ${tp[1]}`);
+  return out;
+}
+
 function buildSectionsPayloadForAgent(){
   return SECTIONS.map(s => ({
     id: s.id,
-    name: s.name,
-    aliases: SECTION_ALIASES[s.id] || [],
+    // Display name, not the raw one: "Email #2" normalizes to a longer key than
+    // the base "Email", and the server's matcher prefers the longest id/name
+    // hit — so a per-tactic reference resolves to the tactic, not the base card.
+    name: dispSectionName(s),
+    aliases: aliasesForSection(s),
     // Metasheet (CMA) sub-field names repeat across groups ("Name",
     // "Description", ...) — qualify each as "Group: Field" so the agent's
     // field list, and matchAssignmentsToSection's exact-match check against
@@ -8429,28 +9189,38 @@ function buildRemainingPayloadForAgent(){
   }).filter(Boolean);
 }
 
-function renderFillProposal(body, sectionId, assignments){
+function renderFillProposal(body, sectionId, assignments, isDerived){
   const section = SECTIONS.find(s => s.id === sectionId);
   if(!section){
     body.innerHTML += `<div class="msg bot">Agent proposed values for unknown section "${sectionId}".</div>`;
     body.scrollTop = body.scrollHeight;
     return;
   }
-  const { matched, unmatched } = matchAssignmentsToSection(sectionId, assignments.map(a => ({ label: a.field, value: a.value })));
+  const { matched, unmatched, blocked } = matchAssignmentsToSection(sectionId, assignments.map(a => ({ label: a.field, value: a.value })));
+  // Blocked rows are named with their reason rather than silently dropped —
+  // "I ignored half of what you said" is worse than saying why.
+  const blockedFoot = blocked.length
+    ? `<div class="foot">Can't write ${blocked.map(b=>`<b>${escapeHtml(b.label)}</b> — ${b.reasonText}`).join('; ')}.</div>`
+    : '';
   if(matched.length === 0){
-    body.innerHTML += `<div class="msg bot">I couldn't map the proposed values to real fields in <b>${section.name}</b>.</div>`;
+    body.innerHTML += `<div class="msg bot">${blocked.length
+      ? `I can't write those to <b>${section.name}</b> right now. ${blocked.map(b=>`<b>${escapeHtml(b.label)}</b> — ${b.reasonText}`).join('; ')}.`
+      : `I couldn't map the proposed values to real fields in <b>${section.name}</b>.`}</div>`;
     body.scrollTop = body.scrollHeight;
     return;
   }
   const propId = `fillprop-${++fillProposalCounter}`;
-  pendingFillProposals[propId] = { section, matched, unmatched };
+  pendingFillProposals[propId] = { section, matched, unmatched, blocked };
   const rows = matched.map(m => `<div class="m-row"><span>${m.label}</span><b>${m.value}</b></div>`).join('');
   const propEl = document.createElement('div');
   propEl.className = 'msg bot';
   propEl.id = propId;
-  propEl.innerHTML = `Here's what I found for <b>${section.name}</b> — nothing has been written to the form yet:
+  propEl.innerHTML = `${isDerived
+      ? `These follow from what you've already told me, for <b>${dispSectionName(section)}</b> — nothing has been written to the form yet:`
+      : `Here's what I found for <b>${dispSectionName(section)}</b> — nothing has been written to the form yet:`}
     <div class="m-card">${rows}</div>
     ${unmatched.length ? `<div class="foot">Couldn't match: ${unmatched.join(', ')}</div>` : ''}
+    ${blockedFoot}
     <p>Confirm to apply these to the form?</p>
     <div class="sec-submit" id="${propId}-actions">
       <button class="btn-primary" onclick="confirmFillProposal('${propId}')">Confirm</button>
@@ -8574,7 +9344,9 @@ async function handleFillCommand(rawText, body){
     payload = JSON.stringify({
       sections: buildSectionsPayloadForAgent(), text: rawText, history: agentHistory,
       tactplanId: currentRequest ? currentRequest.id : null,
-      remaining: buildRemainingPayloadForAgent(), persona: currentPersona, phase: currentPhase,
+      remaining: buildRemainingPayloadForAgent(), blocked: guidedBlockedRefs(),
+      interview: interviewState(), derived: derivedProposals(),
+      persona: currentPersona, phase: currentPhase,
     });
   } catch(e){
     console.error('[agent-fill] failed to build request payload', e);
@@ -8663,16 +9435,18 @@ async function handleFillCommand(rawText, body){
           step.done(`moved to <b>${m ? m.name : r.stage}</b>.`);
         }
         else if(data.name === 'get_missing_fields') step.done(`${r.count||0} field(s) remaining.`);
+        else if(data.name === 'get_interview_state') step.done(`stage <b>${r.stageLabel || 'complete'}</b> — ${r.totalRemaining||0} field(s) left${r.derivableCount ? `, ${r.derivableCount} derivable` : ''}.`);
+        else if(data.name === 'propose_derived_fills') step.done(r.count ? `${r.count} value(s) derived and staged.` : 'nothing derivable yet.');
         else if(data.name === 'record_quiz_answer') step.done(`recorded <b>${r.field}</b>.`);
         else step.done('done.');
       } else if(event === 'proposal'){
-        lastProposalId = renderFillProposal(body, data.sectionId, data.assignments || []);
+        lastProposalId = renderFillProposal(body, data.sectionId, data.assignments || [], !!data.derived);
       } else if(event === 'quiz_answer'){
         // A guided-quiz answer — the user just answered the exact question the
         // agent asked, so unlike propose_fill this applies immediately, no
         // Confirm/Cancel card. The agent's own next message (the 'final' event)
         // is the acknowledgement/next question — no extra chat bubble here.
-        const { matched } = matchAssignmentsToSection(data.sectionId, [{ label: data.field, value: data.value }]);
+        const { matched, blocked } = matchAssignmentsToSection(data.sectionId, [{ label: data.field, value: data.value }]);
         if(matched.length){
           applyMatchedAssignments(matched); // wrapped below — also marks _justFilledFieldIds
           const m = matched[0];
@@ -8680,6 +9454,15 @@ async function handleFillCommand(rawText, body){
           renderSections();
           const sec = SECTIONS.find(x=>x.id===data.sectionId);
           if(sec) syncSectionEntries(sec);
+          setTimeout(maybeAdvancePhase, 200);
+        } else if(blocked.length){
+          // The agent shouldn't be asking for a locked field at all (they're
+          // filtered out of get_missing_fields), but if one slips through, the
+          // write is refused here rather than quietly bypassing the form's
+          // read-only rules — and the user is told why.
+          const b = blocked[0];
+          body.innerHTML += `<div class="msg bot">I couldn't write <b>${escapeHtml(b.label)}</b> — ${b.reasonText}.</div>`;
+          body.scrollTop = body.scrollHeight;
         }
       } else if(event === 'learned'){
         // Distinct from a form-fill proposal — this isn't campaign data, it's
@@ -8692,7 +9475,7 @@ async function handleFillCommand(rawText, body){
         // triggers the centralized You Focus re-evaluation (see renderAll()).
         setMilestone(data.stage);
       } else if(event === 'final'){
-        if(data.text) body.innerHTML += `<div class="msg bot">${data.text}</div>`;
+        if(data.text) body.innerHTML += `<div class="msg bot">${renderBotMarkdown(data.text)}</div>`;
         // Stash the closing sentence on the proposal it explains — confirming
         // that proposal checks this text for "more chunks queued" language to
         // decide whether to auto-continue (see confirmFillProposal).
@@ -8718,6 +9501,10 @@ function confirmFillProposal(propId){
   delete pendingFillProposals[propId];
 
   const filled = applyMatchedAssignments(p.matched);
+  // A shape driver in this batch replaces the whole SECTIONS array, leaving
+  // p.section pointing at a detached copy — re-resolve by id so the remaining
+  // count and syncSectionEntries below read the live section.
+  p.section = SECTIONS.find(x => x.id === p.section.id) || p.section;
   // Confirming a chat proposal fills the values into the form, but it is NOT
   // the same action as clicking Save — it shouldn't print "X submitted",
   // shouldn't run the major-change checkpoint evaluation, and shouldn't
@@ -8742,10 +9529,13 @@ function confirmFillProposal(propId){
   body.scrollTop = body.scrollHeight;
   if(filled.length > 0){
     syncSectionEntries(p.section);
+    // Deferred so the phase banner lands after this confirmation, and so
+    // setMilestone's own renderAll doesn't re-enter the render we're inside.
+    setTimeout(maybeAdvancePhase, 200);
     // Ask the agent to review what's left and say so in its own words —
     // deterministic trigger, agent-authored content (see the Progress &
     // Guided-Fill skill in server.js's BASE_SYSTEM_PROMPT).
-    setTimeout(() => sendChat('[[system:review_progress]]'), 400);
+    setTimeout(() => sendChat('[[system:review_progress]]'), 600);
   }
 
   // Large messages (e.g. "fill the whole CMA sheet") get chunked server-side
@@ -8784,7 +9574,12 @@ function autoGrowChatInput(el){
   const max = parseFloat(getComputedStyle(box).maxHeight) || Infinity;
   box.style.height = `${Math.min(box.scrollHeight, max)}px`;
   box.style.overflowY = box.scrollHeight > max ? 'auto' : 'hidden';
-  const send = document.getElementById('chatSendBtn');
+  // Resolve the send button from the composer this input actually sits in.
+  // It used to be a hardcoded getElementById('chatSendBtn'), so a second
+  // composer anywhere in the app (the home agent) toggled the campaign chat's
+  // button instead of its own and its own stayed disabled forever.
+  const send = (box.closest('.cp-input') || document).querySelector('button.send')
+    || document.getElementById('chatSendBtn');
   if(send) send.disabled = !box.value.trim();
 }
 
@@ -9266,10 +10061,10 @@ function setListStyle(){
   document.body.dataset.list = listStyle;
 }
 
-// Fields that are still on you in this section: yours to own, not locked,
-// not mirrored from somewhere else, and not yet filled. Same definition
-// sectionRemainingForPersona() counts with, so the number on the row and the
-// fields you actually see in simple scope can never disagree.
+// Fields that are still on you in this section: yours to own, not locked, not
+// mirrored from somewhere else, and not yet filled — the same obligation rule
+// sectionGaps() counts with (see the canonical block above), so the number on
+// the row and the fields you actually see in simple scope cannot disagree.
 // A field answered during this visit stays on screen in simple scope rather
 // than vanishing the instant it has a value. Without this, answering a
 // guided question made the field disappear mid-sentence and the orange wash
@@ -9283,27 +10078,215 @@ function fieldsNeedingMe(list){
 
 /* ---- REMAINING-FIELD LOOKUP --------------------------------------------
    Pure data helpers — no chat output, no state machine. The agent decides
-   what to ask and how to phrase it (see the Progress & Guided-Fill skill
-   in server.js's BASE_SYSTEM_PROMPT); this just answers "what's still
-   empty for this persona/phase", the same computation the section rows'
-   counts use, so the agent's tool results and what the user sees on the
-   right can never disagree. */
+   what to ask and how to phrase it (see the Progress & Guided-Fill skill in
+   server.js's BASE_SYSTEM_PROMPT); this only answers "what's still open for
+   me". Both functions below go through fieldLockReason/sectionGaps, so the
+   agent's list is the same list Your Focus and the section rows count — it
+   used to be an independent filter chain that ignored submission state, which
+   is how the agent ended up asking for six fields the form had locked. */
 function guidedFieldLabel(f){
   return f.n.replace(/\*\s*$/, '').trim();
 }
 
-// Every field still on this persona, in the order the sections are listed.
-// Scoped to the current phase for the same reason sectionRemainingForPersona()
-// is: otherwise the agent offers to walk 35 fields while the list beside it
-// says 2 sections need you, because the other 33 belong to phases nobody can
-// act on yet.
+/* ---- REQUIREMENTS INTERVIEW -------------------------------------------
+   The customer's Agent Decision Flow, encoded. Stages run in order: nothing
+   tactical is asked while something campaign-shaping is still unanswered.
+
+   The ordering isn't cosmetic. Three answers — # of Emails, # of SMS, # of
+   touch points — each fan out N whole sections, taking a 116-field form to
+   ~390. Four more (audience, channels, assetScope, enrollment/metadataSource)
+   switch entire sections and field blocks on or off. Asking those first means
+   every later question is one we know actually applies; asking them last means
+   re-interviewing the user after the shape changes under them. */
+const INTERVIEW_STAGES = [
+  { id:'objective', label:'Objective',
+    fields:['1.1.1','1.1.2','1.1.3','1.1.4','1.1.5','1.1.8','1.1.9','1.1.15','1.1.10'] },
+  { id:'audience', label:'Audience',
+    fields:['1.1.6','1.1.13','1.2.6'], sections:['dc'] },
+  { id:'trigger', label:'Trigger & scope',
+    fields:['1.1.7','1.1.6b','1.1.11','1.1.12','1.4.1','1.4.5b','1.4.2','1.4.3','1.4.4',
+            '1.4.8','1.4.9','1.4.10','1.4.11','1.4.12','1.4.13','1.4.14','1.4.15','1.4.16','1.4.5','1.4.7'],
+    sections:['cma'] },
+  { id:'journey', label:'Journey',
+    fields:['1.3.21','1.3.2','1.3.3','1.3.4','1.1.19'], sections:['journey'] },
+  { id:'content', label:'Content',
+    fields:['1.6.1','1.10.1'], sections:['email','sms'] },
+  { id:'data', label:'Data & technical',
+    fields:['1.2.1','1.2.1b','1.2.2','1.2.3','1.2.4','1.2.5','1.2.7','1.2.8','1.2.9','1.2.10',
+            '1.1.14','1.1.16','1.1.17','1.1.18'],
+    sections:['mci'] },
+];
+
+// The answers that change the form's shape rather than just its content. Asked
+// first within their stage — everything downstream depends on them.
+const SHAPE_FIELD_KEYS = ['1.6.1','1.10.1','1.3.21','1.1.6','1.1.6b','1.1.7','1.1.11','1.4.1','1.4.5b'];
+
+// Which stage a field belongs to. Explicit key wins; then the section's stage;
+// per-tactic sections are Content. Anything unclaimed lands in Data, so a new
+// admin-added field is asked last rather than jumping the queue.
+function stageForField(section, field){
+  const byKey = INTERVIEW_STAGES.find(st => st.fields.includes(field.id));
+  if(byKey) return byKey.id;
+  if(section.crfGroup || section.parentId === 'journey') return 'content';
+  const bySection = INTERVIEW_STAGES.find(st => (st.sections||[]).includes(section.id));
+  if(bySection) return bySection.id;
+  return 'data';
+}
+
+function stageIndex(id){ return INTERVIEW_STAGES.findIndex(st => st.id === id); }
+
+// Every outstanding field, tagged and sorted into interview order. Built on
+// guidedRemainingRefs() so it inherits the canonical lock/ownership rules
+// rather than re-deriving them.
+function interviewRefs(){
+  return guidedRemainingRefs().map(ref=>{
+    const r = guidedResolve(ref);
+    if(!r) return null;
+    const stage = stageForField(r.section, r.field);
+    return {
+      ...ref, stage,
+      stageIdx: stageIndex(stage),
+      isShape: SHAPE_FIELD_KEYS.includes(r.field.id),
+      crfGroup: r.section.crfGroup || 0,
+      sectionName: dispSectionName(r.section),
+      field: guidedFieldLabel(r.field),
+      type: r.field.type,
+      opts: r.field.opts,
+      src: (r.field.src && r.field.src !== '—') ? r.field.src : undefined,
+    };
+  }).filter(Boolean).sort((a,b)=>
+    a.stageIdx - b.stageIdx ||
+    (b.isShape - a.isShape) ||       // shape drivers first inside a stage
+    a.crfGroup - b.crfGroup ||       // finish one tactic before starting the next
+    0);
+}
+
+// The next small group to ask about — capped, single-stage, single-tactic, so
+// the agent physically cannot produce a wall of questions or interleave two
+// tactics. ("Ask questions in small groups"; "one email at a time".)
+const INTERVIEW_BATCH = 5;
+function interviewQueue(){
+  const refs = interviewRefs();
+  if(!refs.length) return [];
+  const { stage, crfGroup } = refs[0];
+  return refs.filter(r => r.stage === stage && r.crfGroup === crfGroup).slice(0, INTERVIEW_BATCH);
+}
+
+// Everything the agent needs to run a turn: where we are, what's blocking, what
+// to ask next, and how much it could fill for free.
+function interviewState(){
+  const refs = interviewRefs();
+  const current = refs.length ? refs[0].stage : null;
+  const perStage = INTERVIEW_STAGES.map(st=>{
+    const open = refs.filter(r => r.stage === st.id);
+    return {
+      stage: st.id, label: st.label, remaining: open.length,
+      complete: open.length === 0,
+      current: st.id === current,
+    };
+  });
+  const derivable = derivedProposals();
+  return {
+    stage: current,
+    stageLabel: current ? (INTERVIEW_STAGES.find(s=>s.id===current)||{}).label : null,
+    complete: refs.length === 0,
+    totalRemaining: refs.length,
+    stages: perStage,
+    nextQuestions: interviewQueue(),
+    // Every open field in the current stage, not just the ones being asked
+    // right now. A user answering "brand is X, therapy is Y, and the goal
+    // is Z" volunteers more than was asked; without this the agent has no
+    // sectionId for the extras and drops them on the floor.
+    stageOpen: refs.filter(r => r.stage === current)
+      .map(r => ({ sectionId: r.sectionId, sectionName: r.sectionName, field: r.field })),
+    derivableCount: derivable.length,
+    // Named so the agent can say "I can fill 23 fields from what you've already
+    // told me" without needing a second tool call to find out what they are.
+    derivableSample: derivable.slice(0, 6).map(d => `${d.sectionName}: ${d.field}`),
+  };
+}
+
+// Every field still open for this persona, in the order the sections are
+// listed. Scoped to the current phase for the same reason sectionGaps() is:
+// otherwise the agent offers to walk 35 fields while the list beside it says
+// 2 sections need you, because the other 33 belong to phases nobody can act
+// on yet. Section-level `needs` is honoured too, matching youFocusSections().
 function guidedRemainingRefs(){
   const out = [];
   const phase = currentPhase;
-  SECTIONS.filter(s => sectionApplicable(s)).forEach(s=>{
+  SECTIONS.forEach(s=>{
+    if(!(s.needs[phase]||[]).includes(currentPersona)) return;
+    if(sectionGaps(s, currentPersona, phase).remaining === 0) return;
     visibleFields(s.phases[phase]||[])
       .filter(f=>f.owner===currentPersona && !f.locked && !f.cascadeFromField && !isFieldFilled(f))
+      .filter(f=>!fieldLockReason(s, f, currentPersona))
       .forEach(f=>out.push({ sectionId:s.id, fieldId:f.id, phase }));
+  });
+  return out;
+}
+
+// Fields this persona owns that are still empty but CANNOT be filled right
+// now, with the reason. Not an obligation list — it exists so the agent can
+// answer "why can't I fill X?" without being able to write to it.
+function guidedBlockedRefs(){
+  const out = [];
+  const phase = currentPhase;
+  SECTIONS.forEach(s=>{
+    visibleFields(s.phases[phase]||[])
+      .filter(f=>f.owner===currentPersona && !f.locked && !f.cascadeFromField && !isFieldFilled(f))
+      .forEach(f=>{
+        const reason = fieldLockReason(s, f, currentPersona);
+        if(reason) out.push({ sectionName: s.name, field: guidedFieldLabel(f), reason, reasonText: LOCK_REASON_TEXT[reason] });
+      });
+  });
+  return out;
+}
+
+/* ---- DERIVED VALUES ----------------------------------------------------
+   A campaign restates the same few facts many times over — Brand appears in
+   Generic, again in OMS, and again as "Tact Brand: Name" and "New Program
+   Brand: Brand" inside the CMA sheet. derivesFrom (FormField column, seeded by
+   prisma/seed-derives-from.js) records where each restatement can be inferred
+   from, so the interview asks once instead of a dozen times.
+
+   Nothing here writes: this returns proposals, which the agent stages as ONE
+   confirm card. The customer's rule is that defaults apply only with approval,
+   and a silent 25-field autofill is exactly what that rule forbids. */
+function fieldValueByKey(key){
+  for(const s of SECTIONS){
+    const f = allFieldsForSection(s).find(x => x.id === key);
+    if(f) return fieldValue(f);
+  }
+  return '';
+}
+
+// Every field whose source is answered, which is itself still empty and
+// actually writable right now. Skips anything fieldLockReason rejects, so a
+// derived batch can never propose into a submitted or read-only section.
+function derivedProposals(){
+  const out = [];
+  SECTIONS.forEach(s=>{
+    if(!sectionApplicable(s)) return;
+    allFieldsForSection(s).forEach(f=>{
+      if(f.type === 'metasheet'){
+        const map = f.subDerives || {};
+        (f.groups||[]).forEach((g, gi)=>g.fields.forEach((fn, fi)=>{
+          const src = map[`g${gi}-f${fi}`];
+          if(!src) return;
+          if(fieldValues[`${f.id}-${gi}-${fi}`]) return;      // already answered
+          const value = fieldValueByKey(src);
+          if(!value) return;                                  // source not answered yet
+          if(fieldLockReason(s, f, currentPersona)) return;   // parent not writable
+          out.push({ sectionId: s.id, sectionName: dispSectionName(s), field: `${g.label}: ${fn}`, value, from: src });
+        }));
+        return;
+      }
+      if(!f.derivesFrom || isFieldFilled(f)) return;
+      const value = fieldValueByKey(f.derivesFrom);
+      if(!value) return;
+      if(fieldLockReason(s, f, currentPersona)) return;
+      out.push({ sectionId: s.id, sectionName: dispSectionName(s), field: f.n, value, from: f.derivesFrom });
+    });
   });
   return out;
 }
@@ -9485,6 +10468,7 @@ function startCampaignTicker(){
   renderPersonaMenu();
   renderRequestsTable();
   updateStatsForPersona();
+  renderHomeWelcome();
   loadNudgeRules();
 })();
 </script>
