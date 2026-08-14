@@ -1,5 +1,11 @@
 node_modules/
 .env
+.env.local
+.env.*.local
+# Runtime logs — server.log/server.out.log/server.err.log capture request
+# traces and stack output. Never useful in the repo, and they are exactly the
+# kind of file that quietly accumulates values you did not mean to publish.
+*.log
 *.db
 *.db-journal
 dist/

@@ -1,64 +1,88 @@
+/* ===========================================================================
+   Shared base for the admin client.
+
+   This file was still carrying the Vite React starter's stylesheet: an
+   #aa3bff purple accent, a 1126px fixed-width centred #root with vertical
+   rules down both sides, an 18px root font and a prefers-color-scheme dark
+   block. None of it matched the product, and the dark block was actively
+   harmful — AdminSchema paints hardcoded #fff surfaces and #dde3ea borders,
+   so in dark mode the page background flipped to #16171d while the table,
+   the buttons and the inputs stayed light, at unreadable contrast.
+
+   It now reads from the same three-colour Novartis system the main app uses
+   (accelerate-app/public/index.html): Warm Black #161616, Soft White #FCFCFC,
+   Space Orange #FF4E00 for interaction only, square corners, 1px borders
+   instead of elevation. Greys are the live-novartis.com structural neutrals.
+   =========================================================================== */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  /* ---- Core brand palette ---- */
+  --nv-warm-black: #161616;
+  --nv-soft-white: #FCFCFC;
+  --nv-space-orange: #FF4E00;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* ---- Surfaces ---- */
+  --bg: #F2F2F2;
+  --surface: #FCFCFC;
+  --surface2: #F2F2F2;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
+  /* ---- Ink ladder, contrast-checked against --surface and --surface2 ----
+     ink  #161616 — 17.1:1 / 15.7:1
+     ink2 #3F3F3F — 10.3:1 /  9.4:1
+     ink3 #616161 —  6.0:1 /  5.5:1
+     The greys this replaced (#888 at 3.5:1, #999 at 2.9:1) both failed
+     WCAG AA for body text. ---- */
+  --ink: #161616;
+  --ink2: #3F3F3F;
+  --ink3: #616161;
+
+  --line: #DADADA;
+  --line2: #E8E8E8;
+
+  /* ---- Type. Matches the main app: Volta Modern Display is Novartis
+         proprietary and cannot be bundled, so the stack falls through to
+         the brand's own documented fallback, Arial/Helvetica. ---- */
+  --font: 'Volta Modern Display', Arial, Helvetica, Verdana, sans-serif;
+  --mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --fw-body: 400;
+  --fw-medium: 600;
+
+  /* ---- Type ladder — same whole-pixel steps as the main app ---- */
+  --t-11: 11px;
+  --t-12: 12px;
+  --t-13: 13px;
+  --t-14: 14px;
+  --t-16: 16px;
+  --t-22: 22px;
+  --t-28: 28px;
+
+  /* ---- Spacing — one 4px-based scale, so paddings stop being picked
+         per-rule (the old files used 1, 4, 5, 6, 7, 8, 10, 12, 20, 22,
+         24, 30, 32 and 40px with no relationship between them). ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* ---- Shape and motion ---- */
+  --radius: 0;
+  --dur: 150ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  --tracking: 0.4px;
+
+  font: var(--fw-body) var(--t-16) / 1.5 var(--font);
+  letter-spacing: var(--tracking);
+  color: var(--ink);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
 }
 
@@ -66,46 +90,68 @@ body {
   margin: 0;
 }
 
+#root {
+  min-height: 100dvh;
+}
+
+/* Headings: weight and colour carry the hierarchy, not scale alone. */
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+h2,
+h3 {
+  margin: 0;
+  font-weight: var(--fw-medium);
+  color: var(--ink);
+  letter-spacing: var(--tracking);
+  line-height: 1.2;
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: var(--t-28);
 }
+
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-size: var(--t-16);
 }
+
 p {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+/* Square everything, including UA defaults on form controls. */
+input,
+select,
+textarea,
+button {
+  border-radius: var(--radius);
+  font-family: inherit;
+  letter-spacing: var(--tracking);
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Global interaction pattern: Warm Black by default, Space Orange on
+   hover/focus, 3px focus ring — same as the main app. */
+a {
+  color: var(--ink);
+  transition: color var(--dur) var(--ease);
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--nv-space-orange);
+}
+
+:focus-visible {
+  outline: 2px solid var(--nv-space-orange);
+  outline-offset: 2px;
 }
 
 code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  font-family: var(--mono);
+  font-size: var(--t-13);
+  padding: 2px var(--sp-1);
+  background: var(--surface2);
+  color: var(--ink);
 }

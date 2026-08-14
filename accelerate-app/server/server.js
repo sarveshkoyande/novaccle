@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { GoogleGenAI, createPartFromFunctionResponse } = require('@google/genai');
+const { AnthropicFoundry } = require('@anthropic-ai/foundry-sdk');
 const { PrismaClient } = require('./generated/prisma');
 const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
 const multer = require('multer');
@@ -11,8 +11,62 @@ const mammoth = require('mammoth');
 const XLSX = require('xlsx');
 
 const app = express();
+
+// ---------------------------------------------------------------------------
+// Diagnostics. The browser can only ever report "fetch threw" for anything
+// that fails below the HTTP layer — wrong origin, connection refused, reset
+// mid-flight — so the single most useful question is whether the request
+// arrives here AT ALL. Every request is logged on arrival and again on
+// completion; if the browser reports an error and nothing appears here, the
+// request never reached this process and the problem is on the client side
+// (usually the page being served from somewhere other than this server).
+// ---------------------------------------------------------------------------
+const started = new Date().toISOString();
+console.log(`[server] pid=${process.pid} node=${process.version} boot=${started}`);
+
+let reqSeq = 0;
+app.use((req, res, next) => {
+  const id = ++reqSeq;
+  const t0 = Date.now();
+  const origin = req.get('origin') || req.get('referer') || '-';
+  const len = req.get('content-length') || '0';
+  console.log(`[req ${id}] --> ${req.method} ${req.originalUrl} origin=${origin} bytes=${len} ip=${req.ip}`);
+  res.on('finish', () => {
+    console.log(`[req ${id}] <-- ${res.statusCode} ${req.method} ${req.originalUrl} ${Date.now() - t0}ms`);
+  });
+  // Fires when the client hangs up before the response completed — this is
+  // what a browser-side "Failed to fetch" looks like from in here.
+  res.on('close', () => {
+    if (!res.writableEnded) {
+      console.warn(`[req ${id}] !!! client disconnected before response completed after ${Date.now() - t0}ms`);
+    }
+  });
+  next();
+});
+
 app.use(cors());
 app.use(express.json({ limit: '500kb' }));
+
+// A body larger than the limit, or malformed JSON, surfaces here rather than
+// as a silent hang — both would otherwise look like "backend unreachable".
+app.use((err, req, res, next) => {
+  if (err && (err.type === 'entity.too.large' || err instanceof SyntaxError)) {
+    console.error(`[server] rejected body: ${err.type || 'invalid JSON'} (${err.message})`);
+    return res.status(413).json({ error: `Request body rejected: ${err.type || 'invalid JSON'}` });
+  }
+  return next(err);
+});
+
+process.on('uncaughtException', err => {
+  console.error('[server] FATAL uncaughtException:', err && err.stack || err);
+});
+process.on('unhandledRejection', err => {
+  console.error('[server] unhandledRejection:', err && err.stack || err);
+});
+['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK'].forEach(sig => {
+  process.on(sig, () => { console.warn(`[server] received ${sig} — exiting`); process.exit(0); });
+});
+process.on('exit', code => console.warn(`[server] process exiting with code ${code}`));
 
 // In-memory upload handling for the chat's file-parse feature — files are
 // parsed to text and discarded, never written to disk. 15 MB cap.
@@ -58,12 +112,21 @@ app.post('/api/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-const apiKey = process.env.GEMINI_API_KEY;
-if (!apiKey) {
-  console.warn('[server] GEMINI_API_KEY is not set — /api/agent-fill will return 503 until server/.env has it.');
+// Claude on Microsoft Foundry. The SDK builds
+// https://{resource}.services.ai.azure.com/anthropic/ from `resource` and
+// sends the key as the x-api-key header; `resource` and `baseURL` are
+// mutually exclusive, so only one of them is passed.
+const apiKey = process.env.ANTHROPIC_FOUNDRY_API_KEY;
+const foundryResource = process.env.ANTHROPIC_FOUNDRY_RESOURCE;
+if (!apiKey || !foundryResource) {
+  console.warn('[server] ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not set — the agent routes will return 503 until server/.env has both.');
 }
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
-const MODEL = 'gemini-2.5-flash';
+const ai = apiKey && foundryResource ? new AnthropicFoundry({ apiKey, resource: foundryResource }) : null;
+const MODEL = process.env.CLAUDE_DEPLOYMENT || 'claude-opus-4-8';
+// Anthropic requires an explicit output cap. 16k keeps a long multi-field
+// propose_fill well within limits while staying under the SDK's HTTP timeout
+// for non-streaming requests (the SSE stream below is our own, not the model's).
+const MAX_OUTPUT_TOKENS = 16000;
 // Large multi-field messages (e.g. "fill the whole CMA sheet", 45 fields
 // across 10 groups) are deliberately chunked to at most 10 fields per
 // propose_fill call, one call per turn (see BASE_SYSTEM_PROMPT) — cramming
@@ -615,23 +678,32 @@ app.delete('/api/admin/nudge-rules/:id', async (req, res) => {
 // below is the model's choice, not a scripted order.
 // ===========================================================================
 
-const BASE_SYSTEM_PROMPT = `You are the Novartis Accelerate assistant — a form-filling agent embedded in a pharma campaign requirement-gathering platform, not a general-purpose chatbot. If asked what you are or who made you, answer in that identity (the platform's assistant) — never describe yourself as "a large language model trained by Google" or similar; that's an implementation detail, not who you are here. Most messages are free text — sometimes hurried, informal, with typos, in any language — describing a form section and values for fields in it. Some messages are just questions about data already entered into the form, with nothing new to fill. Some messages are corrections or preferences about how YOU should behave going forward, not about the form at all. Some messages are just plain chat (greetings, questions about the platform) with no fields to fill. Some messages ask to move to a different stage of the process. You have five tools:
+const BASE_SYSTEM_PROMPT = `You are the Novartis Accelerate assistant — a form-filling agent embedded in a pharma campaign requirement-gathering platform, not a general-purpose chatbot. If asked what you are or who made you, answer in that identity (the platform's assistant) — never describe yourself as "a large language model" or name the vendor behind you; that's an implementation detail, not who you are here. Most messages are free text — sometimes hurried, informal, with typos, in any language — describing a form section and values for fields in it. Some messages are just questions about data already entered into the form, with nothing new to fill. Some messages are corrections or preferences about how YOU should behave going forward, not about the form at all. Some messages are just plain chat (greetings, questions about the platform) with no fields to fill. Some messages ask to move to a different stage of the process. You have five tools:
 
 - match_section(query): locates which section of the form the user means and returns its real field names. ALWAYS pass the user's ENTIRE original message as query — never extract just a fragment or sub-topic of it (e.g. don't pass just "tact franchise" from a message that says "let's fill the whole cma sheet, for the tact franchise..." — pass the whole message). Matching is substring-based against section names/aliases, so the full message gives it the best chance; a cherry-picked fragment can accidentally match nothing or match the wrong thing.
 - propose_fill(sectionId, assignments): stages field:value pairs for the user to confirm. This does NOT write anything to the form yet — it only proposes. For a normal-sized message, batch every assignment you can extract into ONE propose_fill call for that section — do not call it once per group/topic. BUT: if the message specifies more than 10 fields for one section (e.g. "fill the whole CMA sheet" with all ten groups), do NOT try to fit them all in one call and do NOT call propose_fill more than once in the same turn for that section. Instead: stage only the FIRST 10 fields (in the order the fields appear on the form) as a single propose_fill call, then end your turn — do not call propose_fill again this turn. Tell the user exactly which fields/groups you staged and that the rest are queued; once they confirm this batch and say "continue" (or similar), stage the next 10 from the same original message, and so on. This exists because attempting to cram 30-45+ fields into one call is unreliable — it produces partial/dropped assignments — and because staging everything at once with no pacing overwhelms the confirm-review step. 10 fields, one confirmed batch at a time.
 - get_entries(sectionId?, phase?): looks up field values already saved to the form (real persisted data, not memory/history) — optionally filtered to one section and/or one stage (preplan/plan/exec). Use this whenever the user asks what's already been entered, confirmed, or set for something — never answer from conversation history or a guess when this tool can ground the answer in what's actually saved.
 - learn_skill(title, rule): permanently records a correction or preference about how you should behave, so it applies automatically on every future turn from now on — not just this session. Use this when the user is correcting your behavior, stating a standing preference, or clarifying a rule for how to handle something going forward ("always do X", "don't do Y", "when someone says Z, you should..."), as opposed to a one-off form-fill or a question. This is a judgment call you make from the message's intent — there is no fixed keyword list for it. "rule" should be the general, reusable instruction (not campaign-specific data); "title" is a short label for it.
 - navigate_stage(stage): moves the user to a different stage of the process (cpf/crf/build/deploy/monitor). Use this whenever the user asks to go to, move to, advance to, switch to, or proceed to a stage by name — this is a real UI navigation, not a form-fill, so don't call match_section or propose_fill for it.
+- get_missing_fields(sectionId?): returns the fields still needing input for the current user and phase — real data computed by the client (ownership, conditional visibility, cascades all included), optionally filtered to one section. Read-only.
+- record_quiz_answer(sectionId, field, value): records ONE field's answer immediately (no staging, no confirm step) during a guided quiz — see the Progress & Guided-Fill skill below. Only use this for an answer the user just gave to a question you asked about that exact field; for freeform text describing multiple values, use propose_fill instead.
+
+Progress & Guided-Fill skill — three behaviors, always driven by you, never a repeated template:
+
+1. Status reviews. If the user asks a "what's left / how am I doing / what's still needed" question, OR the message is the literal sentinel [[system:review_progress]] (a silent check-in fired by the UI after something changed — never show that literal text to the user), call get_missing_fields for the current phase and report what's outstanding in your own words, naming a few actual field labels, not just a count. If nothing is missing, say so briefly in one sentence and don't call the tool for nothing to report.
+2. Fill-from-text. Unchanged — the existing match_section / propose_fill flow above, for messages that describe values in free text.
+3. Guided quiz. Triggered when the user asks to get started, be walked through what's left, or asks you to ask them one by one. Call get_missing_fields first. Then ask about exactly ONE missing field per turn, in plain conversational English (the same style as your normal prose — mention where the value usually comes from if you have that context). Wait for their reply. If it's an answer, call record_quiz_answer with that exact field and value, then ask about the next missing field in the same reply. If they say skip/pass/not sure, move to the next field without recording anything. If they ask an unrelated question or issue a correction mid-quiz, handle it with the normal tools first, then resume asking about the next missing field — don't lose your place. When nothing is left, close with a short, freshly-worded wrap-up sentence, not a template.
 
 Rules:
 - Only reach for match_section/propose_fill when the message is actually about filling in NEW form values. If it's a greeting or a general question with nothing to fill, just reply directly and briefly, in persona — do not call match_section on a "hello".
 - If the user is asking a question about existing data ("what's the brand we set for OMS", "what did we put for the campaign name", "what's still empty in planning"), call get_entries — do not guess from memory, and do not call propose_fill for a read-only question.
 - If the user is correcting how you behave or stating a standing preference (not campaign data), call learn_skill instead of just apologizing and moving on — the correction should actually persist. Confirm in your final reply what you've learned, in one short sentence.
-- When you do call a tool, output exactly one short, plain, professional sentence right before it stating what you're about to do and why — write it like a status log entry, not a conversational aside. No first-person filler ("Okay", "I'm", "I've"), no chit-chat.
+- Write like a helpful colleague sitting next to the user: warm, plain English, contractions fine. The UI already renders the raw field:value list on the staged-changes card, so your text should not repeat it as a list — your job is to say what it means in sentences. Stay brief; two or three sentences is usually plenty.
+- When you do call a tool, first say one short conversational sentence about what you're doing. "Let me pull up the Campaign Metadata fields for you." reads right; "Invoking match_section." does not.
 - ALWAYS call match_section before propose_fill — never guess a section id or field name from memory.
 - Only call propose_fill after match_section has told you the section's real field names. Only include a field in assignments if the user's text actually specifies a value for it — never invent one. Field names must be copied verbatim from the list match_section returned.
 - If match_section finds no match, end your turn asking the user which section they mean — do not guess.
-- After calling propose_fill, end your turn with one short sentence telling the user the values are staged and awaiting confirmation in the UI — never claim they were applied.
+- After calling propose_fill, close by reading back what you staged in natural prose, naming the actual values rather than just the field labels — "I've put Cosentyx down as the brand and Q3 2026 for the launch window; take a look and confirm when it looks right." If you had to interpret something loosely, say so in the same breath. Never say the values were applied or saved — they are staged until the user confirms.
 - You have the full conversation history. If the user is correcting or amending a value from earlier in this conversation (e.g. "my mistake, brand is X", "actually make it Y") rather than starting a new request, reuse the section already established earlier — do not call match_section on the correction fragment alone (a bare value like "brand is X" will not match any section by itself). Only call match_section again if the user is clearly now talking about a different section.`;
 
 // Every active AgentSkill's rule gets folded into the system prompt on every
@@ -666,7 +738,7 @@ function buildToolDeclarations() {
     {
       name: 'match_section',
       description: "Find which form section the user's message refers to, and return that section's real field names.",
-      parametersJsonSchema: {
+      input_schema: {
         type: 'object',
         properties: { query: { type: 'string', description: "The user's ENTIRE original message, verbatim — not a fragment or extracted sub-topic. Matching is substring-based, so passing the whole message maximizes the chance of finding the section name/alias wherever it appears." } },
         required: ['query'],
@@ -675,7 +747,7 @@ function buildToolDeclarations() {
     {
       name: 'propose_fill',
       description: 'Stage field:value assignments for one section for the user to confirm. Does not write to the form.',
-      parametersJsonSchema: {
+      input_schema: {
         type: 'object',
         properties: {
           sectionId: { type: 'string' },
@@ -694,7 +766,7 @@ function buildToolDeclarations() {
     {
       name: 'get_entries',
       description: 'Look up field values already saved to this campaign request, optionally filtered to one section and/or one stage (preplan/plan/exec). Read-only — grounds answers about existing data in what is actually persisted.',
-      parametersJsonSchema: {
+      input_schema: {
         type: 'object',
         properties: {
           sectionId: { type: 'string', description: 'Optional — restrict to one section id.' },
@@ -706,7 +778,7 @@ function buildToolDeclarations() {
     {
       name: 'learn_skill',
       description: 'Permanently record a correction or standing preference about your own behavior, so it applies on every future turn from now on — not just this session.',
-      parametersJsonSchema: {
+      input_schema: {
         type: 'object',
         properties: {
           title: { type: 'string', description: 'Short label for this rule.' },
@@ -718,12 +790,34 @@ function buildToolDeclarations() {
     {
       name: 'navigate_stage',
       description: 'Move to a different stage of the requirement-gathering process. Use when the user asks to go to, move to, advance to, or switch to a stage ("let\'s go to CRF", "move to build", "back to CPF").',
-      parametersJsonSchema: {
+      input_schema: {
         type: 'object',
         properties: {
           stage: { type: 'string', enum: ['cpf', 'crf', 'build', 'deploy', 'monitor'], description: 'cpf = CPF & Visio, crf = CRF & Asset Handoff, build = Build & Proofing, deploy = Deployment, monitor = Monitoring.' },
         },
         required: ['stage'],
+      },
+    },
+    {
+      name: 'get_missing_fields',
+      description: 'Return the fields still needing input for the current user and phase (ownership, conditional visibility, and cascades already applied client-side), optionally filtered to one section. Read-only.',
+      input_schema: {
+        type: 'object',
+        properties: { sectionId: { type: 'string', description: 'Optional — restrict to one section id.' } },
+        required: [],
+      },
+    },
+    {
+      name: 'record_quiz_answer',
+      description: "Record one field's answer immediately during a guided quiz — no staging, no confirm step. Only for an answer to a question you just asked about that exact field.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          sectionId: { type: 'string' },
+          field: { type: 'string', description: 'The field label, copied verbatim from get_missing_fields.' },
+          value: { type: 'string' },
+        },
+        required: ['sectionId', 'field', 'value'],
       },
     },
   ];
@@ -813,7 +907,80 @@ async function executeTool(name, args, ctx) {
     if (!valid.includes(args.stage)) return { error: `Unknown stage "${args.stage}".` };
     return { navigated: true, stage: args.stage };
   }
+  if (name === 'get_missing_fields') {
+    const remaining = Array.isArray(ctx.remaining) ? ctx.remaining : [];
+    const filtered = args.sectionId ? remaining.filter(r => r.sectionId === args.sectionId) : remaining;
+    return { remaining: filtered, count: filtered.length };
+  }
+  if (name === 'record_quiz_answer') {
+    const section = ctx.sections.find(s => s.id === args.sectionId);
+    if (!section) return { error: `Unknown sectionId "${args.sectionId}".` };
+    const field = String(args.field || '').trim();
+    const value = String(args.value ?? '');
+    if (!field) return { error: 'field is required.' };
+    return { applied: true, sectionId: section.id, sectionName: section.name, field, value };
+  }
   return { error: `Unknown tool "${name}".` };
+}
+
+// Concatenated text of an assistant message. The Messages API returns a list
+// of content blocks (text / tool_use / thinking), not a flat .text string.
+function assistantText(message) {
+  return (message.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim();
+}
+
+// The Anthropic tool-use loop, shared by both SSE agent routes below.
+// Replaces Gemini's stateful `chat` object: the Messages API is stateless, so
+// `messages` IS the conversation and gets round-tripped through the client via
+// the existing "history" SSE event — same client contract as before, the array
+// is opaque to it.
+//
+// Callers pass `onResult` to emit their own route-specific SSE events
+// (proposal / learned / navigate) off a tool result.
+async function runAgentTurn({ system, tools, messages, execute, ctx, send, onResult }) {
+  const request = { model: MODEL, max_tokens: MAX_OUTPUT_TOKENS, system, tools };
+  let response = await ai.messages.create({ ...request, messages });
+
+  let rounds = 0;
+  while (response.stop_reason === 'tool_use' && rounds < MAX_TOOL_ROUNDS) {
+    rounds++;
+    // The one-sentence narration the model writes before calling a tool.
+    const reasoning = assistantText(response);
+    if (reasoning) send('reasoning', { text: reasoning });
+
+    // The assistant turn must be echoed back verbatim — every tool_use block
+    // needs a matching tool_result in the next user turn or the API rejects it.
+    messages.push({ role: 'assistant', content: response.content });
+
+    const toolResults = [];
+    for (const block of response.content) {
+      if (block.type !== 'tool_use') continue;
+      send('tool_start', { name: block.name });
+      let result;
+      try { result = await execute(block.name, block.input || {}, ctx); }
+      catch (err) { result = { error: err instanceof Error ? err.message : 'Tool execution failed.' }; }
+      send('tool', { name: block.name, result });
+      onResult(block.name, result);
+
+      toolResults.push({
+        type: 'tool_result',
+        tool_use_id: block.id,
+        content: JSON.stringify(result),
+        is_error: Boolean(result && result.error),
+      });
+    }
+    messages.push({ role: 'user', content: toolResults });
+
+    response = await ai.messages.create({ ...request, messages });
+  }
+
+  // Only persist the closing turn when it has no unanswered tool calls —
+  // hitting MAX_TOOL_ROUNDS leaves tool_use blocks with no tool_result, and
+  // storing those would make the NEXT turn fail validation on resend.
+  if (response.stop_reason !== 'tool_use') {
+    messages.push({ role: 'assistant', content: response.content });
+  }
+  return { finalText: assistantText(response), messages };
 }
 
 // SSE agent loop — same event-per-step granularity as govex's streamAgentTurn:
@@ -822,8 +989,8 @@ async function executeTool(name, args, ctx) {
 // propose_fill result, ready for the client's existing Confirm/Cancel card),
 // "final" (closing text), "error".
 app.post('/api/agent-fill', async (req, res) => {
-  const { sections, text, history, tactplanId } = req.body || {};
-  if (!ai) return res.status(503).json({ error: 'GEMINI_API_KEY not configured on the server.' });
+  const { sections, text, history, tactplanId, remaining, persona, phase } = req.body || {};
+  if (!ai) return res.status(503).json({ error: 'ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not configured on the server.' });
   if (!Array.isArray(sections) || sections.length === 0 || !text) {
     return res.status(400).json({ error: 'sections[] and text are required.' });
   }
@@ -839,7 +1006,11 @@ app.post('/api/agent-fill', async (req, res) => {
   // pass the full message despite being told to; this sidesteps that by
   // not depending on model compliance for something we can do deterministically).
   // tactplanId scopes get_entries to the campaign request currently open.
-  const ctx = { sections, originalText: text, tactplanId: tactplanId || null };
+  const ctx = {
+    sections, originalText: text, tactplanId: tactplanId || null,
+    remaining: Array.isArray(remaining) ? remaining : [],
+    persona: persona || null, phase: phase || null,
+  };
 
   try {
     // Client resends the prior turn's history (from the "history" event
@@ -847,46 +1018,25 @@ app.post('/api/agent-fill', async (req, res) => {
     // conversation instead of starting a blank one each request — there's
     // no server-side session store, so the client is the source of truth
     // for continuity, same effect as govex's ChatSession.historyJson.
-    const chat = ai.chats.create({
-      model: MODEL,
-      history: Array.isArray(history) ? history : undefined,
-      config: {
-        systemInstruction: await buildSystemPrompt(),
-        tools: [{ functionDeclarations: buildToolDeclarations() }],
-        automaticFunctionCalling: { disable: true },
-        temperature: 0.3,
-      },
-    });
+    const messages = (Array.isArray(history) ? history : []).concat([{ role: 'user', content: text }]);
 
-    let response = await chat.sendMessage({ message: text });
-    if (response.text?.trim() && response.functionCalls?.length) send('reasoning', { text: response.text.trim() });
-
-    let rounds = 0;
-    while (response.functionCalls?.length && rounds < MAX_TOOL_ROUNDS) {
-      rounds++;
-      const responseParts = [];
-      for (const call of response.functionCalls) {
-        const name = call.name || 'unknown_tool';
-        const args = call.args || {};
-        const callId = call.id || `${name}-${rounds}`;
-
-        send('tool_start', { name });
-        let result;
-        try { result = await executeTool(name, args, ctx); }
-        catch (err) { result = { error: err instanceof Error ? err.message : 'Tool execution failed.' }; }
-        send('tool', { name, result });
+    const turn = await runAgentTurn({
+      system: await buildSystemPrompt(),
+      tools: buildToolDeclarations(),
+      messages,
+      execute: executeTool,
+      ctx,
+      send,
+      onResult: (name, result) => {
         if (name === 'propose_fill' && result?.proposed) send('proposal', result);
         if (name === 'learn_skill' && result?.learned) send('learned', result);
         if (name === 'navigate_stage' && result?.navigated) send('navigate', result);
+        if (name === 'record_quiz_answer' && result?.applied) send('quiz_answer', result);
+      },
+    });
 
-        responseParts.push(createPartFromFunctionResponse(callId, name, result));
-      }
-      response = await chat.sendMessage({ message: responseParts });
-      if (response.text?.trim() && response.functionCalls?.length) send('reasoning', { text: response.text.trim() });
-    }
-
-    send('final', { text: response.text?.trim() || '' });
-    send('history', { history: chat.getHistory() });
+    send('final', { text: turn.finalText });
+    send('history', { history: turn.messages });
     res.end();
   } catch (err) {
     console.error('[server] Agent turn failed:', err);
@@ -946,7 +1096,7 @@ function buildDiagramToolDeclarations() {
     {
       name: 'propose_diagram_edit',
       description: 'Stage one or more diagram graph operations for the user to preview and apply. Does not mutate the diagram itself.',
-      parametersJsonSchema: {
+      input_schema: {
         type: 'object',
         properties: {
           summary: { type: 'string', description: 'One-line description of the overall edit, shown as the preview card headline.' },
@@ -1037,7 +1187,7 @@ async function executeDiagramTool(name, args, ctx) {
 // existing SSE parsing pattern (see vbSendChat) needed no new plumbing.
 app.post('/api/visio-agent', async (req, res) => {
   const { graph, text, history, tactplanId } = req.body || {};
-  if (!ai) return res.status(503).json({ error: 'GEMINI_API_KEY not configured on the server.' });
+  if (!ai) return res.status(503).json({ error: 'ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not configured on the server.' });
   if (!text) return res.status(400).json({ error: 'text is required.' });
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -1048,50 +1198,27 @@ app.post('/api/visio-agent', async (req, res) => {
   const ctx = { graph: graph && graph.nodes ? graph : { nodes: [], edges: [] }, tactplanId: tactplanId || null };
 
   try {
-    const chat = ai.chats.create({
-      model: MODEL,
-      history: Array.isArray(history) ? history : undefined,
-      config: {
-        systemInstruction: DIAGRAM_SYSTEM_PROMPT,
-        tools: [{ functionDeclarations: buildDiagramToolDeclarations() }],
-        automaticFunctionCalling: { disable: true },
-        temperature: 0.3,
-      },
-    });
-
     // The graph is sent inline with the message (not just in a tool result)
     // so the model can answer read-only questions without needing a tool
     // round-trip, and so it always has real current node ids/labels to
     // reference even on the very first turn.
     const messageWithGraph = `Current diagram graph (JSON):\n${JSON.stringify(ctx.graph)}\n\nUser message: ${text}`;
+    const messages = (Array.isArray(history) ? history : []).concat([{ role: 'user', content: messageWithGraph }]);
 
-    let response = await chat.sendMessage({ message: messageWithGraph });
-    if (response.text?.trim() && response.functionCalls?.length) send('reasoning', { text: response.text.trim() });
-
-    let rounds = 0;
-    while (response.functionCalls?.length && rounds < MAX_TOOL_ROUNDS) {
-      rounds++;
-      const responseParts = [];
-      for (const call of response.functionCalls) {
-        const name = call.name || 'unknown_tool';
-        const args = call.args || {};
-        const callId = call.id || `${name}-${rounds}`;
-
-        send('tool_start', { name });
-        let result;
-        try { result = await executeDiagramTool(name, args, ctx); }
-        catch (err) { result = { error: err instanceof Error ? err.message : 'Tool execution failed.' }; }
-        send('tool', { name, result });
+    const turn = await runAgentTurn({
+      system: DIAGRAM_SYSTEM_PROMPT,
+      tools: buildDiagramToolDeclarations(),
+      messages,
+      execute: executeDiagramTool,
+      ctx,
+      send,
+      onResult: (name, result) => {
         if (name === 'propose_diagram_edit' && result?.proposed) send('proposal', result);
+      },
+    });
 
-        responseParts.push(createPartFromFunctionResponse(callId, name, result));
-      }
-      response = await chat.sendMessage({ message: responseParts });
-      if (response.text?.trim() && response.functionCalls?.length) send('reasoning', { text: response.text.trim() });
-    }
-
-    send('final', { text: response.text?.trim() || '' });
-    send('history', { history: chat.getHistory() });
+    send('final', { text: turn.finalText });
+    send('history', { history: turn.messages });
     res.end();
   } catch (err) {
     console.error('[server] Diagram agent turn failed:', err);

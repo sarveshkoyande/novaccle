@@ -1,0 +1,35 @@
+/* App shell. Was three inline style objects on App.tsx with their own
+   font-family, padding and colours. */
+.app-shell {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-5);
+}
+
+.app-head {
+  margin-bottom: var(--sp-5);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.app-head p {
+  margin-top: var(--sp-1);
+  font-size: var(--t-13);
+  color: var(--ink2);
+}
+
+/* Health readout. Status is carried by weight and a rule, not by a green
+   and a red that exist nowhere else in the system. */
+.app-health {
+  color: var(--ink3);
+}
+
+.app-health.ok {
+  color: var(--ink);
+  font-weight: var(--fw-medium);
+}
+
+.app-health.error {
+  color: var(--nv-space-orange);
+  font-weight: var(--fw-medium);
+}

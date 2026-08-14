@@ -5,15 +5,15 @@
   "description": "Backend for the Novartis Accelerate requirement gathering mock — proxies the chat fill-tool to Gemini so the API key never touches the browser.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
+    "start": "node --use-system-ca server.js",
+    "dev": "node --use-system-ca server.js",
     "seed": "node prisma/seed.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
-    "@google/genai": "^2.12.0",
+    "@anthropic-ai/foundry-sdk": "^0.4.1",
     "@prisma/adapter-better-sqlite3": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "better-sqlite3": "^12.11.1",

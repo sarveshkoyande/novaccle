@@ -55,7 +55,11 @@ const TACTIC_CALLS = [
 
 async function main() {
   const html = fs.readFileSync(HTML_PATH, 'utf8');
-  const sandbox = {};
+  // Each generator now tries fieldsFromTemplatesByPhase() first and only
+  // falls back to its hardcoded array when that returns null — i.e. it reads
+  // the very table this script fills. Stubbing it to null forces the
+  // hardcoded path, which is the source of truth we're porting from.
+  const sandbox = { fieldsFromTemplatesByPhase: () => null };
   vm.createContext(sandbox);
   const source = GENERATOR_NAMES.map(n => extractFunctionSource(html, n)).join('\n');
   vm.runInContext(source, sandbox);

@@ -1,39 +1,209 @@
+/* Schema admin. Everything here reads from the tokens in index.css so this
+   screen sits in the same system as the main app, instead of carrying its
+   own indigo (#6366f1), green (#1e7a4f) and red (#c0392b) accents against
+   greys that failed contrast (#888 at 3.5:1, #999 at 2.9:1). Sizes come off
+   the shared whole-pixel ladder rather than the old rem fractions, which
+   ran 0.68 / 0.7 / 0.75 / 0.78 / 0.8 / 0.82 / 0.95 — seven steps inside
+   4px of each other, rendering at fractional pixels. */
 .admin-schema {
   display: grid;
   grid-template-columns: 260px 1fr;
-  gap: 24px;
+  gap: var(--sp-5);
   align-items: start;
-  font-family: system-ui, sans-serif;
 }
 
-.admin-sections h2, .admin-fields h2 {
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin-bottom: 10px;
+@media (max-width: 900px) {
+  .admin-schema {
+    grid-template-columns: 1fr;
+  }
 }
 
-.admin-sections ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.admin-sections h2,
+.admin-fields h2 {
+  font-size: var(--t-16);
+  margin-bottom: var(--sp-3);
+}
+
+.admin-sections ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
 .admin-sections button {
-  display: flex; align-items: center; gap: 8px; width: 100%;
-  padding: 8px 10px; border: 1px solid #dde3ea; border-radius: 8px;
-  background: #fff; cursor: pointer; font-size: 0.82rem; text-align: left;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--t-13);
+  text-align: left;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.admin-sections button.on { background: #eef2ff; border-color: #6366f1; font-weight: 700; }
-.admin-sec-ic { flex-shrink: 0; }
-.admin-sec-count { margin-left: auto; font-size: 0.7rem; color: #888; background: #f2f2f2; border-radius: 99px; padding: 1px 7px; }
-.admin-sec-id { font-weight: 400; color: #999; font-size: 0.75rem; margin-left: 8px; }
 
-.admin-note { font-size: 0.78rem; color: #666; margin-bottom: 12px; max-width: 70ch; }
+.admin-sections button:hover {
+  border-color: var(--nv-space-orange);
+  color: var(--nv-space-orange);
+}
 
-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
-th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: #888; padding: 6px 8px; border-bottom: 1px solid #dde3ea; }
-td { padding: 4px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
-td.mono { font-family: ui-monospace, monospace; font-size: 0.75rem; color: #555; }
-td input, td select { width: 100%; padding: 4px 6px; border: 1px solid #dde3ea; border-radius: 5px; font-size: 0.78rem; }
+/* Selected state is the solid Warm Black fill the main app's nav uses,
+   not a tinted lilac pill. */
+.admin-sections button.on {
+  background: var(--nv-warm-black);
+  border-color: var(--nv-warm-black);
+  color: var(--nv-soft-white);
+  font-weight: var(--fw-medium);
+}
 
-.admin-del { border: none; background: #fdecea; color: #c0392b; border-radius: 5px; width: 22px; height: 22px; cursor: pointer; }
-.admin-add-row td { padding-top: 10px; }
-.admin-add { border: none; background: #1e7a4f; color: #fff; border-radius: 6px; padding: 5px 12px; cursor: pointer; font-weight: 600; font-size: 0.75rem; }
+.admin-sec-ic {
+  flex-shrink: 0;
+}
 
-.admin-error { color: #c0392b; padding: 20px; }
-.admin-loading { color: #888; padding: 20px; }
+.admin-sec-count {
+  margin-left: auto;
+  font-size: var(--t-11);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink3);
+  background: var(--surface2);
+  padding: 1px var(--sp-2);
+}
+
+.admin-sections button.on .admin-sec-count {
+  background: rgba(252, 252, 252, 0.16);
+  color: var(--nv-soft-white);
+}
+
+.admin-sec-id {
+  font-weight: var(--fw-body);
+  color: var(--ink3);
+  font-size: var(--t-12);
+  margin-left: var(--sp-2);
+}
+
+.admin-note {
+  font-size: var(--t-13);
+  color: var(--ink2);
+  margin-bottom: var(--sp-3);
+  max-width: 70ch;
+  line-height: 1.5;
+}
+
+/* Scoped to this component — these were bare `table`/`th`/`td` selectors
+   that would style every future table in the app. */
+.admin-fields table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-13);
+}
+
+.admin-fields th {
+  text-align: left;
+  font-size: var(--t-11);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink3);
+  padding: var(--sp-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-fields td {
+  padding: var(--sp-1) var(--sp-2);
+  border-bottom: 1px solid var(--line2);
+  vertical-align: middle;
+}
+
+.admin-fields td.mono {
+  font-family: var(--mono);
+  font-size: var(--t-12);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink2);
+}
+
+.admin-fields td input,
+.admin-fields td select {
+  width: 100%;
+  padding: var(--sp-1) var(--sp-2);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--t-13);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.admin-fields td input:hover,
+.admin-fields td select:hover {
+  border-color: #CCCCCC;
+}
+
+.admin-fields td input:focus,
+.admin-fields td select:focus {
+  outline: none;
+  border-color: var(--nv-space-orange);
+}
+
+/* Destructive action. Orange is the system's only signal colour, so it
+   carries this too — reserved for the hover, so a row of delete buttons
+   is not a row of alarms. 28px square keeps it a real pointer target;
+   the old one was 22px. */
+.admin-del {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink3);
+  width: 28px;
+  height: 28px;
+  line-height: 1;
+  transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.admin-del:hover {
+  color: var(--nv-space-orange);
+  border-color: var(--nv-space-orange);
+}
+
+.admin-add-row td {
+  padding-top: var(--sp-3);
+}
+
+.admin-add {
+  border: 1px solid var(--nv-warm-black);
+  background: var(--nv-warm-black);
+  color: var(--nv-soft-white);
+  padding: var(--sp-2) var(--sp-4);
+  font-weight: var(--fw-medium);
+  font-size: var(--t-13);
+  line-height: 1;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.admin-add:hover,
+.admin-add:focus-visible {
+  background: var(--nv-space-orange);
+  border-color: var(--nv-space-orange);
+}
+
+.admin-add:active {
+  transform: scale(0.98);
+}
+
+/* Status surfaces. Left rule instead of a coloured box — the same device
+   the main app uses to mark a row that needs you. */
+.admin-error,
+.admin-loading {
+  padding: var(--sp-4);
+  font-size: var(--t-13);
+  background: var(--surface);
+  border-left: 3px solid var(--line);
+  color: var(--ink2);
+}
+
+.admin-error {
+  border-left-color: var(--nv-space-orange);
+  color: var(--ink);
+}

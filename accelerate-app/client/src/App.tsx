@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import AdminSchema from './AdminSchema';
+import './App.css';
 
 // Phase 0/1 shell: health check proves the pipe works (Vite dev proxy ->
 // Express -> Prisma); AdminSchema is the Phase 1 deliverable — a real,
@@ -15,15 +16,20 @@ function App() {
       .catch(() => setHealth('error'));
   }, []);
 
+  // Styling lives in index.css / App.css rather than inline: the font-family
+  // here restated what :root already sets, and the hardcoded #666 / #1E7A4F /
+  // #c0392b were a third palette on top of the two the stylesheets carried.
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '32px 40px' }}>
-      <h1 style={{ marginBottom: 4 }}>Novartis Accelerate — Admin</h1>
-      <p style={{ color: '#666', marginBottom: 20 }}>
-        Form schema editor (Phase 1). Backend:{' '}
-        {health === 'checking' && 'checking…'}
-        {health === 'ok' && <strong style={{ color: '#1E7A4F' }}>connected</strong>}
-        {health === 'error' && <strong style={{ color: '#c0392b' }}>unreachable</strong>}
-      </p>
+    <main className="app-shell">
+      <header className="app-head">
+        <h1>Novartis Accelerate — Admin</h1>
+        <p>
+          Form schema editor (Phase 1). Backend:{' '}
+          {health === 'checking' && <span className="app-health">checking…</span>}
+          {health === 'ok' && <strong className="app-health ok">connected</strong>}
+          {health === 'error' && <strong className="app-health error">unreachable</strong>}
+        </p>
+      </header>
       <AdminSchema />
     </main>
   );

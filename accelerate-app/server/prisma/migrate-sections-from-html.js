@@ -16,13 +16,15 @@ const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
 const HTML_PATH = path.join(__dirname, '..', '..', '..', 'hqe-requirement-studio-mock_2.html');
 
 function extractBaseSections(htmlSource) {
-  const startMarker = 'const BASE_SECTIONS = [';
-  const startIdx = htmlSource.indexOf(startMarker);
-  if (startIdx === -1) throw new Error('Could not find "const BASE_SECTIONS = [" in ' + HTML_PATH);
+  // Declared `let` since loadFormSchemaFromDb started reassigning it; match
+  // either keyword so this doesn't break again on the next such change.
+  const startMarker = /(?:const|let|var)\s+BASE_SECTIONS\s*=\s*\[/.exec(htmlSource);
+  const startIdx = startMarker ? startMarker.index : -1;
+  if (startIdx === -1) throw new Error('Could not find the BASE_SECTIONS array declaration in ' + HTML_PATH);
   // Walk bracket depth from the opening `[` to find its exact matching `]`,
   // rather than assuming a fixed line range — resilient to the source file
   // being edited before this script is next re-run.
-  const openIdx = startIdx + startMarker.length - 1;
+  const openIdx = startIdx + startMarker[0].length - 1;
   let depth = 0, i = openIdx;
   for (; i < htmlSource.length; i++) {
     if (htmlSource[i] === '[') depth++;
@@ -44,8 +46,25 @@ async function main() {
   const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL || `file:${dbPath}` });
   const prisma = new PrismaClient({ adapter });
 
+  // FormSection gained a required formId when Form Management landed
+  // (migration 20260729131500_add_form), after this script was first written.
+  // Everything BASE_SECTIONS holds is the original single form, so it all
+  // belongs to form-default; ensure that row exists before seeding into it.
+  const FORM_ID = 'form-default';
+  await prisma.form.upsert({
+    where: { id: FORM_ID },
+    update: {},
+    create: {
+      id: FORM_ID,
+      name: 'Requirement Gathering Form',
+      description: 'The original campaign requirement-gathering flow.',
+      active: true,
+      order: 0,
+    },
+  });
+
   await prisma.formField.deleteMany({});
-  await prisma.formSection.deleteMany({});
+  await prisma.formSection.deleteMany({ where: { formId: FORM_ID } });
 
   let sectionOrder = 0;
   let fieldCount = 0;
@@ -53,6 +72,7 @@ async function main() {
     await prisma.formSection.create({
       data: {
         id: s.id,
+        formId: FORM_ID,
         num: s.num,
         name: s.name,
         icon: s.ic,
