@@ -307,7 +307,39 @@ body[data-view="landing"] #view-landing{height:100%;min-height:0}
 .hm-list-head{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
 .hm-list-head h4{font-size:var(--t-13);font-weight:800;letter-spacing:var(--tracking);white-space:nowrap}
 .hm-list-head .search-input{flex:1;min-width:0}
-.hm-list .filter-row{margin:0;padding:11px 16px;border-bottom:1px solid var(--line2);gap:6px;flex-wrap:wrap}
+/* Quick-pick chips under a question. Deliberately not a .msg bubble: these
+   are controls the agent is offering, not something it said. */
+.qp-row{align-self:flex-start;max-width:94%;margin-top:-2px;animation:fltIn var(--dur-2) var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.qp-row{animation:none}}
+.qp-note{display:block;padding-left:2px;margin-bottom:5px;font-size:var(--t-11);color:var(--ink3);font-weight:600}
+.qp-row .cp-suggest{padding:0;background:transparent}
+
+/* Filter control beside the search field. */
+.flt-wrap{position:relative;flex-shrink:0}
+.flt-btn{display:flex;align-items:center;gap:6px;height:30px;padding:0 11px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink2);font-size:var(--t-12);font-weight:700;cursor:pointer;
+  transition:border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out),background-color var(--dur-1) var(--ease-out)}
+.flt-btn:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.flt-btn.on{border-color:var(--nv-space-orange);color:var(--nv-space-orange);background:var(--ai-tint)}
+.flt-btn:active{transform:scale(.97)}
+.flt-count{min-width:16px;height:16px;padding:0 4px;display:grid;place-items:center;background:var(--nv-space-orange);color:#fff;font-size:10px;font-weight:800}
+.flt-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:212px;padding:8px;
+  background:var(--surface);border:1px solid var(--line);box-shadow:0 8px 24px rgba(22,22,22,.13);
+  animation:fltIn var(--dur-2) var(--ease-out)}
+@keyframes fltIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.flt-menu{animation:none}}
+.flt-group + .flt-group{margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)}
+.flt-label{display:block;padding:2px 8px 6px;font-size:var(--t-11);font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
+.flt-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:6px 8px;
+  border:none;background:transparent;color:var(--ink);font-size:var(--t-12);font-weight:600;text-align:left;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.flt-opt:hover{background:var(--surface2)}
+.flt-opt.on{background:var(--ai-tint);color:var(--nv-space-orange);font-weight:800}
+.flt-n{font-size:var(--t-11);font-weight:800;color:var(--ink3)}
+.flt-opt.on .flt-n{color:var(--nv-space-orange)}
+.flt-clear{width:100%;margin-top:8px;padding:6px;border:1px solid var(--line);background:transparent;
+  color:var(--ink2);font-size:var(--t-11);font-weight:700;cursor:pointer}
+.flt-clear:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
 /* Fixed page size, so no inner scroll: the list is exactly five rows tall and
    the pager sits under it rather than below a scroll well. */
 .hm-list .req-table{border:none}
@@ -401,7 +433,40 @@ body[data-view="landing"] #view-landing{height:100%;min-height:0}
 /* Deliberately the one filled, colored element in the bar: this is a switch
    to a different kind of view (the human project conversation), not another
    stage in the form flow, so it should not look like the stage tabs. */
+/* Collapsed details: a vertical orange tab on the right edge, same material
+   as the Conversations trigger so the two read as the same family of control.
+   Only rendered in the request view, and only while collapsed. */
+.details-tab{position:fixed;top:calc(60px + var(--campaign-bar-h));right:0;bottom:0;
+  width:var(--details-tab-w);z-index:76;display:none;align-items:center;justify-content:center;gap:9px;
+  border:none;background:var(--grad-orange);color:#fff;cursor:pointer;
+  font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  writing-mode:vertical-rl;transition:filter var(--dur-1) var(--ease-out)}
+.details-tab:hover{filter:brightness(1.07)}
+.details-tab:focus-visible{outline:2px solid var(--nv-warm-black);outline-offset:-4px}
+body[data-view="request"][data-details="collapsed"] .details-tab{display:flex}
+
+/* Drag handle sitting on the boundary, only while both halves are visible.
+   Widened hit area, hairline visual — a 6px orange bar would read as a
+   divider rule rather than something you grab. */
+.details-resizer{position:fixed;top:calc(60px + var(--campaign-bar-h));bottom:0;
+  width:9px;margin-left:-4px;left:var(--chat-w);z-index:77;display:none;cursor:col-resize;
+  background:transparent}
+.details-resizer::after{content:'';position:absolute;top:0;bottom:0;left:4px;width:1px;background:transparent;
+  transition:background-color var(--dur-1) var(--ease-out)}
+.details-resizer:hover::after,body[data-resizing] .details-resizer::after{background:var(--nv-space-orange)}
+body[data-view="request"][data-details="open"] .details-resizer{display:block}
+/* While dragging, kill text selection and let pointer events through the
+   panels so the pointer keeps tracking even when it outruns the handle. */
+body[data-resizing]{user-select:none;cursor:col-resize}
+body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
+
 .crf-comments-trigger{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 20px;border:none;background:var(--grad-orange);font-size:13px;font-weight:800;color:#fff;cursor:pointer;white-space:nowrap;transition:filter var(--dur-1) var(--ease-out)}
+/* Quieter than the Conversations trigger beside it: collapsing is a layout
+   control, not a destination, so it gets the outline rather than the fill. */
+.crf-hide-details{flex-shrink:0;padding:0 15px;border:none;border-left:1px solid var(--line);
+  background:transparent;color:var(--ink3);font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.crf-hide-details:hover{background:var(--ai-tint);color:var(--nv-space-orange)}
 .crf-comments-trigger:hover{filter:brightness(1.07)}
 .crf-comments-trigger:focus-visible{outline:2px solid var(--nv-space-orange);outline-offset:-3px}
 .crf-comments-trigger svg{flex-shrink:0}
@@ -1603,12 +1668,23 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
    the plan view and admin get the full width with no chat at all —
    there is no single campaign for it to be about there. body[data-view]
    is stamped by syncShellLayout() in the script below. ---- */
+/* The chat/details split is a single width, --chat-w, that both sides read.
+   Dragging the divider writes it (see initDetailsResizer); collapsing the
+   details overrides it to full width. One variable means the two halves can
+   never disagree about where the boundary is. */
+:root{--chat-w:40vw;--details-tab-w:34px}
+
 @media (min-width:1101px){
   body[data-view="request"] #chatPanel{
-    left:0;right:auto;width:40vw;max-width:none;
+    left:0;right:auto;width:var(--chat-w);max-width:none;
     border-left:none;border-right:1px solid var(--line);
   }
-  body[data-view="request"] .stage{margin-left:40vw;margin-right:0}
+  body[data-view="request"] .stage{margin-left:var(--chat-w);margin-right:0}
+  /* Details start collapsed: the conversation is the point of this screen and
+     the form is reference you open when you want it. Collapsed leaves the
+     tab's width behind so the strip is never flush against the window edge. */
+  body[data-view="request"][data-details="collapsed"] #chatPanel{width:calc(100% - var(--details-tab-w))}
+  body[data-view="request"][data-details="collapsed"] .stage{display:none}
   body:not([data-view="request"]) #chatPanel{display:none}
   body:not([data-view="request"]) .stage{margin-right:0}
   /* The admin editor borrows .chat-panel's geometry; it must stay right. */
@@ -1932,6 +2008,12 @@ body[data-view="request"][data-list="compact"] .sm-detail-panel{top:calc(60px + 
   <div class="cb-ticker" id="cbTicker"></div>
 </div>
 
+<!-- Both live OUTSIDE .stage: collapsing sets .stage to display:none, and a
+     display:none ancestor hides a position:fixed child too, so the tab that
+     re-opens the details cannot be inside the thing it re-opens. -->
+<div class="details-resizer" id="detailsResizer" role="separator" aria-orientation="vertical" aria-label="Resize chat and details"></div>
+<button class="details-tab" id="detailsTab" onclick="toggleDetails()" aria-expanded="false">Show details</button>
+
 <div class="stage">
 
 <!-- ============ VIEW: LANDING ============ -->
@@ -1998,14 +2080,18 @@ body[data-view="request"][data-list="compact"] .sm-detail-panel{top:calc(60px + 
         <div class="hm-list-head">
           <h4>Campaigns</h4>
           <div class="search-input"><input id="reqSearch" placeholder="Search brand, TactPlan ID, name…" oninput="reqPage=1;renderRequestsTable()"></div>
-        </div>
-        <div class="filter-row">
-          <button class="filt on" onclick="setFilt(this,'all')">All <span class="n" id="filtAll">14</span></button>
-          <button class="filt" onclick="setFilt(this,'mine')">Assigned to me <span class="n" id="filtMine">3</span></button>
-          <button class="filt" onclick="setFilt(this,'preplan')">Pre-planning <span class="n" id="filtPreplan">4</span></button>
-          <button class="filt" onclick="setFilt(this,'plan')">Planning <span class="n" id="filtPlan">7</span></button>
-          <button class="filt" onclick="setFilt(this,'exec')">Execution <span class="n" id="filtExec">3</span></button>
-          <button class="filt" onclick="setFilt(this,'completed')">Completed <span class="n" id="filtCompleted">2</span></button>
+          <!-- Six pills wrapped onto two rows and ate a third of the rail.
+               Status and assignee are also two independent questions, so they
+               are two groups in one menu rather than one mutually-exclusive
+               strip where picking "Assigned to me" threw away the phase. -->
+          <div class="flt-wrap">
+            <button class="flt-btn" id="fltBtn" onclick="toggleFilterMenu(event)" aria-haspopup="true" aria-expanded="false" title="Filter campaigns">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
+              <span>Filter</span>
+              <span class="flt-count" id="fltCount" hidden></span>
+            </button>
+            <div class="flt-menu" id="fltMenu" hidden></div>
+          </div>
         </div>
         <div class="req-table" id="reqTable"></div>
         <div class="rp-bar" id="reqPager"></div>
@@ -2438,6 +2524,58 @@ const INTAKE_FIELDS = [
   { id:'channels',        label:'Channel Type',       options:['Email + SMS','Email only','SMS only'] },
 ];
 
+/* ---- QUICK PICKS -------------------------------------------------------
+   A field with a fixed option list should not make you type its answer. The
+   agent still asks in prose; these are the same options the form's own
+   dropdown would offer, rendered under the question. Only ever one row on
+   screen — the previous question's options are removed before the next set
+   goes up, so an old chip can't be clicked into the wrong field. */
+function clearQuickPicks(body){
+  if(body) body.querySelectorAll('.qp-row').forEach(el => el.remove());
+}
+
+function renderQuickPicks(body, options, handler, note){
+  clearQuickPicks(body);
+  if(!body || !options || !options.length) return;
+  const row = document.createElement('div');
+  row.className = 'qp-row';
+  row.innerHTML =
+    (note ? `<span class="qp-note">${escapeHtml(note)}</span>` : '') +
+    `<div class="cp-suggest">${options.map(o =>
+      `<button type="button" onclick="${handler}(${JSON.stringify(String(o)).replace(/"/g,'&quot;')})">${escapeHtml(String(o))}</button>`
+    ).join('')}</div>`;
+  body.appendChild(row);
+  body.scrollTop = body.scrollHeight;
+}
+
+// Options for whichever intake field is being asked next. Brand and Indication
+// have no static list — they come from the same brand-master endpoints the New
+// Campaign modal's autocomplete uses, so the chat offers exactly what the form
+// would have offered.
+async function quickPicksForIntake(){
+  if(!intake) return null;
+  const next = intakeMissing()[0];
+  if(!next) return null;
+  if(next.options) return { options: next.options };
+  try{
+    if(next.id === 'brand'){
+      const res = await fetch('/api/brands');
+      if(!res.ok) return null;
+      const { brands } = await res.json();
+      if(!brands || !brands.length) return null;
+      return { options: brands.slice(0, 8), note: 'On the brand master - or type another' };
+    }
+    if(next.id === 'indication' && intake.values.brand){
+      const res = await fetch(`/api/indications?brand=${encodeURIComponent(intake.values.brand)}`);
+      if(!res.ok) return null;
+      const { indications } = await res.json();
+      if(!indications || !indications.length) return null;
+      return { options: indications.slice(0, 8), note: `Already on record for ${intake.values.brand} - or type another` };
+    }
+  }catch(e){ /* chips are an accelerator; typing still works */ }
+  return null;
+}
+
 let intake = null;   // { values:{}, derived:{} } while an intake is running
 
 function startCampaignIntake(){
@@ -2520,6 +2658,7 @@ async function sendHomeChat(text){
   // tells the agent to open the intake, and is never shown as something the
   // user typed.
   const isKickoff = raw === '[[intake:start]]';
+  clearQuickPicks(body);   // the question they belonged to has been answered
   if(!isKickoff) body.innerHTML += `<div class="msg usr">${escapeHtml(raw)}</div>`;
   body.scrollTop = body.scrollHeight;
   homeAgentBusy = true;
@@ -2575,6 +2714,10 @@ async function sendHomeChat(text){
     if(intake && intakeMissing().length === 0){
       body.scrollTop = body.scrollHeight;
       setTimeout(finishCampaignIntake, 400);
+    } else if(intake){
+      const picks = await quickPicksForIntake();
+      if(picks) renderQuickPicks(body, picks.options, 'sendHomeChat', picks.note);
+      else clearQuickPicks(body);
     }
   } catch(e){
     thinking.remove();
@@ -3368,14 +3511,23 @@ function switchPersona(k){
 // state; everything else derives from REQUESTS on each render.
 let currentReqFilter = 'all';
 
+// Status and assignee are independent axes now: "Planning" AND "assigned to
+// me" is a question people actually ask, and the old single strip could only
+// answer one at a time.
+let currentReqAssignee = 'anyone';
+
+function matchesStatusFilter(r, f){
+  if(f === 'completed') return r.status === 'completed';
+  if(['preplan','plan','exec'].includes(f)) return r.phase === f && r.status !== 'completed';
+  return true; // 'all'
+}
+
 function filteredSortedRequests(){
   const q = (document.getElementById('reqSearch')?.value || '').trim().toLowerCase();
-  let rows = REQUESTS.filter(r=>{
-    if(currentReqFilter==='mine') return r.mineTo.includes(currentPersona);
-    if(currentReqFilter==='completed') return r.status==='completed';
-    if(['preplan','plan','exec'].includes(currentReqFilter)) return r.phase===currentReqFilter && r.status!=='completed';
-    return true; // 'all'
-  });
+  let rows = REQUESTS.filter(r=>
+    matchesStatusFilter(r, currentReqFilter) &&
+    (currentReqAssignee === 'anyone' || r.mineTo.includes(currentPersona))
+  );
   if(q){
     rows = rows.filter(r =>
       r.brand.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)
@@ -3437,12 +3589,7 @@ function renderRequestsTable(){
     </div>`;
   }).join('') : `<div class="rt-empty">No requests match this filter.</div>`);
 
-  document.getElementById('filtAll').textContent = REQUESTS.length;
-  document.getElementById('filtMine').textContent = REQUESTS.filter(r=>r.mineTo.includes(currentPersona)).length;
-  document.getElementById('filtPreplan').textContent = REQUESTS.filter(r=>r.phase==='preplan'&&r.status!=='completed').length;
-  document.getElementById('filtPlan').textContent = REQUESTS.filter(r=>r.phase==='plan'&&r.status!=='completed').length;
-  document.getElementById('filtExec').textContent = REQUESTS.filter(r=>r.phase==='exec'&&r.status!=='completed').length;
-  document.getElementById('filtCompleted').textContent = REQUESTS.filter(r=>r.status==='completed').length;
+  renderFilterMenu();
 }
 
 // Page numbers, windowed around the current page so a 20-page list doesn't
@@ -3484,7 +3631,8 @@ function renderReqPager(total, pages, start, shown){
 function updateStatsForPersona(){
   const mineCount = REQUESTS.filter(r=>r.mineTo.includes(currentPersona)).length;
   document.getElementById('statMine').textContent = mineCount;
-  document.getElementById('filtMine').textContent = mineCount;
+  // The old #filtMine pill is gone — that count now lives in the filter menu's
+  // "Assigned to" group, rendered by renderFilterMenu().
   const subMap = {
     aor:'2 planning · 1 execution', xm:'1 decision blocking · confirm-and-go',
     mds:'1 target list · 1 pending visio', cep:'2 planning · Data Cloud + MCI',
@@ -3493,13 +3641,100 @@ function updateStatsForPersona(){
   document.getElementById('statMineSub').textContent = subMap[currentPersona] || '';
 }
 
-function setFilt(el, key){
-  document.querySelectorAll('.filt').forEach(f=>f.classList.remove('on'));
-  el.classList.add('on');
+const REQ_STATUS_FILTERS = [
+  { key:'all',       label:'All' },
+  { key:'preplan',   label:'Pre-planning' },
+  { key:'plan',      label:'Planning' },
+  { key:'exec',      label:'Execution' },
+  { key:'completed', label:'Completed' },
+];
+
+function setStatusFilter(key){
   currentReqFilter = key;
   reqPage = 1;   // a new filter is a new list; page 3 of the old one is meaningless
   renderRequestsTable();
 }
+
+function setAssigneeFilter(key){
+  currentReqAssignee = key;
+  reqPage = 1;
+  renderRequestsTable();
+}
+
+function clearReqFilters(){
+  currentReqFilter = 'all';
+  currentReqAssignee = 'anyone';
+  reqPage = 1;
+  renderRequestsTable();
+}
+
+// Counts shown against each option are what that option would return given
+// the OTHER axis's current setting — so "Planning 3" while filtered to me
+// means three of mine, not three overall. A count that ignores the rest of
+// the filter state is a count you cannot act on.
+function renderFilterMenu(){
+  const menu = document.getElementById('fltMenu');
+  if(!menu) return;
+  const assigneeScoped = REQUESTS.filter(r => currentReqAssignee === 'anyone' || r.mineTo.includes(currentPersona));
+  const statusScoped   = REQUESTS.filter(r => matchesStatusFilter(r, currentReqFilter));
+
+  const statusOpts = REQ_STATUS_FILTERS.map(f => `
+    <button class="flt-opt${currentReqFilter===f.key?' on':''}" role="menuitemradio" aria-checked="${currentReqFilter===f.key}"
+      onclick="setStatusFilter('${f.key}')">
+      <span>${f.label}</span><span class="flt-n">${assigneeScoped.filter(r=>matchesStatusFilter(r,f.key)).length}</span>
+    </button>`).join('');
+
+  const assigneeOpts = [
+    { key:'anyone', label:'Anyone' },
+    { key:'me',     label:'Assigned to me' },
+  ].map(a => `
+    <button class="flt-opt${currentReqAssignee===a.key?' on':''}" role="menuitemradio" aria-checked="${currentReqAssignee===a.key}"
+      onclick="setAssigneeFilter('${a.key}')">
+      <span>${a.label}</span><span class="flt-n">${a.key==='anyone'?statusScoped.length:statusScoped.filter(r=>r.mineTo.includes(currentPersona)).length}</span>
+    </button>`).join('');
+
+  const active = (currentReqFilter !== 'all' ? 1 : 0) + (currentReqAssignee !== 'anyone' ? 1 : 0);
+  menu.innerHTML = `
+    <div class="flt-group"><span class="flt-label">Status</span>${statusOpts}</div>
+    <div class="flt-group"><span class="flt-label">Assigned to</span>${assigneeOpts}</div>
+    ${active ? `<button class="flt-clear" onclick="clearReqFilters()">Clear filters</button>` : ''}`;
+
+  const badge = document.getElementById('fltCount');
+  const btn = document.getElementById('fltBtn');
+  if(badge){ badge.textContent = active; badge.hidden = !active; }
+  if(btn) btn.classList.toggle('on', !!active);
+}
+
+function toggleFilterMenu(e){
+  if(e) e.stopPropagation();
+  const menu = document.getElementById('fltMenu');
+  const btn = document.getElementById('fltBtn');
+  if(!menu) return;
+  const open = menu.hidden;
+  menu.hidden = !open;
+  if(btn) btn.setAttribute('aria-expanded', String(open));
+}
+
+function closeFilterMenu(){
+  const menu = document.getElementById('fltMenu');
+  const btn = document.getElementById('fltBtn');
+  if(menu && !menu.hidden){
+    menu.hidden = true;
+    if(btn) btn.setAttribute('aria-expanded','false');
+  }
+}
+// Clicking a filter re-renders the list but deliberately leaves the menu open,
+// so you can set status and assignee in one visit. Anything outside closes it.
+//
+// Capture phase, deliberately: picking an option re-renders the menu's
+// innerHTML inside its own onclick, so by the time a bubbling listener sees
+// the event the clicked button is already detached and closest() returns null
+// — which read as "clicked outside" and shut the menu on every selection.
+// Running before the re-render means the node is still in the tree.
+document.addEventListener('click', e => {
+  if(!e.target.closest('.flt-wrap')) closeFilterMenu();
+}, true);
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeFilterMenu(); });
 
 /* ============ REQUEST DETAIL ============ */
 async function openRequest(id){
@@ -7291,9 +7526,13 @@ function renderCrfViewTabs(groups){
   const unreadCount = unreadNotifications().length;
   const badge = unreadCount ? `<span class="crf-comments-badge">${unreadCount}</span>` : '';
   const commentsBtn = `<button class="crf-comments-trigger" onclick="openCommentsDrawer()" title="Project conversation">${ICON_CONVO}<span>Conversations</span>${badge}</button>`;
+  // The way back to a chat-only screen. Sits at the head of this bar, which is
+  // the details panel's own header, so collapse lives with the thing it
+  // collapses rather than floating somewhere else.
+  const hideBtn = `<button class="crf-hide-details" onclick="toggleDetails()" title="Collapse the form details">Hide details</button>`;
   // "Form details" names what this bar heads, so the bar reads as this form
   // section's own header rather than a floating strip of tabs.
-  return `<div class="crf-view-tabs"><span class="stage-eyebrow">Form details</span><div class="stage-track">${tabs.join('')}</div>${subTabs}</div>${commentsBtn}`;
+  return `<div class="crf-view-tabs"><span class="stage-eyebrow">Form details</span><div class="stage-track">${tabs.join('')}</div>${subTabs}</div>${hideBtn}${commentsBtn}`;
 }
 
 // ============ SECTION MASTER/DETAIL — a list of sections on the left, the
@@ -9493,6 +9732,18 @@ async function handleFillCommand(rawText, body){
     }
   }
   thinking.remove();
+  // Same accelerator on the campaign side: if the next field the interview is
+  // asking about has a fixed option list, offer it rather than making them
+  // type an option verbatim. Only for a single-field ask — with several fields
+  // in flight a bare chip is ambiguous about which one it answers.
+  try{
+    const q = (typeof interviewQueue === 'function') ? interviewQueue() : [];
+    if(q.length === 1 && q[0].opts && q[0].opts.length){
+      renderQuickPicks(body, q[0].opts, 'sendChat', q[0].field);
+    } else {
+      clearQuickPicks(body);
+    }
+  }catch(e){ /* chips are optional */ }
 }
 
 function confirmFillProposal(propId){
@@ -9592,6 +9843,7 @@ function sendChat(text){
   // user typed, so it never renders as a user bubble.
   const silent = text.startsWith('[[system:');
   if(!silent) body.innerHTML += `<div class="msg usr">${text}</div>`;
+  clearQuickPicks(body);   // the question they belonged to has been answered
   input.value = '';
   autoGrowChatInput(input);
   body.scrollTop = body.scrollHeight;
@@ -10026,6 +10278,64 @@ function stripDeco(s){
   return String(s).replace(/^[↳⇢⤳→▸▪⮕]\s*/, '').trim();
 }
 
+/* ============ CHAT / DETAILS SPLIT ============
+   Details start collapsed on a campaign: the conversation is what this screen
+   is for, and the form is reference you pull up when you want it. Both halves
+   size off one --chat-w variable, so the divider can only ever be in one
+   place no matter which control moved it. */
+const CHAT_W_MIN = 26, CHAT_W_MAX = 78;   // percent of viewport width
+
+function setDetailsCollapsed(collapsed){
+  document.body.dataset.details = collapsed ? 'collapsed' : 'open';
+  const tab = document.getElementById('detailsTab');
+  if(tab) tab.setAttribute('aria-expanded', String(!collapsed));
+}
+
+function toggleDetails(){
+  setDetailsCollapsed(document.body.dataset.details !== 'collapsed');
+}
+
+function setChatWidth(pct){
+  const clamped = Math.min(CHAT_W_MAX, Math.max(CHAT_W_MIN, pct));
+  document.documentElement.style.setProperty('--chat-w', clamped + 'vw');
+}
+
+// Pointer events rather than mouse: one code path covers trackpad, mouse and
+// touch, and setPointerCapture keeps the drag alive when the pointer outruns
+// the 9px handle, which is most of the time.
+function initDetailsResizer(){
+  const handle = document.getElementById('detailsResizer');
+  if(!handle) return;
+  // Listeners go on window for the duration of the drag rather than relying on
+  // setPointerCapture: capture routes moves back to the 9px handle, which is
+  // fine in principle but leaves the drag dependent on the pointer staying
+  // associated with an element it has long since left. Window-scoped moves
+  // track no matter how far or fast the pointer goes, and are torn down on
+  // release so nothing listens while idle.
+  const onMove = e => setChatWidth((e.clientX / window.innerWidth) * 100);
+  const onUp = () => {
+    delete document.body.dataset.resizing;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+  };
+  handle.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    document.body.dataset.resizing = 'true';
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  });
+  // Keyboard parity for a control that is otherwise drag-only.
+  handle.tabIndex = 0;
+  handle.addEventListener('keydown', e => {
+    const step = e.shiftKey ? 5 : 2;
+    const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--chat-w')) || 40;
+    if(e.key === 'ArrowLeft'){ e.preventDefault(); setChatWidth(cur - step); }
+    if(e.key === 'ArrowRight'){ e.preventDefault(); setChatWidth(cur + step); }
+  });
+}
+
 const SHELL_VIEW_IDS = ['request','landing','plan','admin','placeholder','gantt'];
 function syncShellLayout(){
   let active = 'landing';
@@ -10369,6 +10679,7 @@ selectDetailSection = function(id){
 const _origOpenRequest = openRequest;
 openRequest = function(){
   recentlyAnswered.clear();
+  setDetailsCollapsed(true);   // every campaign opens on the conversation
   _origOpenRequest.apply(this, arguments);
   // After the sections have rendered, greet the current persona and offer
   // the three starting options — see renderChatWelcome().
@@ -10469,6 +10780,8 @@ function startCampaignTicker(){
   renderRequestsTable();
   updateStatsForPersona();
   renderHomeWelcome();
+  setDetailsCollapsed(true);
+  initDetailsResizer();
   loadNudgeRules();
 })();
 </script>
