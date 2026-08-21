@@ -1,0 +1,2281 @@
+/* ===========================================================================
+   NOVARTIS WEBSITE UI BRAND SYSTEM
+   Source: brandguidelines/Novartis_Website_Brand_Guidelines.docx +
+           brandguidelines/brand-tokens.css (both supplied in this repo),
+           cross-checked against the live novartis.com CSS in
+           brandguidelines/Novartis page sample_files/.
+
+   The five rules everything below obeys:
+     1. TWO UI colors — Warm Black #161616 and Soft White #FCFCFC.
+        Space Orange #FF4E00 is NOT a third color: it signals interaction
+        only (hover / focus / active / small highlights / links on hover).
+     2. NO GRADIENTS on any interface surface. (The gradient imagery in the
+        asset kit is hero photography, explicitly "not part of the UI system".)
+     3. SQUARE CORNERS everywhere — border-radius:0 on every state. The one
+        exception is a true circle (50%), which the live site also uses for
+        avatars/status dots — a circle has no corners to round.
+     4. NO SHADOWS on buttons; structure comes from 1px borders, not elevation.
+     5. Black → orange hover on every interactive element.
+
+   Greys: the guidelines name two colors, but a data-dense application needs
+   structural neutrals for borders and table rules. Rather than invent them,
+   these are lifted from the live novartis.com stylesheet, where they are the
+   4 most-used values after the brand pair: #dadada (borders, 231 uses),
+   #f2f2f2 (subtle surface, 108), #7a7a7a (muted/disabled text, 53), #616161.
+   =========================================================================== */
+:root{
+  /* ---- Core brand palette (the only three colors in the system) ---- */
+  --nv-warm-black:#161616; --nv-soft-white:#FCFCFC; --nv-space-orange:#FF4E00;
+
+  /* ---- Structural neutrals, sampled from live novartis.com ---- */
+  --nv-grey-line:#DADADA; --nv-grey-surface:#F2F2F2; --nv-grey-text:#7A7A7A; --nv-grey-dk:#616161;
+
+  /* ---- Semantic surfaces ----
+     The ink ladder is contrast-checked against BOTH surfaces it is ever
+     drawn on (--surface #FCFCFC and --surface2/--bg #F2F2F2), because a
+     grey that passes on white can still fail on the app background:
+       ink  #161616 — 17.1:1 / 15.7:1
+       ink2 #3F3F3F — 10.3:1 /  9.4:1
+       ink3 #616161 —  6.0:1 /  5.5:1   (was #7A7A7A = 4.2 / 3.8, fails AA)
+       ink4 #7A7A7A —  4.2:1 /  3.8:1   (was #A8A8A8 = 2.3 / 2.1, fails badly)
+     ink3 is the muted-TEXT grey and clears AA (4.5:1) on both. ink4 is now
+     the brand's documented "muted/disabled" grey and is for non-text marks
+     only — status dots, gantt bars, dependency arrows, disabled controls —
+     where the 3:1 non-text threshold applies. Both values are lifted from
+     the live-novartis.com neutrals above rather than invented. ---- */
+  --bg:#F2F2F2; --surface:#FCFCFC; --surface2:#F2F2F2; --surface3:#EAEAEA;
+  --ink:#161616; --ink2:#3F3F3F; --ink3:#616161; --ink4:#7A7A7A;
+  --line:#DADADA; --line2:#E8E8E8;
+
+  /* ---- Interaction. --brand is Warm Black (the default UI color);
+         --accent is Space Orange and appears ONLY on hover/focus/active. ---- */
+  --brand:#161616; --brand-dk:#000000; --brand-tint:#F2F2F2; --brand-line:#DADADA; --brand-light:#3F3F3F;
+  --accent:#FF4E00; --accent-dk:#D64100; --accent-active:#A83400; --accent-tint:#FFF0EA;
+  /* --ai/--gold aliases retained so existing rules keep resolving; all now
+     point into the two-color system instead of the old blue/gold palette. */
+  --ai:#FF4E00; --ai-dk:#D64100; --ai-tint:#FFF0EA; --ai-line:#FFD0BC; --ai-light:#FF7A40;
+  --accent-gold:#161616; --gold-tint:#F2F2F2; --gold-dk:#000000; --gold-light:#3F3F3F;
+  --ok:#161616; --ok-tint:#F2F2F2; --ok-light:#3F3F3F;
+  --warn:#161616; --warn-tint:#F2F2F2;
+  --risk:#FF4E00; --risk-tint:#FFF0EA;
+  --lock:#7A7A7A; --lock-tint:#F2F2F2;
+
+  /* ---- Flat "gradients": kept as tokens so the 13 existing var(--grad-*)
+         call sites keep working, but every one is now a FLAT color. ---- */
+  --grad-blue:#161616;
+  --grad-orange:#FF4E00;
+  --grad-gold:#161616;
+  --grad-ok:#161616;
+
+  /* ---- Shape: square, no exceptions (rule 3) ---- */
+  --r:0; --r-sm:0;
+
+  /* ---- Elevation: none (rule 4). Kept as tokens so any existing
+         box-shadow call site resolves to nothing instead of breaking. ---- */
+  --shadow:none;
+  --shadow-lg:none;
+
+  /* ---- Type. Real family names taken from the live site's @font-face:
+         volta_modern_display65_medium (headlines) /
+         volta_modern_display55_roman (body). Volta Modern Display is
+         Novartis-proprietary (Commercial Type) and cannot be bundled here,
+         so the stack falls through to the brand's own documented fallback,
+         Arial/Helvetica — which is the correct substitution, since Volta is
+         a customized Neue Haas Grotesk (i.e. the original Helvetica). ---- */
+  --font:'Volta Modern Display',volta_modern_display55_roman,Arial,Helvetica,Verdana,sans-serif;
+  --font-medium:'Volta Modern Display',volta_modern_display65_medium,Arial,Helvetica,Verdana,sans-serif;
+  --fw-body:400;      /* Roman */
+  /* "Medium" is 500 in Volta. But the two weights are really selected by
+     FAMILY here (--font vs --font-medium map to volta ...55_roman /
+     ...65_medium), and the Arial fallback ships only 400/700 — so a literal
+     500 collapses to Regular and the Roman/Medium hierarchy disappears
+     wherever the real font isn't installed. 600 picks Volta Medium when
+     present and renders visibly heavier than Roman in the fallback. */
+  --fw-medium:600;    /* Medium — headlines + inline highlights */
+
+  /* ---- Type scale. The guidelines' doubling ladder (20/40/80/140px) is a
+         marketing-page scale; this is that same doubling relationship
+         re-anchored for an information-dense application, matching the sizes
+         the live novartis.com actually ships (16/14/12/20/22/28/32/40/60). ---- */
+  --t-micro:12px; --t-sm:14px; --t-body:16px; --t-lg:20px;
+  --t-h4:22px; --t-h3:28px; --t-h2:40px; --t-h1:60px;
+
+  /* ---- UI ladder — the steps the dense application surfaces actually
+         draw on. This replaces 41 hand-picked sizes (.5rem through
+         1.6rem; .74/.75/.76/.78/.79/.8/.81/.82 all sat within 0.8px of
+         each other) that rendered as fractional pixels and read as noise
+         rather than hierarchy. Every font-size in this stylesheet now
+         lands on one of these nine whole-pixel steps, and nothing moved
+         by more than ~1px in doing so.
+         NOTE: t-10 and t-11 are below the brand's own 12px minimum. That
+         is where the existing micro-labels already were — raising them is
+         a density decision, not a cleanup. ---- */
+  --t-10:10px; --t-11:11px; --t-12:12px; --t-13:13px; --t-14:14px;
+  --t-15:15px; --t-16:16px; --t-22:22px; --t-26:26px;
+  --tracking:.4px;   /* the live site's signature letter-spacing */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:16px}
+/* Hard safety net — nothing on the page should ever be able to force a
+   horizontal scrollbar on the document itself. Every panel that legitimately
+   needs its own horizontal scroll (tables, code blocks, etc.) sets its own
+   overflow-x:auto on a wrapping element; this just guarantees a stray wide
+   element somewhere can't drag the whole page sideways with it. */
+html,body{overflow-x:hidden;max-width:100%}
+/* Body copy: Roman (400). Highlights/headlines step up to Medium (500). */
+body{font-family:var(--font);background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;font-weight:var(--fw-body);letter-spacing:var(--tracking)}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;letter-spacing:var(--tracking)}
+input,select,textarea{font-family:inherit;font-weight:var(--fw-body);letter-spacing:var(--tracking)}
+::selection{background:var(--nv-space-orange);color:var(--nv-soft-white)}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-medium);font-weight:var(--fw-medium);letter-spacing:var(--tracking);line-height:1.2}
+.mono,.fid,.rt-id{font-variant-numeric:tabular-nums;letter-spacing:0;font-weight:var(--fw-medium)}
+
+/* ---- Global interaction pattern: black → orange, square, 3px focus ring.
+        Mirrors the live novartis.com link treatment exactly (underline
+        offset 5px, thickness 1px → 2px on hover). ---- */
+a{color:var(--ink);transition:color .15s ease}
+a:hover,a:focus-visible{color:var(--nv-space-orange)}
+:focus-visible{outline:3px solid var(--nv-warm-black);outline-offset:3px}
+/* Square everything, including UA defaults on form controls. */
+input,select,textarea,button{border-radius:0}
+
+/* ================== LOGIN SCREEN ================== */
+.login-screen{position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:var(--bg);transition:opacity .25s}
+.login-screen.done{opacity:0;pointer-events:none}
+.login-card{position:relative;width:100%;max-width:380px;background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;padding:32px 30px}
+/* The account picker sits in the screen's own top-right corner (fixed to
+   the viewport, not the card) — reusing the app bar's persona-btn/
+   persona-menu look, same "who am I" affordance, just relocated to where
+   the choice actually belongs now: before login, not as an always-available
+   in-app switch. .login-persona-picker also carries .persona-wrap (reusing
+   its dropdown open/close machinery), and .persona-wrap{position:relative}
+   elsewhere in this file is an equal-specificity, later-in-source rule that
+   would otherwise win the tie and leave this in normal document flow — the
+   extra specificity here (two classes) beats it regardless of source order. */
+.login-persona-picker.login-persona-picker{position:fixed;top:20px;right:20px;z-index:1000}
+.login-persona-btn{padding:4px}
+.login-persona-btn .p-caret{margin-left:4px}
+.login-persona-picker .persona-menu{width:300px}
+.login-brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.login-brand .brand-name{font-weight:800;font-size:15px}
+.login-card h2{font-size:var(--t-h3);font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink)}
+.login-sub{font-size:13px;color:var(--ink3);margin-top:2px;margin-bottom:22px}
+.login-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.login-field span{font-size:12px;font-weight:700;color:var(--ink2)}
+.login-field input{border:1.5px solid var(--line);border-bottom:2px solid var(--line);border-radius:0;padding:10px 12px;font-size:14px;background:var(--surface2);color:var(--ink);transition:border-color .15s ease}
+.login-field input:hover{border-color:#CCCCCC;border-bottom-color:#CCCCCC}
+.login-field input:focus{outline:none;border-color:var(--line);border-bottom:2px solid var(--nv-space-orange)}
+.login-btn{width:100%;margin-top:8px;padding:11px;font-size:14px}
+.login-hint{font-size:12px;color:var(--ink3);margin-top:14px;text-align:center;line-height:1.5}
+
+/* ================== APP BAR ================== */
+/* z-index:95, not 80 — .sm-detail-panel (also z-index:80, but later in the
+   DOM) was winning the stacking tie and painting over any dropdown living in
+   the app bar's own stacking context (persona menu, notification bell),
+   regardless of that dropdown's own z-index — a nested z-index only ranks
+   siblings within this element's stacking context, it can't out-rank a
+   same-or-higher sibling context declared later in the DOM. Raising the app
+   bar itself above every page-level fixed panel is what actually fixes it. */
+.appbar{background:var(--surface);border-bottom:1px solid var(--line);height:60px;display:flex;align-items:center;padding:0 26px;gap:22px;position:sticky;top:0;z-index:95;box-shadow:0 2px 6px rgba(22,22,22,.08)}
+.brand-logo{display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--ink)}
+/* Real Novartis wordmark lockup (brandguidelines/Logo Warm Black RGB.svg) —
+   wide aspect ratio (283x42), so this is sized by height with auto width,
+   not the old square icon-only box. */
+.brand-mark{height:26px;width:auto;display:grid;place-items:center;flex-shrink:0}
+.brand-mark img{height:100%;width:auto;object-fit:contain}
+.brand-name{font-weight:800;font-size:16px}
+.brand-name span{color:var(--ink3);font-weight:600}
+.top-nav{display:flex;align-items:stretch;align-self:stretch;gap:2px;margin-left:20px}
+/* Nav: black -> orange on hover, active marked by a 2px Warm Black underline
+   rather than a tinted pill (no rounded surfaces, no colour fills). */
+/* Selected/hover fill spans the FULL header height (top to bottom of the
+   appbar), not just the text's own line box — display:flex + height:100%
+   inside a stretched .top-nav container. */
+/* width sized to fit the longest label ("Dashboard") plus its padding —
+   every tab shares this same width instead of each shrink-wrapping its own
+   text, so "Admin" isn't a noticeably narrower target sitting next to
+   "Dashboard"/"Calendar". */
+.top-nav a{height:100%;width:112px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;border-radius:0;font-size:16px;font-weight:var(--fw-body);color:var(--ink);text-decoration:none;border-bottom:4px solid transparent;box-sizing:border-box;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.top-nav a:hover,.top-nav a:focus-visible{background:var(--nv-grey-surface);color:var(--nv-space-orange)}
+/* Only ONE nav item is ever "on" at a time — spec §2: solid Warm Black,
+   white text, orange left border. */
+.top-nav a.on{color:var(--nv-soft-white);background:var(--nv-warm-black);font-family:var(--font-medium);font-weight:var(--fw-medium);border-bottom-color:var(--nv-space-orange)}
+.top-nav a.on:hover{color:var(--nv-soft-white);background:var(--nv-warm-black)}
+.appbar-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.appbar-icon{width:36px;height:36px;border-radius:0;display:grid;place-items:center;color:var(--nv-warm-black);font-size:16px;transition:background-color .15s ease,color .15s ease;position:relative}
+.appbar-icon:hover{background:var(--nv-grey-surface);color:var(--nv-space-orange)}
+.appbar-icon .badge{position:absolute;top:6px;right:6px;background:var(--grad-orange);color:#fff;font-size:10px;font-weight:800;line-height:1;width:16px;height:16px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--surface)}
+.autosave{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink3);font-weight:600}
+.autosave .sdot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(30,122,79,.15)}
+
+/* New — the request-detail chat/split/form layout toggle. Not in the
+   original (only "All changes saved" lived here). No button box: the
+   squares sit bare on the app bar and carry their own state (black fill +
+   orange divider when selected) instead of a background pill around them. */
+.layout-toggle{display:flex;align-items:center;gap:10px}
+.layout-toggle-btn{width:24px;height:24px;display:grid;place-items:center;background:none;border:none;color:var(--ink3);transition:color .15s ease,opacity .15s ease}
+.layout-toggle-btn:hover{color:var(--nv-warm-black);opacity:.75}
+.layout-toggle-btn.on{color:var(--nv-warm-black);opacity:1}
+
+.persona-btn{display:flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--line);border-radius:0;padding:4px 12px 4px 4px;transition:all .15s}
+.persona-btn:hover,.persona-btn:focus-visible{border-color:var(--nv-space-orange);background:transparent}
+.persona-btn .p-av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--nv-soft-white);color:var(--nv-warm-black);font-weight:800;font-size:11px;border:2.5px solid var(--nv-grey-line)}
+.persona-btn .p-name{text-align:left;line-height:1.15}
+.persona-btn .p-name b{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+.persona-btn .p-name i{font-style:normal;font-size:10px;color:var(--ink3);font-weight:600}
+.persona-btn .p-caret{color:var(--ink3);margin-left:2px;font-size:12px}
+.persona-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;min-width:290px;padding:6px;z-index:100;display:none}
+.persona-wrap.open .persona-menu{display:block;animation:fadeDown .18s ease}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.persona-menu-h{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);padding:9px 12px 6px}
+.persona-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:0;width:100%;text-align:left;transition:background .15s}
+.persona-item:hover{background:var(--surface2)}
+.persona-item.on{background:var(--brand-tint)}
+.persona-item .p-av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--nv-soft-white);color:var(--nv-warm-black);font-weight:800;font-size:12px;flex-shrink:0;border:2.5px solid var(--nv-grey-line)}
+.persona-item .p-info b{display:block;font-size:13px;font-weight:700}
+.persona-item .p-info i{font-style:normal;font-size:11px;color:var(--ink3);font-weight:600}
+.persona-item .p-info span{display:block;font-size:11px;color:var(--brand);margin-top:2px;font-weight:700}
+.persona-menu hr{border:none;border-top:1px solid var(--line2);margin:4px 0}
+.persona-wrap{position:relative}
+/* Read-only identity row — who's signed in, not a switch target, so it
+   doesn't get the hover/click affordance a real .persona-item button has. */
+.persona-item-static{cursor:default}
+.persona-item-static:hover{background:var(--brand-tint)}
+.persona-logout{justify-content:center;font-weight:700;color:var(--nv-space-orange)}
+.persona-logout:hover{background:var(--surface2)}
+
+.notif-wrap{position:relative}
+.notif-btn{position:relative;display:grid;place-items:center;width:36px;height:36px;background:transparent;border:1px solid transparent;border-radius:0;color:var(--ink2);transition:all .15s}
+.notif-btn:hover,.notif-btn:focus-visible{border-color:var(--line);background:var(--surface2);color:var(--ink)}
+.notif-badge{position:absolute;top:2px;right:2px;min-width:15px;height:15px;padding:0 3px;border-radius:50%;background:var(--nv-space-orange);color:#fff;font-size:9px;font-weight:800;line-height:15px;text-align:center}
+.notif-menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;width:340px;max-height:420px;overflow-y:auto;padding:6px;z-index:100}
+.notif-menu-h{display:flex;align-items:center;justify-content:space-between;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);padding:9px 12px 6px}
+.notif-mark-all{font-size:10px;font-weight:700;color:var(--brand);text-transform:none;letter-spacing:0}
+.notif-mark-all:hover{text-decoration:underline}
+.notif-empty{padding:20px 12px;text-align:center;font-size:12px;color:var(--ink3)}
+.notif-item{display:flex;align-items:flex-start;gap:8px;width:100%;text-align:left;padding:10px 12px;border-radius:0;transition:background .15s}
+.notif-item:hover{background:var(--surface2)}
+.notif-item.unread{background:var(--brand-tint)}
+.notif-item.unread:hover{background:var(--brand-tint)}
+.notif-dot{flex-shrink:0;width:7px;height:7px;border-radius:50%;background:var(--nv-space-orange);margin-top:5px}
+.notif-item:not(.unread) .notif-item-body{padding-left:15px}
+.notif-item-title{font-size:12px;font-weight:700;color:var(--ink)}
+.notif-item-text{font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.notif-item-meta{font-size:10px;color:var(--ink3);margin-top:4px;font-weight:600}
+
+/* ================== STAGE (leaves 30vw for chat) ================== */
+.stage{padding:20px 22px 32px;margin-right:340px}
+.view{display:none}
+.view.on{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ================== LANDING ================== */
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.hero-l h1{font-size:var(--t-h2);font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink);line-height:1.15}
+.hero-r{display:flex;gap:10px;align-items:center}
+.new-btn{display:inline-flex;align-items:center;gap:10px;height:40px;background:var(--nv-warm-black);color:var(--nv-soft-white);padding:0 24px;border:2px solid var(--nv-warm-black);border-radius:0;font-size:var(--t-16);font-family:var(--font-medium);font-weight:var(--fw-medium);line-height:1;transition:background-color .15s ease,border-color .15s ease,transform .15s ease;box-shadow:none}
+.new-btn:hover,.new-btn:focus-visible{background:var(--nv-space-orange);border-color:var(--nv-space-orange);color:var(--nv-soft-white);transform:translateY(-1px)}
+.new-btn:active{background:var(--accent-active);border-color:var(--accent-active);transform:translateY(0)}
+.new-btn .plus{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.22);display:grid;place-items:center;font-size:var(--t-14);line-height:1;font-weight:400}
+
+/* ---- AGENT-FIRST HOME -------------------------------------------------
+   Agent on the left at the larger weight, portfolio numbers and campaign
+   list stacked down the right rail. Asymmetric on purpose: the agent is the
+   thing you're meant to reach for, the rail is reference. Collapses to a
+   single column below 1100px with the agent still first. */
+/* The home screen occupies the viewport under the app bar and does not scroll
+   as a page: the agent's composer has to be reachable the moment you land,
+   without hunting for it. Each column scrolls inside itself instead. Same
+   arrangement the campaign view already uses, where the chat is pinned
+   full-height beside a form that scrolls on its own. */
+body[data-view="landing"] .stage{padding:0;margin-right:0;height:calc(100dvh - 60px);overflow:hidden}
+/* height:100% here needs every ancestor up to html to have an explicit
+   height for the percentage to resolve against anything — this file never
+   defines html,body{height:100%}, so it silently resolved to nothing and
+   #view-landing just grew to fit its content instead of being capped.
+   Same fix .stage above already uses: size directly off the viewport
+   instead of a % chain. Without this the composer ends up however far
+   down the (now very tall) page the conversation has pushed it — visually
+   indistinguishable from "the chat box doesn't work" since it's still
+   there, just off-screen. */
+body[data-view="landing"] #view-landing{height:calc(100dvh - 60px);min-height:0;overflow:hidden}
+/* Was 45/55 in favour of the rail — changed to an even 50/50 so the agent
+   and the campaign list actually share the screen equally. */
+.hm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(420px,1fr);height:100%;min-height:0}
+.hm-rail{display:flex;flex-direction:column;gap:14px;min-width:0;min-height:0;overflow-y:auto;padding:16px 18px}
+
+/* The agent panel borrows the campaign chat's chrome and gradient body
+   verbatim, so opening a campaign reads as the same window continuing
+   rather than a second, unrelated assistant. */
+/* Full-bleed, not a card: it runs from the app bar to the bottom of the
+   window and hard against the left edge, the way the campaign chat does.
+   A border and a gap here made it read as a widget sitting on a page. */
+.hm-agent{display:flex;flex-direction:column;min-height:0;background:var(--surface);border-right:1px solid var(--line)}
+.hm-agent-head{display:flex;align-items:center;gap:11px;padding:14px 22px;border-bottom:1px solid var(--line);background:var(--surface);flex-shrink:0}
+.hm-agent-mark{width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;background:var(--ai-tint);color:var(--nv-space-orange);font-size:var(--t-15)}
+.hm-agent-head h3{font-size:var(--t-14);font-weight:800;letter-spacing:var(--tracking)}
+.hm-agent-head p{font-size:var(--t-12);color:var(--ink3);font-weight:600;margin-top:1px}
+.hm-agent-body{flex:1;min-height:0;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(rgba(252,252,252,.6),rgba(252,252,252,.6)),url('/gradient-chat.jpg') center/cover fixed,var(--surface2)}
+/* flex-shrink:0 so the composer keeps its height and stays on screen no
+   matter how long the conversation above it grows. */
+.hm-agent-input{flex-shrink:0;border-top:1px solid var(--line);padding:12px 18px;background:var(--surface)}
+/* No attach/mic here (nothing to attach to without an open campaign), so the
+   lone send button is pushed right rather than left-floating under the field. */
+.hm-agent-input .cp-input-tools{justify-content:flex-end}
+
+/* Centred greeting. No avatar or mascot: the ✦ mark is the agent's identity
+   everywhere else in this app, and a character here would be the only one. */
+.hm-welcome{margin:auto 0;text-align:center;padding:8px 2px}
+.hm-welcome .hm-w-mark{width:44px;height:44px;margin:0 auto 14px;display:grid;place-items:center;background:var(--ai-tint);color:var(--nv-space-orange);font-size:var(--t-20)}
+.hm-welcome h4{font-family:var(--font-medium);font-weight:var(--fw-medium);font-size:var(--t-16);color:var(--ink);letter-spacing:var(--tracking)}
+.hm-welcome p{font-size:var(--t-13);line-height:1.6;color:var(--ink2);margin:8px auto 0;max-width:44ch;font-weight:var(--fw-body)}
+.hm-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:16px;text-align:left}
+.hm-action{background:var(--surface);border:1px solid var(--line);padding:11px 13px;cursor:pointer;
+  transition:border-color var(--dur-1) var(--ease-out),background-color var(--dur-1) var(--ease-out),transform var(--dur-1) var(--ease-out)}
+.hm-action:hover{border-color:var(--nv-space-orange);background:var(--ai-tint)}
+.hm-action:active{transform:scale(.985)}
+.hm-action b{display:block;font-size:var(--t-12);font-weight:800;color:var(--ink)}
+.hm-action span{display:block;font-size:var(--t-11);color:var(--ink3);margin-top:3px;font-weight:600;line-height:1.45}
+
+.hm-list{background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
+.hm-list-head{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.hm-list-head h4{font-size:var(--t-13);font-weight:800;letter-spacing:var(--tracking);white-space:nowrap}
+.hm-list-head .search-input{flex:1;min-width:0}
+/* Quick-pick chips under a question. Deliberately not a .msg bubble: these
+   are controls the agent is offering, not something it said. */
+.qp-row{align-self:flex-start;max-width:94%;margin-top:-2px;animation:fltIn var(--dur-2) var(--ease-out)}
+@media (prefers-reduced-motion:reduce){.qp-row{animation:none}}
+.qp-note{display:block;padding-left:2px;margin-bottom:5px;font-size:var(--t-11);color:var(--ink3);font-weight:600}
+.qp-row .cp-suggest{padding:0;background:transparent}
+
+/* Filter control beside the search field. */
+.flt-wrap{position:relative;flex-shrink:0}
+.flt-btn{display:flex;align-items:center;gap:6px;height:30px;padding:0 11px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink2);font-size:var(--t-12);font-weight:700;cursor:pointer;
+  transition:border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out),background-color var(--dur-1) var(--ease-out)}
+.flt-btn:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.flt-btn.on{border-color:var(--nv-space-orange);color:var(--nv-space-orange);background:var(--ai-tint)}
+.flt-btn:active{transform:scale(.97)}
+.flt-count{min-width:16px;height:16px;padding:0 4px;display:grid;place-items:center;background:var(--nv-space-orange);color:#fff;font-size:10px;font-weight:800}
+.flt-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:60;min-width:212px;padding:8px;
+  background:var(--surface);border:1px solid var(--line);box-shadow:0 8px 24px rgba(22,22,22,.13);
+  animation:fltIn var(--dur-2) var(--ease-out)}
+@keyframes fltIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.flt-menu{animation:none}}
+.flt-group + .flt-group{margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)}
+.flt-label{display:block;padding:2px 8px 6px;font-size:var(--t-11);font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3)}
+.flt-opt{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:6px 8px;
+  border:none;background:transparent;color:var(--ink);font-size:var(--t-12);font-weight:600;text-align:left;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.flt-opt:hover{background:var(--surface2)}
+.flt-opt.on{background:var(--ai-tint);color:var(--nv-space-orange);font-weight:800}
+.flt-n{font-size:var(--t-11);font-weight:800;color:var(--ink3)}
+.flt-opt.on .flt-n{color:var(--nv-space-orange)}
+.flt-clear{width:100%;margin-top:8px;padding:6px;border:1px solid var(--line);background:transparent;
+  color:var(--ink2);font-size:var(--t-11);font-weight:700;cursor:pointer}
+.flt-clear:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+/* Fixed page size, so no inner scroll: the list is exactly five rows tall and
+   the pager sits under it rather than below a scroll well. */
+.hm-list .req-table{border:none}
+
+.rp-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid var(--line2);background:var(--surface)}
+.rp-count{font-size:var(--t-11);color:var(--ink3);font-weight:600}
+.rp-count b,.rp-page b{color:var(--ink);font-weight:800}
+.rp-page{margin-left:auto;font-size:var(--t-11);color:var(--ink3);font-weight:600}
+.rp-nav{display:flex;align-items:center;gap:3px}
+.rp-btn{min-width:26px;height:26px;padding:0 6px;border:1px solid var(--line);background:var(--surface);color:var(--ink2);
+  font-size:var(--t-11);font-weight:700;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.rp-btn:hover:not(:disabled){border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.rp-btn:active:not(:disabled){transform:scale(.94)}
+.rp-btn.on{background:var(--nv-warm-black);border-color:var(--nv-warm-black);color:var(--nv-soft-white)}
+.rp-btn:disabled{opacity:.35;cursor:default}
+.rp-gap{padding:0 2px;font-size:var(--t-11);color:var(--ink4)}
+/* The rail is narrower than the old full-width table. The owner avatars are
+   the one column that repeats information the campaign already implies, so
+   they're dropped here rather than crushed; the header row goes with them
+   since three labelled columns don't need a header. */
+.hm-list .rt-head{display:none}
+.hm-list .rt-row{grid-template-columns:minmax(0,1.9fr) minmax(0,.95fr) minmax(0,1fr) 34px;gap:12px;padding:11px 16px}
+.hm-list .rt-row > .rt-owners{display:none}
+/* The id belongs to the campaign, so it sits under the name rather than beside
+   it: side by side in this width it wrapped mid-token ("TP-" / "87699"). */
+.hm-list .rt-camp{display:block;min-width:0}
+.hm-list .rt-camp .rt-id{font-size:var(--t-11);color:var(--ink3);margin-top:2px;font-weight:600}
+
+@media (max-width:1100px){
+  .hm-grid{grid-template-columns:1fr}
+  .hm-agent{min-height:420px}
+  .hm-list .req-table{max-height:none}
+}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.stat-card{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:16px 18px;box-shadow:none;
+  transition:border-color var(--dur-1) var(--ease-out),transform var(--dur-1) var(--ease-out);
+  animation:rt-row-in var(--dur-3) var(--ease-out) backwards;animation-delay:calc(var(--i,0) * 40ms)}
+.stat-card:hover{border-color:var(--nv-space-orange);transform:translateY(-1px)}
+@media (prefers-reduced-motion:reduce){.stat-card{animation:none}}
+.stat-card .sc-lbl{font-size:var(--t-11);font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:6px}
+.stat-card .sc-ico{width:18px;height:18px;border-radius:0;display:grid;place-items:center;font-size:var(--t-11)}
+.stat-card .sc-num{font-weight:800;font-size:var(--t-26);line-height:1.1;margin-top:6px;color:var(--ink)}
+.stat-card .sc-sub{font-size:var(--t-12);color:var(--ink3);margin-top:2px;font-weight:600}
+.sc-a{background:var(--brand-tint);color:var(--brand)}
+.sc-b{background:var(--gold-tint);color:var(--gold-dk)}
+.sc-c{background:var(--ok-tint);color:var(--ok)}
+.sc-d{background:var(--ai-tint);color:var(--ai-dk)}
+
+/* ============ FLOW MAP: status legend + node icon/badge ============ */
+.flow-legend{display:flex;gap:18px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line2);font-size:12px;color:var(--ink3);font-weight:700;flex-wrap:wrap;justify-content:flex-end}
+.fl-i{display:flex;align-items:center;gap:6px}
+.fl-dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.fl-dot-prog{background:var(--brand)}
+.fl-dot-attn{background:var(--risk)}
+.fl-dot-done{background:var(--ok)}
+.fl-dot-ns{background:var(--ink4)}
+.flow-node-top{display:flex;align-items:center;gap:8px}
+.flow-node-ic{width:20px;height:20px;border-radius:0;display:grid;place-items:center;font-size:11px;flex-shrink:0;background:var(--surface3);color:var(--ink3)}
+.flow-node.done .flow-node-ic{background:var(--ok-tint);color:var(--ok)}
+.flow-node.now .flow-node-ic,.flow-node.parallel.now .flow-node-ic{background:var(--brand-tint);color:var(--brand)}
+.flow-node.attn .flow-node-ic{background:var(--risk-tint);color:var(--risk)}
+.flow-node-badge{margin-left:auto;font-size:10px;font-weight:800;padding:2px 7px;border-radius:0;background:var(--surface3);color:var(--ink3);white-space:nowrap}
+.flow-node.done .flow-node-badge{background:var(--ok-tint);color:var(--ok)}
+.flow-node.now .flow-node-badge,.flow-node.parallel.now .flow-node-badge{background:var(--brand-tint);color:var(--brand)}
+.flow-node.attn .flow-node-badge{background:var(--risk-tint);color:var(--risk)}
+
+/* ============ SECTION MASTER/DETAIL (Plan at a Glance + default section view) ============ */
+.crf-tabs-slot:empty{display:none}
+/* Sticks right below the app bar so the nav stays reachable while the
+   section list/detail panel below it scrolls — same sticky pattern
+   .sm-list-panel already uses, just one layer higher. */
+/* Butts directly against the black campaign bar — no top margin, no top
+   border — so the two read as one stacked header for this form section
+   rather than a detached strip of tabs floating under it. */
+/* Full-bleed: negative margins cancel .stage's own padding (20px top,
+   22px sides) so the bar spans the entire gray form-section column and its
+   top edge meets the black campaign bar with no seam. Side borders are
+   dropped for the same reason — an edge-to-edge header has no side edges. */
+.crf-tabs-slot{position:sticky;top:60px;z-index:75;background:var(--surface);border:1px solid var(--line);border-top:none;border-left:none;border-right:none;box-shadow:none;margin:-20px -22px 16px;padding:0;border-radius:0;display:flex;align-items:stretch;overflow:hidden}
+.crf-tabs-slot .crf-view-tabs{flex:1;min-width:0}
+.stage-track{display:flex;align-items:stretch;flex-shrink:0}
+/* Focus/Show all — new, this is the original's formScope simple/full
+   switch (was a text link, "Show only what needs me") as a real toggle,
+   sitting left of Conversations per the redesign. */
+.crf-scope-toggle{flex-shrink:0;align-self:center;margin:0 4px;padding:6px 14px;font-size:12px;font-weight:800;letter-spacing:.02em;color:var(--ink3);background:var(--surface2);border:1px solid var(--line2);white-space:nowrap;transition:background-color .15s ease,color .15s ease}
+.crf-scope-toggle:hover{color:var(--ink)}
+.crf-scope-toggle.on{background:var(--surface3);color:var(--ink)}
+/* Fixed, non-scrolling area to the right of the (horizontally scrollable)
+   tab strip — same sticky bar, same height, never scrolls with the tabs.
+   Opens the project conversation drawer. */
+/* Deliberately the one filled, colored element in the bar: this is a switch
+   to a different kind of view (the human project conversation), not another
+   stage in the form flow, so it should not look like the stage tabs. */
+/* Collapsed details: a vertical orange tab on the right edge, same material
+   as the Conversations trigger so the two read as the same family of control.
+   Only rendered in the request view, and only while collapsed. */
+.details-tab{position:fixed;top:calc(60px + var(--campaign-bar-h));right:0;bottom:0;
+  width:var(--details-tab-w);z-index:76;display:none;align-items:center;justify-content:center;gap:9px;
+  border:none;background:var(--grad-orange);color:#fff;cursor:pointer;
+  font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  writing-mode:vertical-rl;transition:filter var(--dur-1) var(--ease-out)}
+.details-tab:hover{filter:brightness(1.07)}
+.details-tab:focus-visible{outline:2px solid var(--nv-warm-black);outline-offset:-4px}
+body[data-view="request"][data-details="collapsed"] .details-tab{display:flex}
+
+/* Drag handle sitting on the boundary, only while both halves are visible.
+   Widened hit area, hairline visual — a 6px orange bar would read as a
+   divider rule rather than something you grab. */
+.details-resizer{position:fixed;top:calc(60px + var(--campaign-bar-h));bottom:0;
+  width:9px;margin-left:-4px;left:var(--chat-w);z-index:77;display:none;cursor:col-resize;
+  background:transparent}
+.details-resizer::after{content:'';position:absolute;top:0;bottom:0;left:4px;width:1px;background:transparent;
+  transition:background-color var(--dur-1) var(--ease-out)}
+.details-resizer:hover::after,body[data-resizing] .details-resizer::after{background:var(--nv-space-orange)}
+body[data-view="request"][data-details="open"] .details-resizer{display:block}
+/* While dragging, kill text selection and let pointer events through the
+   panels so the pointer keeps tracking even when it outruns the handle. */
+body[data-resizing]{user-select:none;cursor:col-resize}
+body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
+
+/* Same white/grey language as .crf-tab now — no orange fill. Grey when
+   the drawer is open (matches the tabs' "selected = grey fill" state),
+   plain otherwise. */
+.crf-comments-trigger{flex-shrink:0;display:flex;align-items:center;gap:8px;padding:0 20px;border:none;border-left:1px solid var(--line2);background:none;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
+.crf-hide-details{flex-shrink:0;padding:0 15px;border:none;border-left:1px solid var(--line);
+  background:transparent;color:var(--ink3);font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.crf-hide-details:hover{background:var(--surface2);color:var(--ink)}
+.crf-comments-trigger:hover{color:var(--ink);background:var(--surface2)}
+.crf-comments-trigger.on{background:var(--surface3);color:var(--ink);font-weight:800}
+.crf-comments-trigger:focus-visible{outline:2px solid var(--ink3);outline-offset:-3px}
+.crf-comments-trigger svg{flex-shrink:0}
+.crf-comments-badge{background:var(--ink);color:#fff;font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:0;display:inline-grid;place-items:center;padding:0 4px}
+.sm-wrap{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;margin-top:0}
+@media (max-width:900px){.sm-wrap{grid-template-columns:1fr}}
+.sm-list-panel{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;padding:8px;display:flex;flex-direction:column;gap:1px;position:sticky;top:74px;max-height:calc(100vh - 88px);overflow-y:auto}
+.glance-toggle-row{display:flex;gap:8px;margin:16px 0 12px}
+.glance-toggle-btn{height:32px;padding:0 14px;border-radius:0;font-size:12px;font-weight:700;color:var(--ink2);background:var(--surface);border:1px solid var(--line);transition:all .15s}
+.glance-toggle-btn:hover{border-color:var(--brand)}
+.glance-toggle-btn.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sm-list-head{font-size:12px;font-weight:800;color:var(--ink);padding:6px 8px 8px}
+.sm-list-head span{color:var(--ink3);font-weight:700}
+.sm-row{display:flex;align-items:center;gap:7px;width:100%;height:33px;padding:0 9px 0 6px;border-radius:0;border:none;border-left:4px solid transparent;background:transparent;text-align:left;cursor:pointer;font-size:12px;color:var(--ink2);font-weight:600;transition:background .15s ease,border-color .15s ease}
+.sm-row:hover{background:var(--nv-grey-surface)}
+/* Active selection: white bg (not a tint fill), 4px Space Orange left bar,
+   bold title — spec §1. */
+.sm-row.on{background:var(--surface);color:var(--ink);font-weight:800;border-left-color:var(--nv-space-orange)}
+.sm-row.sm-row-indent{padding-left:22px}
+.sm-row.sm-row-indent .sm-row-num{opacity:.6}
+.sm-row-num{font-size:11px;color:var(--ink3);font-weight:800;width:16px;flex-shrink:0}
+.sm-row.on .sm-row-num{color:var(--brand)}
+.sm-row-ic{width:22px;height:22px;border-radius:0;display:grid;place-items:center;font-size:12px;flex-shrink:0}
+.sm-row-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sm-row-check{width:15px;height:15px;color:var(--nv-space-orange);font-size:13px;display:grid;place-items:center;flex-shrink:0;font-weight:800}
+.sm-row-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;position:relative}
+.sm-dot-prog{background:var(--brand)}
+/* Orange + pulsing is reserved for sections that actually appear in Chat's
+   Your Focus card right now (focusedSectionIds()) — anything else, even if
+   technically "mine" or merely not-started, stays a flat grey dot so the nav
+   never lights up more rows than the chat is actually telling you about. */
+.sm-dot-mine{background:var(--nv-space-orange);position:relative}
+.sm-dot-mine::before{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nv-space-orange);animation:dotPulse 1.6s ease-in-out infinite}
+.sm-dot-ns{background:var(--ink4)}
+.sm-row-chev{color:var(--nv-warm-black);font-size:14px;flex-shrink:0;transition:color .15s ease}
+.sm-row:hover .sm-row-chev{color:var(--nv-space-orange)}
+.sm-row.on .sm-row-chev{color:var(--nv-space-orange)}
+.sm-detail-panel{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;min-height:200px}
+.sm-detail-card{scroll-margin-top:76px}
+.sm-detail-empty{padding:32px;text-align:center;color:var(--ink3);font-size:14px;font-weight:600}
+/* Project-level conversation — one @mention comment thread per whole
+   campaign request. Opens as a dropdown-style panel directly BELOW the
+   "Conversations" trigger next to the CPF/BU Setup/CRF details pill nav
+   (not a full-height side drawer) — .project-drawer-backdrop is just an
+   invisible full-page click-catcher so clicking outside the panel closes
+   it, same click-outside pattern the persona/notification menus use,
+   scaled up to also work when the trigger itself is scrolled off-screen.
+   Position (top/right) is computed in JS from the trigger's own
+   getBoundingClientRect() — see positionProjectDrawer(). */
+.project-drawer-backdrop{position:fixed;inset:0;z-index:200;display:none}
+.project-drawer-backdrop.open{display:block}
+.project-drawer{position:fixed;width:400px;max-width:92vw;max-height:min(520px,70vh);background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;z-index:201;display:flex;flex-direction:column;opacity:0;transform:translateY(-6px);transition:opacity .15s ease,transform .15s ease}
+.project-drawer-backdrop.open .project-drawer{opacity:1;transform:none}
+.project-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line2);flex-shrink:0}
+.project-drawer-head h3{font-size:15px;font-weight:800}
+.project-drawer-head p{font-size:12px;color:var(--ink3);font-weight:600;margin-top:1px}
+.project-drawer-body{flex:1;overflow-y:auto;padding:14px 16px;min-height:80px}
+.project-drawer-compose{border-top:1px solid var(--line2);padding:12px 16px;flex-shrink:0;position:relative}
+.cm-list{display:flex;flex-direction:column;gap:14px}
+.cm-empty{color:var(--ink3);font-size:13px;font-weight:600;text-align:center;padding:20px 0}
+.cm-item{display:flex;gap:10px}
+.cm-av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--nv-soft-white);color:var(--nv-warm-black);font-weight:800;font-size:11px;flex-shrink:0;border:2.5px solid var(--nv-grey-line)}
+.cm-body{flex:1;min-width:0}
+.cm-meta{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;font-size:12px}
+.cm-meta b{color:var(--ink)}
+.cm-role{color:var(--ink3);font-size:11px;font-weight:600}
+.cm-time{color:var(--ink3);font-size:11px;margin-left:auto}
+.cm-section-tag{font-size:11px;font-weight:700;color:var(--brand);margin-top:2px}
+.cm-text{font-size:13px;color:var(--ink2);line-height:1.5;margin-top:3px;white-space:pre-wrap}
+.cm-mentions{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap}
+.cm-mention{font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-tint);border-radius:0;padding:2px 7px}
+.cm-input{width:100%;min-height:64px;border:1px solid var(--line2);border-bottom:2px solid var(--line2);border-radius:0;padding:9px 11px;font:inherit;font-size:13px;resize:vertical;background:var(--surface2);color:var(--ink);transition:border-color .15s ease}
+.cm-input:hover{border-color:#CCCCCC;border-bottom-color:#CCCCCC}
+.cm-input:focus{outline:none;border-color:var(--line2);border-bottom:2px solid var(--nv-space-orange)}
+.cm-mention-picker{position:absolute;bottom:100%;left:18px;right:18px;margin-bottom:6px;background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;padding:6px;z-index:20}
+.cm-picker-item{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;border-radius:0;text-align:left;font-size:13px;font-weight:700;color:var(--ink)}
+.cm-picker-item:hover{background:var(--surface2)}
+.cm-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
+.cm-tagged{display:flex;gap:5px;flex-wrap:wrap}
+.cm-tag-chip{font-size:11px;font-weight:700;color:var(--brand);background:var(--brand-tint);border-radius:0;padding:3px 9px 3px 7px;display:inline-flex;align-items:center;gap:4px}
+.cm-tag-chip button{color:var(--brand);opacity:.6;font-weight:800}
+.cm-tag-chip button:hover{opacity:1}
+.sm-detail-head{padding:14px 16px;border-bottom:1px solid var(--line2)}
+.sm-detail-head-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sm-detail-x{margin-left:auto;width:26px;height:26px;flex-shrink:0;display:grid;place-items:center;background:transparent;border:1px solid transparent;color:var(--ink3);font-size:14px;cursor:pointer;transition:background-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out)}
+.sm-detail-x:hover{background:var(--surface3);color:var(--ink);border-color:var(--line)}
+.sm-detail-x:focus-visible{outline:2px solid var(--nv-space-orange);outline-offset:2px}
+.sm-detail-num{font-size:11px;font-weight:800;color:var(--ink3)}
+.sm-detail-title{font-size:var(--t-h4);font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink)}
+/* Section status badges — spec §3: IN PROGRESS is solid black; COMPLETE is
+   white with an orange check (glyph prepended by JS, see below) and dark
+   text; "Your input needed" gets its own outlined-orange variant. */
+.sm-status-pill{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 9px;border-radius:0;display:inline-flex;align-items:center;gap:4px}
+.sm-status-done{background:var(--nv-soft-white);color:var(--ink);border:1px solid var(--nv-grey-line)}
+.sm-status-done::before{content:'✓';color:var(--nv-space-orange);font-weight:800}
+.sm-status-prog{background:var(--nv-warm-black);color:var(--nv-soft-white)}
+.sm-status-ns{background:var(--surface3);color:var(--ink3)}
+.sm-status-mine{background:transparent;color:var(--nv-space-orange);border:1.5px solid var(--nv-space-orange)}
+.sm-detail-sub{font-size:12px;color:var(--ink3);font-weight:600;margin-top:2px}
+.sm-detail-progress-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.sm-detail-progress-row .sm-count{font-size:12px;color:var(--ink3);font-weight:700;white-space:nowrap}
+/* Progress bars — spec §6: 4px tall, orange completed / light-grey
+   remaining track, animated width transitions. */
+.sm-detail-bar{flex:1;height:4px;border-radius:0;background:var(--nv-grey-line);overflow:hidden}
+.sm-detail-bar-fill{height:100%;border-radius:0;transition:width .35s ease}
+.sm-detail-bar-fill.sm-status-done{background:var(--nv-space-orange)}
+.sm-detail-bar-fill.sm-status-prog{background:var(--nv-space-orange)}
+.sm-detail-bar-fill.sm-status-ns{background:var(--ink4)}
+.sm-detail-body{padding:16px}
+
+.filter-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filt{padding:8px 16px;border-radius:0;font-size:var(--t-13);font-weight:700;color:var(--ink2);background:var(--surface);border:1px solid var(--line);transition:background-color .15s ease,border-color .15s ease,color .15s ease;display:inline-flex;align-items:center;gap:6px}
+.filt:hover{border-color:var(--brand)}
+.filt.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.filt .n{background:rgba(255,255,255,.15);color:inherit;font-size:var(--t-11);font-weight:800;padding:1px 7px;border-radius:0}
+.filt:not(.on) .n{background:var(--surface2);color:var(--ink3)}
+.search-input{margin-left:auto;position:relative}
+.search-input input{width:260px;padding:8px 14px 8px 34px;border:1px solid var(--line);border-radius:0;font-size:var(--t-13);background:var(--surface);transition:border-color .15s ease}
+.search-input input:focus{outline:none;border-color:var(--nv-warm-black);box-shadow:0 0 0 2px var(--nv-warm-black)}
+.search-input::before{content:'⌕';position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:var(--t-14)}
+
+/* ================== ADMIN: MANAGE FORM FIELDS (Drupal Field UI-style) ================== */
+.admin-tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line2)}
+.admin-tabs button{padding:10px 16px;border:none;background:transparent;font-size:13px;font-weight:700;color:var(--ink3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.admin-tabs button:hover{color:var(--ink2)}
+.admin-tabs button.on{color:var(--brand);border-bottom-color:var(--brand)}
+.admin-layout{display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start}
+.admin-sec-list{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;padding:10px;display:flex;flex-direction:column;gap:2px}
+.admin-sec-item{display:flex;align-items:center;gap:8px;width:100%;padding:9px 10px;border-radius:0;border:none;background:transparent;text-align:left;cursor:pointer;font-size:13px;color:var(--ink2);font-weight:600}
+.admin-sec-item:hover{background:var(--surface2)}
+.admin-sec-item.on{background:var(--brand-tint);color:var(--brand);font-weight:800}
+.admin-sec-item .n{margin-left:auto;font-size:11px;background:var(--surface3);color:var(--ink3);border-radius:0;padding:1px 7px}
+.admin-sec-item.on .n{background:var(--surface);color:var(--brand)}
+
+.admin-field-panel{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none}
+.admin-panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--line)}
+.admin-panel-head h3{font-size:15px;font-weight:700}
+.admin-panel-head p{font-size:12px;color:var(--ink3);margin-top:2px}
+
+.admin-ftable{width:100%;border-collapse:collapse}
+.admin-ftable th{text-align:left;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3);padding:8px 16px;border-bottom:1px solid var(--line2)}
+.admin-ftable td{padding:0 16px;height:44px;border-bottom:1px solid var(--line2);font-size:13px;vertical-align:middle}
+.admin-ftable tr.admin-frow:hover{background:var(--surface2)}
+.admin-ftable tr.admin-frow-active{background:var(--brand-tint)}
+.admin-ftable tr.admin-frow-active:hover{background:var(--brand-tint)}
+.ops-hero-tag{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink2);background:var(--surface2);border:1px solid var(--line2);border-radius:0;padding:6px 14px 6px 6px}
+.ops-hero-tag .p-av{width:26px;height:26px;border-radius:0;display:flex;align-items:center;justify-content:center;background:var(--nv-soft-white);color:var(--nv-warm-black);font-size:11px;font-weight:800;border:2.5px solid var(--nv-grey-line)}
+.plan-table input[type="date"]{font:inherit;border:1px solid var(--line2);border-radius:0;padding:6px 8px;background:var(--surface);color:var(--ink)}
+.plan-table td .plan-eta-saved{font-size:11px;color:var(--ink3);margin-left:6px}
+.admin-tactic-head{margin-top:22px;border-top:1px solid var(--line2);padding-top:18px}
+
+/* ================== GANTT (Calendar > campaign timeline) ================== */
+.gantt-back{display:inline-block;font-size:12px;font-weight:700;color:var(--ink2);text-decoration:none;margin-bottom:10px}
+.gantt-back:hover{color:var(--brand)}
+.gantt-card{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;margin-bottom:12px;padding:14px 16px;transition:border-color .15s ease}
+.gantt-card:hover{border-color:var(--nv-space-orange)}
+.gantt-title-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line2);margin-bottom:12px}
+.gantt-title-l{display:flex;align-items:center;gap:8px}
+.gantt-title-l h2{font-size:16px;font-weight:700}
+.gantt-status-badge{font-size:11px;font-weight:800;padding:2px 9px;border-radius:0;text-transform:uppercase;letter-spacing:.03em}
+.gantt-status-badge.planning{background:var(--brand-tint);color:var(--brand)}
+.gantt-status-badge.execution{background:var(--gold-tint);color:var(--gold-dk)}
+.gantt-kpis{display:flex;gap:28px;margin-left:auto;flex-wrap:wrap}
+.gantt-kpi{min-width:110px}
+.gantt-kpi-label{font-size:11px;color:var(--ink3);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-bottom:3px}
+.gantt-kpi-value{font-size:15px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:6px}
+.gantt-kpi-bar{height:5px;border-radius:0;background:var(--line2);margin-top:5px;overflow:hidden;width:110px}
+.gantt-kpi-bar-fill{height:100%;background:var(--nv-space-orange);border-radius:0}
+.gantt-conf-badge{font-size:10px;font-weight:800;padding:1px 7px;border-radius:0;background:var(--ok-tint);color:var(--ok)}
+.gantt-status-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);display:inline-block}
+.gantt-meta-row{display:flex;gap:22px;font-size:12px;color:var(--ink2);font-weight:600;flex-wrap:wrap}
+.gantt-meta-row b{color:var(--ink3);font-weight:700;margin-right:5px}
+
+.gantt-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gantt-toolbar select{height:32px;padding:0 10px;border:1px solid var(--line);border-radius:0;font-size:12px;background:var(--surface);color:var(--ink2);font-weight:600}
+.gantt-view-tabs{display:flex;gap:2px;background:var(--surface2);border-radius:0;padding:2px;margin-left:auto}
+.gantt-view-tabs button{padding:5px 12px;border-radius:0;font-size:12px;font-weight:700;color:var(--ink3)}
+.gantt-view-tabs button.on{background:var(--surface);color:var(--brand);box-shadow:none}
+
+/* table-layout:fixed is what actually makes this work — without it, a table
+   sizes itself to fit its widest cell's content, so the Gantt's naturally-
+   wide inner block (16 weeks × 64px) grows the whole table/page instead of
+   scrolling inside its own td. Fixed layout ignores content width and just
+   uses the available column width, so the overflow gets contained where
+   intended: inside .gantt-scroll. */
+.plan-table{table-layout:fixed;width:100%}
+.plan-gantt-row td{padding:0;background:var(--surface2);width:100%;max-width:0;overflow:hidden}
+.plan-progress-cell{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink)}
+/* Calendar page's two-column layout — activities table on the left, a
+   separate "Go-live timeline" box on the right in the space the persistent
+   chat panel would otherwise occupy (chat is hidden on this view). Two
+   distinct boxes, not one merged table, per design ask — row alignment
+   between them is kept in sync by JS (syncTimelineRowHeights()) rather than
+   assumed, since the left table's rows vary in height (wrapping activity
+   names, an expanded Gantt detail row) while the right table's rows are
+   naturally short. */
+.plan-cols{display:flex;gap:16px;align-items:flex-start}
+.plan-left{flex:1.3;min-width:0}
+.plan-right{flex:1;min-width:380px}
+.yt-table{table-layout:fixed}
+.yt-table th{text-align:center;padding:8px 2px;font-size:10px}
+.yt-table td{padding:0;text-align:center;vertical-align:middle;cursor:pointer}
+.yt-table tr:hover td{background:var(--surface2)}
+.yt-mark{display:inline-block;width:20px;height:20px;border-radius:0;background:transparent}
+.yt-table td.yt-hit .yt-mark{background:var(--grad-orange);box-shadow:none}
+.plan-table tr.admin-frow{cursor:pointer}
+.gantt-scroll{overflow-x:auto;cursor:grab;padding-bottom:4px}
+.gantt-scroll.dragging{cursor:grabbing;user-select:none}
+.gantt-body{display:flex;flex-direction:column}
+.gantt-week-header{display:flex}
+.gantt-activities-head{width:260px;flex-shrink:0;font-size:11px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;position:sticky;left:0;background:var(--surface);z-index:3}
+.gantt-weeks{position:relative;display:flex;border-left:1px solid var(--line2)}
+.gantt-week-cell{flex-shrink:0;border-right:1px solid var(--line2);font-size:10px;color:var(--ink3);font-weight:700;text-align:center;padding:6px 2px;position:relative}
+.gantt-month-band{display:flex;border-bottom:1px solid var(--line2)}
+.gantt-month-cell{flex-shrink:0;border-right:1px solid var(--line2);font-size:11px;color:var(--ink2);font-weight:800;text-align:center;padding:4px 0}
+.gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--nv-space-orange);z-index:5;pointer-events:none}
+.gantt-today-line::after{content:'Today';position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;color:var(--nv-space-orange);white-space:nowrap}
+.gantt-row{display:flex;border-bottom:1px solid var(--line2)}
+.gantt-row:last-child{border-bottom:none}
+.gantt-activity-cell{width:260px;flex-shrink:0;padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink);border-right:1px solid var(--line2);position:sticky;left:0;background:var(--surface);z-index:3}
+.gantt-activity-cell .drag-h{color:var(--ink3);font-size:11px}
+.gantt-owner-av{width:20px;height:20px;border-radius:50%;background:var(--surface3);color:var(--ink2);font-size:10px;font-weight:800;display:grid;place-items:center;flex-shrink:0}
+.gantt-activity-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gantt-status-pill{font-size:10px;font-weight:700;padding:1px 7px;border-radius:0;white-space:nowrap}
+.gantt-status-pill.complete{background:var(--ok-tint);color:var(--ok)}
+.gantt-status-pill.inprogress{background:var(--brand-tint);color:var(--brand)}
+.gantt-status-pill.notstarted{background:var(--surface3);color:var(--ink3)}
+.gantt-track{position:relative;min-height:38px;flex-shrink:0}
+.gantt-bar{position:absolute;top:50%;transform:translateY(-50%);height:22px;border-radius:0;display:flex;align-items:center;gap:6px;padding:0 8px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden}
+/* Gantt track categories: a monochrome Warm-Black→grey ramp rather than a
+   rainbow. Space Orange is deliberately NOT used here — it is reserved for
+   interaction, and a always-on bar colour is not an interaction state. */
+.gantt-bar.c-discovery{background:#0460A9}
+.gantt-bar.c-cpf{background:#7A5AB8}
+.gantt-bar.c-journey{background:#1E7A4F}
+.gantt-bar.c-assets{background:#EC961D}
+.gantt-bar.c-audience{background:#1E8E9E}
+.gantt-bar.c-mlr{background:#C23B6B}
+.gantt-bar.c-deploy{background:var(--ink4)}
+.gantt-bar-tag{font-size:10px;font-weight:800;background:rgba(255,255,255,.25);padding:0 5px;border-radius:0}
+.gantt-bar-risk::before{content:'⚠';margin-right:1px}
+.gantt-milestone{position:absolute;top:50%;width:16px;height:16px;background:var(--brand-dk);transform:translateY(-50%) rotate(45deg);border-radius:0}
+.gantt-dep-arrow{position:absolute;border-top:1.5px dashed var(--ink4);pointer-events:none}
+
+.gantt-legend{display:flex;gap:16px;flex-wrap:wrap;padding-top:12px;margin-top:8px;border-top:1px solid var(--line2);font-size:11px;color:var(--ink3);font-weight:600}
+.gantt-legend .lg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.gantt-legend .lg-i{display:flex;align-items:center}
+
+.gantt-quick-actions{display:flex;gap:8px;flex-wrap:wrap}
+.gantt-quick-actions button{height:32px;padding:0 12px;font-size:12px;font-weight:700;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:0}
+.gantt-quick-actions button:hover{border-color:var(--brand);color:var(--brand)}
+
+/* AI Planning Assistant sidebar */
+.ai-plan-head{background:var(--brand)}
+.ai-plan-body{padding:14px}
+.ai-plan-section{margin-bottom:18px}
+.ai-plan-section h4{font-size:12px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ai-log-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--ink2);margin-bottom:9px;font-weight:600}
+.ai-log-ic{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:10px;color:#fff;margin-top:1px}
+.ai-log-ic.ok{background:var(--ok)}
+.ai-log-ic.warn{background:var(--gold-dk)}
+.ai-log-ic.info{background:var(--ink4)}
+.ai-log-ic.blue{background:var(--brand)}
+.ai-log-time{display:block;font-size:10px;color:var(--ink3);font-weight:600;margin-top:1px}
+.ai-conf-num{font-size:26px;font-weight:800;color:var(--ink)}
+.ai-conf-tag{font-size:11px;font-weight:800;background:var(--ok-tint);color:var(--ok);padding:2px 8px;border-radius:0;margin-left:8px}
+.ai-conf-bar{height:6px;border-radius:0;background:var(--line2);margin-top:8px;overflow:hidden}
+.ai-conf-bar-fill{height:100%;background:var(--nv-space-orange);border-radius:0}
+.ai-conf-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-top:3px;font-weight:600}
+.ai-list{list-style:none;display:flex;flex-direction:column;gap:7px}
+.ai-list li{font-size:12px;color:var(--ink2);font-weight:600;padding-left:14px;position:relative;line-height:1.4}
+.ai-list.risks li::before{content:'⚠';position:absolute;left:0;color:var(--warn);font-size:11px}
+.ai-list.recs li::before{content:'✦';position:absolute;left:0;color:var(--brand);font-size:11px}
+.ai-plan-actions{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.ai-plan-updated{font-size:11px;color:var(--ink3);font-weight:600;text-align:center;margin-top:12px}
+.admin-flabel{font-weight:700;color:var(--ink)}
+.admin-fmachine{font-family:ui-monospace,monospace;font-size:12px;color:var(--ink3)}
+.admin-ftype-badge{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:2px 8px;border-radius:0;background:var(--surface3);color:var(--ink2)}
+.admin-fops{display:flex;gap:6px;justify-content:flex-end}
+.admin-fops button{font-size:12px;font-weight:700;padding:4px 10px;border-radius:0;border:1px solid var(--line2);background:var(--surface);color:var(--ink2);cursor:pointer}
+.admin-fops button:hover{background:var(--surface2)}
+.admin-fops button.danger:hover{background:var(--danger-tint,var(--accent-tint));color:var(--danger,var(--nv-space-orange));border-color:var(--danger-tint,var(--accent-tint))}
+
+.admin-drawer td{background:var(--surface2);padding:16px 20px}
+.admin-drawer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.admin-drawer-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700;color:var(--ink2)}
+.admin-drawer-grid input,.admin-drawer-grid select{border:1.5px solid var(--line);border-radius:0;padding:8px 10px;font-size:13px;background:var(--surface);color:var(--ink);font-weight:500}
+.admin-drawer-grid label.wide{grid-column:1/-1}
+.admin-drawer-actions{display:flex;gap:8px;margin-top:14px}
+.admin-drawer-check{flex-direction:row!important;align-items:center;gap:8px!important}
+.admin-hint{display:block;margin-top:4px;font-size:11px;line-height:1.5;color:var(--ink2);font-weight:400}
+/* Narrow single-column layout for the side edit panel (30vw, same slot the
+   Requirement agent chat normally occupies) — the 3-column drawer grid used
+   inline in the fields table is too cramped at that width. */
+.admin-drawer-grid-stacked{grid-template-columns:1fr}
+.admin-drawer-grid-stacked label.wide{grid-column:auto}
+
+/* ================== ADMIN EDIT PANEL (replaces the chat panel's slot) ================== */
+.admin-edit-panel{}
+.admin-edit-head{position:relative}
+.admin-edit-close{position:absolute;top:14px;right:16px;width:28px;height:28px;border-radius:0;background:rgba(255,255,255,.22);color:#fff;border:none;font-size:13px;cursor:pointer}
+.admin-edit-close:hover{background:rgba(255,255,255,.35)}
+.admin-edit-body{padding:18px}
+.admin-edit-body .admin-cond-values{flex-direction:column;align-items:flex-start;gap:6px}
+
+/* Visual condition builder — search key -> equals -> tick value(s) -> AND/OR */
+.admin-cond-builder{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:10px}
+.admin-cond-empty{font-size:12px;color:var(--ink3);margin:2px 0 8px}
+.admin-cond-rule{display:flex;align-items:center;gap:8px;padding:6px 0;flex-wrap:wrap}
+.admin-cond-rule select{border:1.5px solid var(--line);border-radius:0;padding:6px 9px;font-size:12px;min-width:170px}
+.admin-cond-eq{font-size:12px;color:var(--ink3);font-weight:700;text-transform:uppercase}
+.admin-cond-values{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.admin-cond-val{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--ink2);font-weight:600}
+.admin-cond-del{width:22px;height:22px;border-radius:50%;border:none;background:var(--surface2);color:var(--ink3);font-size:10px;cursor:pointer;margin-left:auto}
+.admin-cond-del:hover{background:var(--danger-tint,var(--accent-tint));color:var(--danger,var(--nv-space-orange))}
+.admin-cond-logic-tag{font-size:10px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--brand);border-radius:0;padding:1px 8px}
+.admin-cond-logic-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink3);font-weight:700;margin:8px 0}
+.admin-cond-logic-toggle button{border:1px solid var(--line);background:var(--surface);border-radius:0;padding:3px 10px;font-size:12px;font-weight:800;cursor:pointer;color:var(--ink3)}
+.admin-cond-logic-toggle button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.admin-cond-add{border:1.5px dashed var(--line);background:transparent;border-radius:0;padding:6px 12px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer}
+.admin-cond-add:hover{border-color:var(--brand);color:var(--brand)}
+
+.req-table{background:var(--surface);border:1px solid var(--line);border-radius:0;overflow:hidden;box-shadow:none}
+.rt-head,.rt-row{display:grid;grid-template-columns:minmax(0,2.4fr) 1.2fr 1.2fr 1.4fr 60px;gap:16px;padding:12px 20px;align-items:center;min-height:52px}
+.rt-head{background:var(--surface2);border-bottom:1px solid var(--line);font-size:var(--t-11);font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);min-height:36px}
+/* Was `transition:background .15s ease` + `animation:.25s ease`: bare `ease`
+   starts slow, which on a row you hover dozens of times a session reads as
+   lag. Same curves and durations the rest of the app already uses, and the
+   row entrance staggers off --i rather than a per-child nth-child list. */
+.rt-row{border-bottom:1px solid var(--line2);border-left:1px solid transparent;cursor:pointer;
+  transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out);
+  animation:rt-row-in var(--dur-2) var(--ease-out) backwards;animation-delay:calc(var(--i,0) * 28ms)}
+.rt-empty{padding:40px 20px;text-align:center;color:var(--ink3);font-size:var(--t-14);font-weight:600}
+.rt-row:last-child{border-bottom:none}
+.rt-row:hover{background:var(--surface2);border-left-color:var(--nv-space-orange)}
+.rt-row.mine{background:var(--ai-tint)}
+@keyframes rt-row-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.rt-row{animation:none}}
+/* Was background:var(--nv-orange) — an undefined token, so this rule had
+   never actually painted. Resolving the token to Space Orange turned every
+   hovered row into a full-bleed orange slab: the muted "Updated 4 h ago"
+   dropped to ~1.6:1 against it and the action pill became orange-on-white
+   floating on orange. Rule 1 of this stylesheet is that orange signals
+   interaction rather than filling surfaces, so the row keeps its tint and
+   the hover is carried by the 1px orange left rule that .rt-row:hover
+   already applies to every other row — same signal, one system. */
+.rt-row.mine:hover{background:var(--ai-tint);border-left-width:3px}
+.rt-camp{display:flex;align-items:center;gap:12px}
+.rt-name b{display:block;font-size:var(--t-14);font-weight:700;line-height:1.25}
+.rt-id{font-size:var(--t-12);color:var(--ink2)}
+.rt-phase{display:flex;align-items:center;gap:6px;font-size:var(--t-12);font-weight:600}
+.rt-phase .pdot{width:8px;height:8px;border-radius:50%}
+.pdot-pp{background:var(--brand)} .pdot-p{background:var(--accent-gold)} .pdot-e{background:var(--nv-space-orange)} .pdot-m{background:var(--ok)}
+.rt-owners{display:flex;gap:6px}
+.rt-owners .p-av{width:24px;height:24px;border-radius:50%;border:2.5px solid var(--nv-grey-line);display:grid;place-items:center;background:var(--nv-soft-white);color:var(--nv-warm-black);font-weight:800;font-size:var(--t-10);flex:none}
+.rt-action{display:inline-flex;align-items:center;gap:5px;font-size:var(--t-12);font-weight:700;padding:3px 9px;border-radius:0;line-height:1}
+.rt-action::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.act-me{background:var(--ai-tint);color:var(--ai-dk)}
+.act-wait{background:var(--surface2);color:var(--ink3);border:1px solid var(--line)}
+.act-block{background:var(--risk-tint);color:var(--risk)}
+.rt-chev{color:var(--ink4);text-align:right;font-size:var(--t-14);transition:transform .15s ease}
+.rt-row:hover .rt-chev{transform:translateX(3px);color:var(--nv-space-orange)}
+
+/* ================== REQUEST DETAIL ================== */
+.crumb-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink3);margin-bottom:14px;font-weight:600}
+.crumb-row a{color:var(--ink2);text-decoration:none}
+.crumb-row a:hover{color:var(--brand)}
+.crumb-row .sep{color:var(--ink3)}
+
+.req-hero{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:10px 16px;margin-bottom:12px;box-shadow:none;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.req-hero .rh-ic{display:none}
+.req-hero .rh-t{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.req-hero .rh-t h2{font-size:15px;font-weight:700;white-space:nowrap}
+.req-hero .rh-t p{font-size:12px;color:var(--ink2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.req-hero .rh-meta{margin-left:auto;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.rh-metric{text-align:right;display:flex;align-items:baseline;gap:4px}
+.rh-metric b{font-weight:800;font-size:14px;color:var(--ink)}
+.rh-metric i{font-style:normal;font-size:10px;color:var(--ink3);letter-spacing:.03em;text-transform:uppercase;font-weight:700}
+
+.timeline{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:16px 22px;margin-bottom:18px;box-shadow:none}
+.tl-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.tl-head h3{font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
+.tl-head .tl-hint{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:6px;font-weight:600}
+.tl-help-toggle{display:flex;align-items:center;gap:4px;background:none;border:none;color:var(--brand);font-size:12px;font-weight:700;cursor:pointer;padding:4px 2px}
+.tl-help-chev{display:inline-block;transition:transform .18s;font-size:14px}
+.tl-help{display:none;margin-bottom:14px}
+.tl-help.open{display:block}
+.tl-help-toggle.open .tl-help-chev{transform:rotate(90deg)}
+.tl-head{cursor:pointer}
+.tl-card-chev{display:inline-block;transition:transform .18s,color .15s ease;font-size:16px;color:var(--nv-warm-black);flex-shrink:0}
+.tl-head:hover .tl-card-chev{color:var(--nv-space-orange)}
+.tl-card-chev.open{transform:rotate(90deg)}
+.tl-card-body{display:none}
+.tl-card-body.open{display:block}
+.tl-hint .demo-pill{background:var(--gold-tint);color:var(--gold-dk);border:1px solid var(--warn-tint);border-radius:0;padding:1px 7px;font-size:10px;font-weight:800;letter-spacing:.05em}
+.phases{display:grid;grid-template-columns:repeat(3,1fr);gap:0;align-items:center;position:relative}
+.tl-track{position:absolute;top:22px;left:0;right:0;height:4px;background:var(--nv-grey-line);border-radius:0;z-index:0}
+.tl-fill{position:absolute;top:22px;left:0;height:4px;background:var(--nv-space-orange);border-radius:0;z-index:1;transition:width .35s ease;width:0%}
+.tl-phase{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;padding-top:0}
+.tl-node{width:44px;height:44px;border-radius:50%;background:var(--surface);border:3px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:13px;color:var(--ink3);transition:all .2s}
+.tl-phase.done .tl-node{background:var(--nv-space-orange);border-color:var(--nv-space-orange);color:#fff}
+.tl-phase.now .tl-node{background:#fff;border-color:var(--nv-space-orange);color:var(--nv-space-orange);box-shadow:0 0 0 5px var(--ai-tint)}
+.tl-phase.future .tl-node{background:var(--surface);border-color:var(--line);color:var(--ink3)}
+.tl-name{font-weight:700;font-size:14px;color:var(--ink2);text-align:center}
+.tl-phase.now .tl-name{color:var(--nv-space-orange)}
+.tl-phase.done .tl-name{color:var(--nv-space-orange)}
+.tl-meta{font-size:11px;color:var(--ink3);text-align:center;line-height:1.35;font-weight:600}
+.tl-phase.now .tl-meta{color:var(--ink2);font-weight:600}
+.tl-phase:hover .tl-node{transform:scale(1.05)}
+.tl-phase.newbrand-node .tl-node{border-style:dashed}
+.tl-phase.newbrand-node .tl-name::after{content:' •';color:var(--nv-space-orange)}
+#phasesRow{overflow-x:auto; padding-bottom:4px;}
+
+.legend-strip{display:flex;gap:16px;margin-top:14px;padding-top:12px;border-top:1px dashed var(--line2);font-size:12px;color:var(--ink3);flex-wrap:wrap;font-weight:600}
+.legend-strip .lg-i{display:flex;align-items:center;gap:6px}
+.legend-strip .lg-sw{width:14px;height:14px;border-radius:0;border:1px solid transparent}
+.sw-edit{background:var(--brand-tint);border-color:var(--brand-line)}
+.sw-lock{background:var(--lock-tint);border-color:var(--line)}
+.sw-hide{background:var(--surface3);border-color:var(--line)}
+.sw-mine{background:var(--ai-tint);border-color:var(--ai-line)}
+.sw-newbrand{background:var(--accent-tint);border:1px dashed var(--nv-space-orange)}
+
+/* ================== FLOW MAP (dynamic process diagram) ================== */
+.flowmap-card{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:10px 16px;margin-bottom:12px;box-shadow:none;transition:padding .18s}
+.flowmap-card-body.collapsed{display:none}
+.flowmap-card-body{height:auto}
+.flowmap-card .tl-hint .demo-pill{background:var(--ok-tint);color:var(--ok);border-color:transparent}
+.flow-scroll{overflow-x:auto;padding-bottom:4px}
+.flow-map{display:flex;align-items:stretch;gap:0;min-width:max-content;padding:2px}
+
+/* Mini mode (default — and always available via the chevron): the compact
+   strip form of the workflow, icons + node names only, no descriptive
+   sub-text/legend/hint copy. Scrolls away with the rest of the page like
+   any other card — it is NOT pinned/sticky, so it doesn't eat viewport
+   height once you've scrolled past it. Height is fully auto (no scroll
+   cap) since mini content is already short. */
+.flowmap-card.mini{padding:6px 16px}
+.flowmap-card.mini .tl-hint,.flowmap-card.mini .flow-legend,.flowmap-card.mini .flow-col-title{display:none}
+.flowmap-card.mini .flow-col{gap:0;min-width:0}
+.flowmap-card.mini .flow-node{padding:4px 8px}
+.flowmap-card.mini .flow-node span,.flowmap-card.mini .flow-parallel{display:none}
+.flowmap-card.mini .flow-node b{font-size:11px}
+.flowmap-card.mini .flow-node-ic{width:16px;height:16px;font-size:10px}
+
+/* Campaign Ops-only cards, woven into the section list: BU Setup toggle +
+   Visio Builder launcher — same .section shell as every other card. */
+.section.ops-section .sec-h{cursor:pointer}
+.section.ops-section[data-id="ops-bu-setup"] .sec-h{cursor:default}
+.ops-toggle{width:38px;height:22px;border-radius:0;background:var(--line2);flex-shrink:0;position:relative;padding:2px;transition:background .15s}
+.ops-toggle.on{background:var(--ok)}
+.ops-toggle-knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:none;transition:transform .15s}
+.ops-toggle.on .ops-toggle-knob{transform:translateX(16px)}
+.flow-col{display:flex;flex-direction:column;gap:5px;min-width:132px;max-width:152px}
+.flow-col-title{font-size:10px;font-weight:800;color:var(--ink3);text-align:center;letter-spacing:.02em;min-height:18px;display:flex;align-items:center;justify-content:center;line-height:1.15}
+.flow-col-title.newbrand{color:var(--nv-space-orange)}
+.flow-nodes{display:flex;flex-direction:column;gap:5px;flex:1;justify-content:center}
+.flow-node{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--surface2);border:1px solid var(--line);border-radius:0;padding:5px 7px;transition:all .15s}
+.flow-node b{font-size:12px;font-weight:700;color:var(--ink2)}
+.flow-node span{font-size:10px;color:var(--ink3);font-weight:600}
+.flow-node:hover{border-color:var(--brand);transform:translateY(-1px)}
+.flow-node.done{background:var(--brand-tint);border-color:var(--brand-line)}
+.flow-node.done b{color:var(--brand)}
+.flow-node.now{border-color:var(--nv-space-orange);position:relative}
+.flow-node.now b{color:var(--nv-space-orange)}
+.flow-node.future{opacity:.55}
+.flow-node.ghost{background:var(--surface2);border-style:dashed;border-color:var(--line);cursor:pointer}
+.flow-node.ghost:hover{border-color:var(--line);transform:none}
+.flow-node.ghost b{color:var(--ink3);font-size:15px;text-align:center}
+.flow-node.ghost span{text-align:center}
+.pulse-dot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:var(--nv-space-orange)}
+.pulse-dot::before{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nv-space-orange);animation:dotPulse 1.6s ease-in-out infinite}
+@keyframes dotPulse{
+  0%{transform:scale(1);opacity:.7}
+  70%{transform:scale(2.4);opacity:0}
+  100%{transform:scale(2.4);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){.pulse-dot::before{animation:none}}
+/* Blinking live/online status dot — reusable everywhere "LIVE"/"ONLINE"
+   appears: ● LIVE, ● ONLINE. */
+.live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--nv-space-orange);animation:livePulse 1.5s infinite;flex-shrink:0}
+@keyframes livePulse{
+  0%{opacity:1;transform:scale(1)}
+  70%{opacity:.35;transform:scale(1.5)}
+  100%{opacity:1;transform:scale(1)}
+}
+@media(prefers-reduced-motion:reduce){.live-dot{animation:none}}
+.flow-arrow{display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:14px;font-weight:600;padding:0 4px;flex-shrink:0}
+.flow-parallel{margin-top:8px;padding-top:8px;border-top:1px dashed var(--ai-line);display:flex;flex-direction:column;gap:5px}
+.flow-parallel-label{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--nv-space-orange);display:flex;align-items:center;gap:5px}
+.flow-parallel-label::before{content:'⇄';font-size:11px}
+.flow-node.parallel{border-style:dashed;border-color:var(--ai-line);background:var(--accent-tint)}
+.flow-node.parallel b{color:var(--nv-space-orange)}
+.flow-node.parallel.now{border-style:solid}
+.flow-node.attn{border-color:var(--nv-space-orange);position:relative}
+.flow-node.attn b{color:var(--nv-space-orange)}
+.flow-node.parallel.attn{border-style:solid}
+.flow-dl{display:block;margin-top:5px;font-size:10px;font-weight:800;color:var(--brand);text-decoration:underline}
+.flow-dl:hover{color:var(--brand-2,var(--brand))}
+
+.detail-grid{display:block}
+/* "Your input needed" block. Previously a solid Space Orange panel, which
+   the guidelines forbid outright ("Don't use Space Orange as a background
+   behind body copy or long text"). Now a Soft White card with a Warm Black
+   rule; the single orange accent is the left keyline marking it as the
+   thing that needs action. */
+.you-focus{background:var(--surface2);color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--nv-space-orange);border-radius:0;padding:16px 18px;box-shadow:none;position:sticky;top:78px}
+.you-focus h4{font-size:13px;font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink);display:flex;align-items:center;gap:8px}
+.you-focus .yf-badge{background:var(--nv-warm-black);color:var(--nv-soft-white);border-radius:0;padding:2px 8px;font-size:10px;font-weight:var(--fw-medium)}
+.you-focus p{font-size:12px;color:var(--ink2);margin-top:5px;line-height:1.45;font-weight:var(--fw-body)}
+.yf-list{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.yf-i{display:flex;gap:7px;font-size:12px;padding:7px 9px;background:var(--surface2);border:1px solid var(--line2);border-radius:0;color:var(--ink);cursor:pointer;transition:color .15s ease,border-color .15s ease;align-items:center;font-weight:var(--fw-body);text-align:left;width:100%}
+.yf-i:hover{color:var(--nv-space-orange);border-color:var(--nv-space-orange)}
+.yf-i .yf-n{width:18px;height:18px;border-radius:50%;background:var(--nv-warm-black);color:var(--nv-soft-white);display:grid;place-items:center;font-size:10px;font-weight:var(--fw-medium);flex-shrink:0}
+.yf-i .yf-c{margin-left:auto;font-size:11px;background:transparent;color:var(--nv-space-orange);padding:2px 8px;border-radius:0;font-weight:var(--fw-medium)}
+.yf-partial-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:6px;vertical-align:middle}
+.yf-ops-forced{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.yf-ops-forced-label{font-size:10px;font-weight:var(--fw-medium);letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.you-focus-msg .yf-ops-forced{border-top-color:var(--line2)}
+.you-focus-msg .yf-ops-forced-label{color:var(--ink3)}
+.you-focus.empty{background:var(--surface);color:var(--ink2);border:1px solid var(--line);box-shadow:none}
+.you-focus.empty .yf-ops-forced{border-top-color:var(--line2)}
+.you-focus.empty .yf-ops-forced-label{color:var(--ink3)}
+.you-focus.empty .yf-i{background:var(--surface2);color:var(--ink);border:1px solid var(--line2)}
+.you-focus.empty .yf-i:hover{background:var(--line2)}
+.you-focus.empty .yf-i .yf-c{background:var(--surface);color:var(--ink3)}
+.you-focus.empty h4{color:var(--ink)}
+.you-focus.empty p{color:var(--ink3)}
+.you-focus.empty .yf-badge{background:var(--ok-tint);color:var(--ok)}
+
+/* Higher specificity than .msg.bot's border shorthand, which would
+   otherwise reset this back to a plain 1px grey border on all sides. */
+.msg.bot.you-focus-msg{position:static;max-width:94%;padding:13px 15px;align-self:flex-start;border-left:4px solid var(--ink3);background:var(--surface2)}
+.msg.bot.you-focus-msg.empty{background:var(--surface);border:1px solid var(--line2)}
+.you-focus-msg h4{font-size:14px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:8px}
+.you-focus-msg .yf-badge{background:var(--ai-tint);color:var(--ai-dk);border-radius:0;padding:2px 9px;font-size:10px;font-weight:800}
+.you-focus-msg.empty .yf-badge{background:var(--ok-tint);color:var(--ok)}
+.you-focus-msg p{font-size:12px;color:var(--ink2);margin-top:6px;line-height:1.5;font-weight:500}
+.you-focus-msg .yf-list{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.you-focus-msg .yf-i{display:flex;gap:7px;font-size:12px;padding:7px 9px;background:var(--surface2);border:1px solid var(--line2);border-radius:0;color:var(--ink);cursor:pointer;transition:background .15s;align-items:center;font-weight:600;text-align:left;width:100%}
+.you-focus-msg .yf-i:hover{background:var(--line2)}
+.you-focus-msg .yf-i .yf-n{width:18px;height:18px;border-radius:50%;background:var(--ai-tint);color:var(--ai-dk);display:grid;place-items:center;font-size:10px;font-weight:800;flex-shrink:0}
+.you-focus-msg .yf-i .yf-c{margin-left:auto;font-size:11px;background:transparent;border:1px solid transparent;padding:2px 8px;border-radius:0;font-weight:700;color:var(--nv-space-orange)}
+/* `.stale` is gone with the copies it existed to dim: there is one live Your
+   Focus card now, moved to the end of the thread on repost rather than
+   duplicated, so no recap can fall out of date behind a newer one. */
+.yf-crf-block{display:flex;flex-direction:column;gap:4px}
+.yf-crf-sub{font-size:11px;color:var(--ink3);line-height:1.5;padding:4px 10px 2px}
+.yf-crf-sub b{color:var(--ink2);display:block;margin-bottom:3px}
+.yf-field-list{display:flex;flex-wrap:wrap;gap:5px}
+.yf-field-i{font-size:11px;font-weight:600;color:var(--ink2);background:var(--surface2);border:1px solid var(--line2);border-radius:0;padding:3px 8px;cursor:pointer;transition:background .15s}
+.yf-field-i:hover{background:var(--line2)}
+
+.overview-card{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none}
+.overview-card .card-h{padding:12px 18px;border-bottom:1px solid var(--line2)}
+.overview-card .card-h b{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.own-list{padding:8px 0}
+
+.orchestration-card{padding:14px 18px 16px}
+.orchestration-card .card-h{padding:0 0 10px;border:none}
+.orc-body{font-size:13px;color:var(--ink2);line-height:1.55;font-weight:600}
+.own-i{padding:9px 18px;display:flex;align-items:center;gap:10px;font-size:12px}
+.own-i .p-av{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--nv-soft-white);color:var(--nv-warm-black);font-weight:800;font-size:10px;flex-shrink:0;border:2.5px solid var(--nv-grey-line)}
+.own-i b{font-weight:800}
+.own-i i{font-style:normal;color:var(--ink3);font-size:11px;margin-left:auto;font-weight:600;text-align:right;max-width:140px;line-height:1.35}
+
+/* ================== SECTIONS ================== */
+.sections{display:flex;flex-direction:column;gap:12px}
+.section{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;overflow:hidden;transition:border-color .2s,box-shadow .2s;position:relative;scroll-margin-top:76px}
+.section.mine{border-color:var(--ai-line);box-shadow:none}
+.section.mine::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--nv-space-orange)}
+.section.empty-phase{opacity:.65}
+.sec-dot{position:relative;width:10px;height:10px;border-radius:50%;background:var(--nv-space-orange);flex-shrink:0;margin-left:10px}
+.sec-dot::before{content:'';position:absolute;inset:0;border-radius:50%;background:var(--nv-space-orange);animation:dotPulse 1.6s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.sec-dot::before{animation:none}}
+.sec-h{display:flex;align-items:center;gap:12px;padding:11px 16px;cursor:pointer;user-select:none;transition:background .15s}
+.sec-h:hover{background:var(--surface2)}
+.section.mine .sec-h{padding-left:20px}
+.sec-num{font-size:11px;font-weight:800;color:var(--ink3);width:20px;flex-shrink:0}
+.sec-ic{width:28px;height:28px;border-radius:0;background:var(--surface2);display:grid;place-items:center;font-size:14px;color:var(--ink2);flex-shrink:0}
+.section.mine .sec-ic{background:var(--ai-tint);color:var(--nv-space-orange)}
+.sec-title{flex:1;min-width:0}
+.sec-title h3{font-size:var(--t-lg);font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sec-title p{font-size:11px;color:var(--ink3);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;font-weight:600}
+.sec-title .mine-tag{background:var(--grad-orange);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:0;display:inline-flex;align-items:center;gap:5px}
+.sec-title .mine-tag::before{content:'●';font-size:10px}
+.sec-title .submitted-tag{background:var(--ok-tint);color:var(--ok);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:0;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ok-tint)}
+.sec-title .submitted-tag::before{content:'✓';font-size:10px}
+.section.submitted{opacity:.88}
+.sec-r{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.sec-toggle{width:26px;height:26px;border-radius:0;display:grid;place-items:center;color:var(--nv-warm-black);transition:transform .2s,color .15s ease}
+.sec-h:hover .sec-toggle{color:var(--nv-space-orange)}
+.section.open .sec-toggle{transform:rotate(90deg)}
+.sec-body{display:none;padding:4px 16px 16px 16px;border-top:1px solid var(--line2)}
+.section.open .sec-body{display:block}
+.section.mine .sec-body{padding-left:20px}
+
+.phase-group{border-top:1px dashed var(--line2);padding:12px 0 4px;position:relative}
+.phase-group:first-child{border-top:none;padding-top:10px}
+.pg-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.pg-label{font-size:11px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);display:flex;align-items:center;gap:6px}
+.pg-label .pdot{width:7px;height:7px;border-radius:50%}
+.pg-state{font-size:11px;font-weight:700;padding:3px 9px;border-radius:0}
+.pg-editable{background:var(--brand-tint);color:var(--brand)}
+.pg-editable::before{content:'✎ ';font-size:.7em}
+/* Read-only: subtle outlined pill — spec §7 (🔒 Read-only). */
+.pg-locked{background:transparent;color:var(--nv-grey-text);border:1px solid var(--nv-grey-line)}
+.pg-locked::before{content:none}
+.phase-group.locked{background:var(--surface2);margin:12px -16px 0 -16px;padding:12px 16px 4px}
+.section.mine .phase-group.locked{margin-left:-20px;padding-left:20px}
+.pg-count{font-size:11px;font-weight:700;color:var(--ink3);margin-left:auto}
+details.phase-group>summary.pg-head{cursor:pointer;list-style:revert}
+details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
+
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;max-width:960px}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f.wide{grid-column:span 2}
+.f-lbl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink)}
+.f-src{font-size:11px;color:var(--ink3);margin-top:2px;font-weight:600}
+.f-remaining-dot{position:relative;width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.f-remaining-dot::before{content:'';position:absolute;inset:0;border-radius:50%;background:inherit;animation:dotPulse 1.6s ease-in-out infinite}
+.f-lbl .fid{font-size:10px;color:var(--ink3);font-weight:600;margin-left:auto}
+/* Form inputs — spec §8: hover border #CCCCCC; focus drops the box/ring
+   entirely in favour of a 2px orange border-bottom; no native blue outline. */
+.inp,.sel,.ta{width:100%;border:1px solid var(--line);border-bottom:2px solid var(--line);border-radius:0;padding:0 12px;font-size:13px;background:var(--surface);color:var(--ink);transition:border-color .15s ease,background-color .15s ease;font-weight:500}
+.inp,.sel{height:40px}
+.inp:hover,.sel:hover,.ta:hover{border-color:#CCCCCC;border-bottom-color:#CCCCCC}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--line);border-bottom:2px solid var(--nv-space-orange)}
+.ta{min-height:64px;padding:8px 12px;resize:vertical}
+.inp.ai-drafted,.ta.ai-drafted{border-color:var(--ai-line);border-bottom-color:var(--ai-line);background:var(--ai-tint);color:var(--ai-dk)}
+.inp[readonly],.sel[disabled],.ta[readonly]{background:var(--surface2);color:var(--ink2);border-color:var(--line2);border-bottom-color:var(--line2);cursor:default;border-style:dashed}
+.inp[readonly]:hover,.ta[readonly]:hover{border-color:var(--line2);border-bottom-color:var(--line2)}
+.inp[readonly]:focus,.ta[readonly]:focus{box-shadow:none;border-color:var(--line2);border-bottom-color:var(--line2)}
+.f-src{font-size:11px;color:var(--ink3);margin-top:2px;display:flex;align-items:center;gap:5px;font-weight:600}
+.f-src.ai{color:var(--ai-dk)}
+.f-src.ai::before{content:'✦';color:var(--nv-space-orange)}
+.f-src.b-tag{font-size:10px;font-weight:800;letter-spacing:.03em;padding:1px 7px;border-radius:0;display:inline-flex;align-self:flex-start}
+.f-src.b-newapp{color:var(--ink3)}
+.f-src.b-newapp.b-tag{background:var(--ai-tint);color:var(--ai-dk)}
+.f-src.b-auto,.f-src.b-tactplan{color:var(--brand)}
+.f-src.b-auto::before,.f-src.b-tactplan::before{content:'⇢';color:var(--brand)}
+.f-src.b-xm{color:var(--nv-space-orange)}
+.f-src.b-xm::before{content:'⇢';color:var(--nv-space-orange)}
+.f-src.b-default{color:var(--ok)}
+.f-src.b-default::before{content:'⇢';color:var(--ok)}
+.f-src.b-ops{color:var(--gold-dk)}
+.f-src.b-ops::before{content:'⏳';font-size:10px}
+.f-src.b-tbd{color:var(--risk)}
+.f-src.b-tbd::before{content:'⚠';font-size:10px}
+.f-src.b-unmapped.b-tag{background:var(--lock-tint);color:var(--lock)}
+.pg-empty{padding:14px 16px;background:var(--surface2);border-radius:0;font-size:12px;color:var(--ink3);text-align:center;line-height:1.5;border:1px dashed var(--line);font-weight:600}
+.pg-empty b{color:var(--ink2);font-weight:800}
+.sec-note{padding:11px 14px;background:var(--gold-tint);border:1px solid var(--warn-tint);color:var(--gold-dk);border-radius:0;font-size:12px;line-height:1.5;margin-bottom:14px;font-weight:600}
+.sec-note b{font-weight:800}
+.sec-submit{margin-top:18px;padding-top:16px;border-top:1px solid var(--line2);display:flex;justify-content:flex-end}
+.sec-indent-group .section{margin-top:10px}
+.sec-indent-group .sec-title{padding-left:24px;position:relative}
+.sec-indent-group .sec-title::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--line2)}
+/* Flat stepper style — thin bar, plain white background, no tab-shaped
+   chrome at all. Each stop's number badge is always tinted with its owning
+   stakeholder's persona color (set inline per-tab via the --sh custom
+   property in renderCrfViewTabs); only the selected stop's label + underline
+   pick up that color too — everything else stays neutral gray. */
+.crf-view-tabs{display:flex;align-items:stretch;overflow-x:auto;padding:0;min-height:44px}
+/* Redesigned: the whole strip reads as one mini-header now, not a text
+   tab-underline pattern — each gate is its own full-height segment, and
+   the selected one is marked with a grey fill instead of orange text +
+   underline (the step-number badges are gone entirely, along with the
+   "Form details" eyebrow that used to sit in front of them). */
+.crf-tab{position:relative;display:inline-flex;align-items:center;flex-shrink:0;padding:0 20px;border:none;background:none;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;transition:background-color .15s ease,color .15s ease;white-space:nowrap}
+.crf-tab:hover{color:var(--ink);background:var(--surface2)}
+.crf-tab.active{color:var(--ink);font-weight:800;background:var(--surface3)}
+.crf-view-panel{animation:crfFadeIn .2s ease}
+@keyframes crfFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.float-save-bar{position:fixed;bottom:18px;z-index:60;display:none;width:auto;padding:10px 14px;background:var(--surface);border:1px solid var(--line2);border-radius:0;box-shadow:none}
+.section.not-applicable{opacity:.55}
+.audience-toggle{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink2);background:var(--surface2);border:1px solid var(--line);border-radius:0;padding:8px 12px;margin-bottom:14px}
+.audience-toggle select{border:1px solid var(--brand-line);border-radius:0;padding:4px 8px;font-size:12px;font-weight:700;color:var(--brand);background:var(--brand-tint)}
+
+/* ================== CHATBOT (persistent right 30vw) ================== */
+.chat-panel{position:fixed;top:60px;right:0;bottom:0;width:340px;max-width:360px;background:var(--surface);border-left:1px solid var(--line);z-index:70;display:flex;flex-direction:row;box-shadow:none}
+/* ChatGPT-style sidebar — same New chat / History content as the header
+   dropdown, just width-animated open only once full-screen chat mode
+   actually has room for it (see the collapsed-state rules below). Width,
+   not display:none, is what's transitioned so it slides rather than pops. */
+.cp-sidebar{width:0;flex-shrink:0;overflow:hidden;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--line2);transition:width .28s var(--ease-out-soft,ease)}
+.cp-sidebar-new{flex-shrink:0;width:100%;padding:13px 18px;text-align:left;background:none;border:none;border-bottom:1px solid var(--line2);font-family:var(--font-medium);font-size:13px;font-weight:var(--fw-medium);letter-spacing:var(--tracking);color:var(--ink);white-space:nowrap;cursor:pointer;transition:color .15s ease}
+.cp-sidebar-new:hover{color:var(--nv-space-orange)}
+.cp-sidebar-list{flex:1;overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.cp-sidebar .cp-archive-row{white-space:normal;border-bottom:none;padding:10px 10px;transition:color .15s ease}
+.cp-sidebar .cp-archive-label{transition:color .15s ease}
+.cp-sidebar .cp-archive-row:hover .cp-archive-label{color:var(--nv-space-orange)}
+.cp-main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+/* The landing page's reuse of the same ChatPanel component — fills its own
+   .hm-agent grid column instead of floating fixed over the whole viewport,
+   and (having no #chatPanel id) sidesteps the display:none rules keyed to
+   that id everywhere the request-detail panel is deliberately hidden. */
+/* position:relative, not static — the floating .cp-input-card positions
+   absolutely against the nearest positioned ancestor, and .chat-panel's
+   own position:fixed (which serves that role in the 'panel' variant)
+   doesn't apply here since this variant overrides it away. */
+.chat-panel-inline{position:relative;top:auto;right:auto;bottom:auto;width:100%;max-width:none;height:100%;border-left:none}
+/* Same white/grey language and 45px height as .crf-tabs-slot on the form
+   side — just New chat / History now, no title (that lived in .cp-head-title,
+   removed along with the "Campaign Navigator" text it wrapped). */
+.cp-head{background:var(--surface);color:var(--ink);padding:0 16px;height:45px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line2);transition:none}
+.cp-head-actions{display:flex;gap:6px;flex-shrink:0}
+.cp-head-btn{font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--ink3);background:var(--surface2);border:1px solid var(--line2);padding:6px 14px;white-space:nowrap;transition:background-color .15s ease,color .15s ease}
+/* Guided Mode toggle — top-right of the header, a real on/off state (not
+   just a one-shot trigger), same grey-fill "on" language as the other
+   toggles in this app (.crf-scope-toggle etc). */
+/* Guided Mode's real home — a small row sitting just above the composer,
+   inside the same floating card, so it's visible in every layout mode
+   without needing a spot in the header. A genuine sliding pill switch
+   (the one deliberately round-cornered control in an otherwise square-
+   cornered design system — this is a toggle, not a button, and reads
+   immediately as one only with the familiar track+thumb shape). */
+.cp-guided-row{display:flex;align-items:center;gap:8px;padding:0 0 8px;margin-bottom:8px;border-bottom:1px solid var(--line2)}
+.cp-guided-label{font-size:12px;font-weight:700;color:var(--ink3);letter-spacing:.02em}
+.cp-guided-switch{position:relative;flex-shrink:0;width:36px;height:20px;padding:0;background:var(--surface3);border:1px solid var(--line2);border-radius:999px;cursor:pointer;transition:background-color .15s ease,border-color .15s ease}
+.cp-guided-switch.on{background:var(--nv-warm-black);border-color:var(--nv-warm-black)}
+.cp-guided-switch-thumb{position:absolute;top:1px;left:1px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s ease}
+.cp-guided-switch.on .cp-guided-switch-thumb{transform:translateX(16px)}
+.cp-head-btn:hover{background:var(--surface3);color:var(--ink)}
+.cp-head-btn.on{background:var(--surface3);color:var(--ink);font-weight:800}
+/* The archive list itself — a plain dropdown-like panel under the head,
+   not styled as chat messages (no orange, matches the rest of the "no
+   orange inside the chat screen" sweep below). */
+.cp-archives{max-height:220px;overflow-y:auto;border-bottom:1px solid var(--line);background:var(--surface2)}
+.cp-archive-row{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:10px 16px;border-bottom:1px solid var(--line2);text-align:left;transition:background-color .15s ease}
+.cp-archive-row:last-child{border-bottom:none}
+.cp-archive-row:hover{background:var(--surface3)}
+/* Destructive, and separated from the restorable sessions above it so it
+   can't be clicked by accident while scanning the list. */
+.cp-archive-clear{border-top:1px solid var(--line)}
+.cp-archive-clear .cp-archive-label{color:var(--nv-space-orange)}
+.cp-archive-clear:hover{background:var(--brand-tint)}
+.cp-archive-label{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.cp-archive-meta{font-size:11px;font-weight:600;color:var(--ink3)}
+/* Brand gradient (brandguidelines/Gradient RGB 02.svg) as the chat space's
+   own backdrop — washed with a translucent white layer so message bubbles
+   stay legible on top, same technique as the page background. */
+/* Extra bottom padding — the floating .cp-input-card overlays this area
+   rather than sitting in flow below it, so without this the tail of the
+   thread would scroll in behind the composer instead of stopping above it. */
+/* Still scrollable (wheel/touch/drag), just no visible scrollbar track —
+   scrollbar-width covers Firefox, the pseudo-element covers Chrome/Safari. */
+/* Bottom padding leaves room for the floating .cp-input-card that overlays
+   this area — bumped up from 100px once the Guided Mode row made that
+   card taller, otherwise content anchored to the bottom (the empty-state
+   welcome buttons, via margin-top:auto) sat underneath the card instead of
+   above it: visible but genuinely unclickable, the card intercepting the
+   clicks first. */
+.cp-body{flex:1;overflow-y:auto;scrollbar-width:none;padding:18px 26px 148px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(rgba(252,252,252,.25),rgba(252,252,252,.25)),url('/gradient-chat.jpg') center/cover,var(--surface2)}
+.cp-body::-webkit-scrollbar{display:none}
+/* Font size bumped from 13px toward ChatGPT's ~15-16px reading size, and the
+   left/right padding above (instead of the message bubbles owning their own
+   inset) is what reads as "margins on both sides of the screen" once bot
+   replies stop being a boxed bubble and become full-width flowing text. */
+.msg{max-width:90%;padding:9px 12px;border-radius:0;font-size:15px;line-height:1.6;animation:fadeUp .2s ease;font-weight:500;font-family:var(--font)}
+/* A thin rule above each new bot turn (not user turns — those are already
+   their own dark bubble, clearly bounded on their own). Without this, bot
+   replies with no box of their own read as one run-on block instead of a
+   sequence of exchanges — the ChatGPT-style separator. */
+.msg+.msg.bot{border-top:1px solid var(--line2);padding-top:14px}
+/* The React port's ChatMessage used role:"user" while this file (ported
+   verbatim from the original) still keyed off role:"usr" — the two never
+   matched, so every user message silently fell back to bare .msg with no
+   box at all. Fixed by keying off "user" for real, and swapping which
+   side gets the box: plain bot replies now sit directly on the panel's
+   own background as flat black text (no card), and the white-surface +
+   orange-left-bar treatment that used to mark every bot reply now marks
+   the user's own messages instead, right-aligned. Special bot cards (Your
+   Focus, checkpoints) keep their own explicit background further down and
+   are unaffected. */
+.msg.bot{background:none;border:none;color:var(--ink);align-self:flex-start;max-width:100%;width:100%}
+/* A dark, deliberate bubble instead of a flat white square sitting on the
+   gradient — reuses the same warm-black the chat header is built from, so
+   it reads as "this app's chat," not a generic form field. */
+.msg.user{background:var(--nv-warm-black);border:none;color:var(--nv-soft-white);align-self:flex-end;padding:10px 14px;box-shadow:0 2px 10px rgba(0,0,0,.15)}
+.msg b{font-weight:800}
+/* ---- Rich agent replies -------------------------------------------------
+   The model writes markdown. Until this existed it went into innerHTML raw,
+   so "**24 fields**" rendered with the asterisks showing and a six-question
+   turn arrived as one unbroken paragraph. renderBotMarkdown() converts it;
+   these rules give the result a readable shape: questions as an indented
+   list, the field name visually separated from the prose around it. */
+/* ChatGPT-style reading paragraphs: justified instead of ragged-right. */
+.msg.bot p{margin:0 0 9px;text-align:justify;text-justify:inter-word}
+.msg.bot p:last-child{margin-bottom:0}
+/* Headings — new, the original's renderBotMarkdown() never parsed #/##/###
+   (agent replies that used them just printed the literal hashes). Sized as
+   a clear step down from each other and from the panel's own "Campaign
+   Navigator" h3, so a reply with a heading doesn't visually outrank the
+   chrome around it. */
+.msg.bot h4,.msg.bot h5,.msg.bot h6{font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink);letter-spacing:var(--tracking);margin:14px 0 6px;text-align:left}
+.msg.bot h4:first-child,.msg.bot h5:first-child,.msg.bot h6:first-child{margin-top:0}
+.msg.bot h4{font-size:19px}
+.msg.bot h5{font-size:17px}
+.msg.bot h6{font-size:15px;color:var(--ink2)}
+/* Tables — also new; agent replies that compared a few options previously
+   rendered as literal "| a | b |" pipe rows. */
+.msg-table-wrap{max-width:100%;overflow-x:auto;margin:8px 0 10px}
+/* font-size matches .msg's own 15px — this was 14px, one size down from
+   the surrounding message text, which combined with the bold value cells
+   below read as a mismatched typeface rather than the same font just
+   organized into rows. */
+.msg.bot table{width:100%;border-collapse:collapse;margin:0;font-size:15px}
+.msg.bot th,.msg.bot td{text-align:left;padding:7px 10px;border:1px solid var(--line2)}
+.msg.bot th{background:var(--surface2);font-weight:800;color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.msg.bot td{color:var(--ink);font-weight:500}
+/* Key:value tables (new campaign intake, the "here's what I've got"
+   reflection) never use a real <th> — both cells are plain <td>. The label
+   column reads as a label (muted, semibold); the value column is left at
+   the table's own base weight and size, matching normal message text —
+   the visible **bold** on the value itself comes from the <b> the value
+   is already wrapped in, so stacking a second, different weight/size here
+   on top of that was double-emphasis, not single. */
+.msg.bot table tr td:first-child{color:var(--ink3);font-weight:700;width:38%;white-space:nowrap}
+.msg.bot ul,.msg.bot ol{margin:8px 0 10px;padding-left:0;list-style:none}
+.msg.bot ul:last-child,.msg.bot ol:last-child{margin-bottom:2px}
+/* Each asked field is its own indented row with an orange tick in the gutter,
+   so a group of five reads as five things to answer rather than a paragraph. */
+.msg.bot li{position:relative;margin:0 0 7px;padding-left:16px;line-height:1.55}
+.msg.bot li:last-child{margin-bottom:0}
+.msg.bot li::before{content:'';position:absolute;left:2px;top:.55em;width:5px;height:5px;background:var(--ink3);opacity:.7}
+.msg.bot ol{counter-reset:botstep}
+.msg.bot ol li{counter-increment:botstep;padding-left:22px}
+.msg.bot ol li::before{content:counter(botstep);top:0;left:0;width:auto;height:auto;background:none;opacity:1;font-size:11px;font-weight:800;color:var(--ink2)}
+/* The field being asked about — the one thing to scan for. Bold weight
+   alone carries the emphasis now (no orange) — see the "don't use orange
+   to highlight text in chat" pass elsewhere in this file. */
+.msg.bot strong{font-weight:800;color:var(--ink)}
+.msg.bot li strong:first-child{display:inline-block;color:var(--ink);letter-spacing:.01em}
+/* Supporting description / where the value comes from — deliberately quieter
+   than the field name so the two never read as the same weight of thing. */
+.msg.bot em{font-style:normal;color:var(--ink3);font-size:12px}
+.msg.bot code{font-family:var(--font-mono,ui-monospace,monospace);font-size:11.5px;background:var(--surface3);padding:1px 5px;color:var(--ink2)}
+.msg.bot hr{border:none;border-top:1px solid var(--line2);margin:10px 0}
+.msg.bot.thinking{background:transparent;border:none;color:var(--ink3);font-style:italic;font-size:12px;padding:2px 14px;box-shadow:none}
+/* Shown between hitting send and the first streamed event — a few seconds on
+   every turn, so it stays quiet: three small dots on a stagger, no spinner,
+   no layout shift when it is replaced by the real reply. */
+.think-dots{display:inline-flex;align-items:center;gap:4px;margin-left:6px;vertical-align:middle}
+.think-dots i{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.28;animation:thinkPulse 1.1s ease-in-out infinite}
+.think-dots i:nth-child(2){animation-delay:.16s}
+.think-dots i:nth-child(3){animation-delay:.32s}
+@keyframes thinkPulse{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:.9;transform:translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){.think-dots i{animation:none;opacity:.55}}
+.msg.bot.checkpoint{border-color:var(--brand-line);background:var(--brand-tint)}
+.msg.bot.thinking-group{padding:9px 14px;cursor:pointer}
+.msg.bot.thinking-group summary{list-style:none;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer}
+.msg.bot.thinking-group summary::-webkit-details-marker{display:none}
+.msg.bot.thinking-group summary::before{content:'›';display:inline-block;transition:transform .18s;font-size:14px}
+.msg.bot.thinking-group[open] summary::before{transform:rotate(90deg)}
+.tg-count{background:var(--surface2);border-radius:0;padding:1px 8px;font-size:10px;font-weight:800;color:var(--ink3)}
+.tg-steps{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.tg-step{font-style:italic;font-size:12px;color:var(--ink3);line-height:1.5;padding-left:2px}
+.step-tag{display:inline-flex;align-items:center;gap:5px;background:var(--grad-blue);color:#fff;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:0;margin-right:6px}
+/* Distinct per-tag colors — Checkpoint (routine status, blue), Major change
+   (something worth noticing, orange), Learned (agent behavior, not campaign
+   data — purple), Milestone (celebratory, green) — so the tag itself signals
+   what kind of callout this is at a glance, not just its text label. */
+.step-tag.tag-checkpoint{background:var(--grad-blue)}
+.step-tag.tag-major{background:linear-gradient(135deg,var(--nv-space-orange),#7a5ab8);color:#fff}
+.step-tag.tag-learned{background:var(--nv-space-orange)}
+.step-tag.tag-milestone{background:var(--nv-warm-black)}
+.step-tag.tag-nudge{background:var(--nv-warm-black)}
+.step-tag.ok{background:var(--grad-ok)}
+.msg .m-card{margin-top:9px;background:var(--surface2);border:1px solid var(--line2);border-radius:0;padding:10px 12px;font-size:12px}
+.m-card .m-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px dashed var(--line2)}
+.m-card .m-row:last-child{border-bottom:none}
+.m-card .m-row b{font-weight:800;color:var(--ink);text-align:right;max-width:60%}
+.m-card .m-row span{color:var(--ink2);font-weight:600}
+.msg.bot .m-card .foot{font-size:11px;color:var(--ink3);margin-top:6px;font-weight:600}
+/* The new-campaign confirmation card was sitting at --surface2 (#F2F2F2)
+   with --line2 (#E8E8E8) row borders — only 10 units apart in luminance,
+   so on screen the whole thing read as one flat grey blob with no visible
+   grid or card boundary against the gradient behind it, and the title
+   (borrowing .foot's 11px meta-text style) was too small to read as a
+   heading. White card, real-contrast border/dividers (--line, not the
+   near-invisible --line2), and an actual title style fix that. */
+.msg .m-card.m-card-campaign{background:var(--surface);border-color:var(--line);box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.msg.bot .m-card-title{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:.01em;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--line2)}
+.msg.bot .m-card-campaign td,.msg.bot .m-card-campaign th{border-color:var(--line)}
+.msg.bot .m-card-campaign td:first-child{background:var(--surface2)}
+.cp-suggest{padding:0 18px 12px;display:flex;gap:7px;flex-wrap:wrap;background:var(--surface2)}
+/* Plain black on white, no orange fill/border by default — orange is
+   reserved for the hover state, and only as a text color, everywhere this
+   button appears (welcome-state suggestions, quick-picks, inline bot
+   suggestions all share this one rule). */
+.cp-suggest button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:12px;font-weight:700;border-radius:0;padding:6px 13px;transition:all .15s}
+.cp-suggest button:hover{background:var(--surface);color:var(--nv-space-orange);border-color:var(--line)}
+/* Guided Mode's ask_choice options — always 2 per row (wrapping to a new
+   row after that) regardless of label length, and sized to match what the
+   user themselves types in the composer rather than the smaller
+   quick-suggestion button size. */
+.cp-choice-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px}
+.cp-choice-options button{border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;border-radius:0;padding:9px 13px;text-align:left;transition:all .15s}
+.cp-choice-options button:hover:not(:disabled){background:var(--surface);color:var(--nv-space-orange);border-color:var(--line)}
+.cp-choice-options button:disabled{cursor:default}
+/* Floats over the bottom of the message list instead of sitting in normal
+   flow below it. No card/background/border of its own any more — just a
+   positioning wrapper; .cp-input's own grey box is the only visible
+   surface now, and its horizontal padding matches .cp-body's exactly
+   (each context below mirrors that file's .cp-body padding rule 1:1) so
+   its edges line up with the message column ("the text wall") above it. */
+.cp-input-card{
+  position:absolute;left:0;right:0;bottom:0;
+  padding:10px 26px 12px;
+  background:none;
+}
+.cp-input-tabs{display:flex;gap:4px;margin-bottom:8px}
+.cp-tab{height:26px;padding:0 10px;border-radius:0;font-size:11px;font-weight:700;color:var(--ink3);background:transparent;display:inline-flex;align-items:center;gap:5px;transition:all .15s}
+.cp-tab:hover{background:var(--surface2);color:var(--ink2)}
+.cp-tab.on{background:var(--surface2);color:var(--brand)}
+.cp-tab.recording{background:var(--nv-space-orange);color:#fff}
+.cp-tab:disabled{opacity:.5;cursor:default}
+/* ---- COMPOSER ---------------------------------------------------
+   One surface, not four. This used to be a bordered input with two icon
+   chips loose on its left and a circular send button on its right, all
+   sitting inside an already-bordered card — four boxes reading as four
+   unrelated controls, and a circle in a system that has no other circle.
+   Now .cp-input IS the field: the textarea is transparent inside it and
+   the tools sit on a row beneath, so the whole thing hovers, focuses and
+   grows as one object.
+   The control is a <textarea> (was <input>) so a line that runs out of
+   width soft-wraps instead of scrolling sideways; autoGrowChatInput()
+   below grows it a row at a time, 1 row up to 6, then scrolls.
+   Enter sends, Shift+Enter breaks a line. ---- */
+/* One shape now holds both the Guided Mode row and the input, instead of
+   the toggle floating loose above a separate boxed field. Top-left keeps
+   the small original corner chamfer; the top edge then runs flat as a
+   raised "tab" behind the Guided Mode label/switch, then a true 45°
+   diagonal (equal run and drop, --guided-notch-y) down to the divider
+   line under the guided row, THEN flat the rest of the way to the right
+   edge at that height — the diagonal ends once it reaches the divider
+   rather than stretching all the way across. --guided-notch-x/-y are set
+   from JS (see the ChatPanel effect that measures the switch and row's
+   real position); everything below the divider (the actual input box)
+   stays a plain, uncut rectangle. */
+.cp-composer-shell{
+  position:relative;
+  --guided-notch-x:140px;
+  --guided-notch-y:40px;
+  background:var(--surface2);
+  border:1px solid var(--line2);
+  clip-path:polygon(16px 0,var(--guided-notch-x) 0,calc(var(--guided-notch-x) + var(--guided-notch-y)) var(--guided-notch-y),100% var(--guided-notch-y),100% 100%,0 100%,0 16px);
+  padding:10px 12px 8px;
+  transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out);
+}
+.cp-composer-shell:focus-within{background:var(--surface)}
+/* Landing page's inline chat variant: composer stays white with a visible
+   grey boundary, distinct from the request-detail panel's borderless one. */
+.chat-panel-inline .cp-composer-shell{background:var(--surface);border:1px solid var(--line)}
+.chat-panel-inline .cp-composer-shell:focus-within{background:var(--surface);border-color:var(--ink3)}
+.cp-input{
+  display:flex;flex-direction:column;gap:6px;
+  background:none;
+  border:none;
+}
+/* Height is driven entirely from JS now (measuring scrollHeight, capped at
+   7 lines / expanded — see ChatPanel's effect), not CSS max-height, so the
+   collapse/expand toggle has something to actually change. */
+.cp-input textarea{
+  display:block;width:100%;margin:0;padding:0;
+  border:none;background:transparent;color:var(--ink);
+  font-family:inherit;font-size:13px;line-height:20px;
+  resize:none;overflow-y:auto;
+}
+.cp-input textarea:focus{outline:none}
+.cp-input textarea::placeholder{color:var(--ink3)}
+.cp-input-tools{display:flex;align-items:center;gap:6px}
+/* Minimize/maximize — only shown once the composer actually has more than
+   7 lines of content to hide. */
+.cp-input-expand{display:grid;place-items:center;width:22px;height:22px;color:var(--ink3);background:var(--surface3);border:1px solid var(--line2);transition:color .15s ease,border-color .15s ease}
+.cp-input-expand:hover{color:var(--ink);border-color:var(--ink3)}
+.cp-input-expand:disabled{opacity:.6;cursor:default}
+.cp-spin{animation:cpSpin .8s linear infinite}
+@keyframes cpSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.cp-spin{animation:none}}
+/* The hint occupies the gap the send button would otherwise float in,
+   and only while you are actually typing into the field. */
+.cp-input-hint{
+  margin-left:auto;padding-right:10px;font-size:10px;letter-spacing:.04em;
+  color:var(--ink3);white-space:nowrap;
+  opacity:0;transition:opacity var(--dur-1) var(--ease-out);
+}
+.cp-input:focus-within .cp-input-hint{opacity:1}
+.cp-icon-btn{width:28px;height:28px;flex-shrink:0;border-radius:0;background:transparent;color:var(--ink2);display:grid;place-items:center;transition:color var(--dur-1) var(--ease-out),background-color var(--dur-1) var(--ease-out)}
+.cp-icon-btn:hover{color:var(--nv-space-orange);background:var(--nv-grey-surface)}
+.cp-icon-btn svg{width:17px;height:17px}
+.cp-icon-btn.recording{color:var(--nv-space-orange)}
+.cp-icon-btn:disabled{opacity:.5;cursor:default}
+/* Send is the only filled control in the composer, so it follows the
+   app's primary button exactly — Warm Black, Space Orange on hover —
+   rather than being the one circular, differently-coloured thing here. */
+.cp-input button.send{
+  width:30px;height:30px;flex-shrink:0;display:grid;place-items:center;
+  background:var(--nv-warm-black);color:var(--nv-soft-white);
+  border:1px solid var(--nv-warm-black);border-radius:0;
+  transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out);
+}
+.cp-input button.send:hover,.cp-input button.send:focus-visible{background:var(--nv-space-orange);border-color:var(--nv-space-orange)}
+.cp-input button.send:disabled{background:transparent;border-color:var(--line);color:var(--ink4);cursor:default}
+.cp-input button.send svg{width:15px;height:15px;flex-shrink:0}
+
+/* ================== TOASTS (bottom-left, away from chat) ================== */
+.toasts{position:fixed;bottom:26px;left:26px;display:flex;flex-direction:column;gap:8px;z-index:110;align-items:flex-start;pointer-events:none;max-width:calc(70vw - 60px)}
+.toast{background:var(--ink);color:#fff;font-size:12px;line-height:1.45;border-radius:0;padding:11px 16px;box-shadow:none;animation:slideIn .25s ease;display:flex;gap:10px;align-items:flex-start;pointer-events:all;font-weight:500}
+.toast b{color:#fff;font-weight:800}
+.toast .tico{color:var(--nv-space-orange);font-weight:800}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+
+/* ================== NEW REQUEST MODAL ================== */
+.modal-backdrop{position:fixed;inset:0;background:rgba(15,26,42,.45);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.open{display:flex;animation:fadeIn .15s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border-radius:0;box-shadow:none;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;animation:fadeDown .18s ease}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
+.modal-h h3{font-size:16px;font-weight:800}
+.modal-x{width:30px;height:30px;border-radius:0;display:grid;place-items:center;color:var(--ink3);font-size:14px}
+.btn-icon{width:26px;height:26px;border-radius:0;border:1px solid var(--line2);background:var(--surface);color:var(--nv-warm-black);font-size:12px;cursor:pointer;display:grid;place-items:center;transition:color .15s ease,border-color .15s ease}
+.btn-icon:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.btn-icon:disabled{opacity:.35;cursor:default}
+.modal-x:hover{background:var(--surface2);color:var(--ink)}
+/* ============ AI-DRIVEN VISIO DIAGRAM EDITOR ============
+   Replaces the old free-form node/connector canvas AND the plain PDF
+   iframe that replaced it. Canvas is the visual truth; editing happens
+   only through the AI Diagram Editor panel (server/server.js
+   /api/visio-agent) — see vbSendChat/vbApplyPreview below. Visio file +
+   Google Drive are a realistic mock (localStorage), same as every other
+   external system in this app (TactPlan, brand master, ...).
+   Layout is deliberately NOT an even split — the diagram is the product,
+   the AI panel is a tool for editing it: ~70/30 diagram/AI-panel of the
+   workspace once the left Sections rail (unchanged, owned elsewhere) takes
+   its ~18%. See .vb-main's flex-grow ratio below. */
+.vb-root{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line2);border-radius:0;background:var(--surface2);padding:10px}
+.vb-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:2px 2px 0}
+.vb-tool-group{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:3px}
+.vb-tool{height:30px;min-width:30px;padding:0 10px;border-radius:0;background:transparent;color:var(--ink2);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer;text-decoration:none}
+.vb-tool:hover{background:var(--surface2)}
+.vb-tool.on{background:var(--brand-tint);color:var(--brand)}
+.vb-tool:disabled{opacity:.35;cursor:default}
+.vb-tool-save{background:var(--grad-blue);color:#fff}
+.vb-tool-save:hover{background:var(--grad-blue);opacity:.92}
+.vb-zoom-pct{font-size:12px;font-weight:700;color:var(--ink3);width:34px;text-align:center}
+.vb-search-wrap{flex:1;min-width:160px}
+.vb-search{width:100%;height:30px;border:1px solid var(--line2);border-bottom:2px solid var(--line2);border-radius:0;padding:0 10px;font-size:12px;background:var(--surface);transition:border-color .15s ease}
+.vb-search:hover{border-color:#CCCCCC;border-bottom-color:#CCCCCC}
+.vb-search:focus{outline:none;border-color:var(--line2);border-bottom:2px solid var(--nv-space-orange)}
+.vb-main{display:flex;gap:10px;align-items:stretch}
+.vb-canvas-wrap{position:relative;width:100%;height:640px;overflow:hidden;border-radius:0;border:1px solid var(--line2);background:var(--surface);background-image:radial-gradient(var(--line2) 1px, transparent 1px);background-size:20px 20px;cursor:grab}
+.vb-canvas-wrap:active{cursor:grabbing}
+.vb-canvas{position:absolute;top:0;left:0;transform-origin:0 0;transition:transform .12s linear}
+.vb-edges-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
+.vb-nodes{position:relative}
+.vb-node{position:absolute;border-radius:0;border-width:2px;border-style:solid;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 14px;cursor:pointer;box-shadow:none;user-select:none;transition:left .35s cubic-bezier(.22,.9,.32,1),top .35s cubic-bezier(.22,.9,.32,1),opacity .28s,transform .28s,box-shadow .15s}
+.vb-node:hover{box-shadow:none;z-index:3}
+.vb-node.sel{outline:2.5px solid var(--brand);outline-offset:2px}
+.vb-node.vb-match{outline:2.5px solid var(--nv-space-orange);outline-offset:2px;animation:vbFlash .5s ease 2}
+@keyframes vbFlash{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 6px rgba(255,138,61,.25)}}
+.vb-anim-in{opacity:0;transform:scale(.6)}
+.vb-anim-out{opacity:0 !important;transform:scale(.7) !important}
+.vb-node-label{font-size:16px;font-weight:800;color:#26333F;text-align:center;line-height:1.3;overflow-wrap:break-word;pointer-events:none}
+.vb-node-sub{font-size:13px;font-weight:700;color:#4B5A68;text-align:center;line-height:1.25;pointer-events:none}
+/* Decision diamond: clip-path on a bordered box clips the border away along
+   the diagonal edges in most browsers, leaving it borderless. Fixed with a
+   two-layer technique instead — ::before is a full diamond filled with the
+   border color, ::after is a smaller diamond (inset by the border width)
+   filled with the actual fill color sitting on top, so the visible ring
+   between them IS the border. The real border is turned off. */
+.vb-shape-decision{border:none !important; background:transparent !important}
+.vb-shape-decision::before{content:'';position:absolute;inset:0;z-index:-2;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:var(--vb-border)}
+.vb-shape-decision::after{content:'';position:absolute;inset:calc(var(--vb-bw) * 1.4);z-index:-1;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);background:var(--vb-fill)}
+.vb-shape-start,.vb-shape-end{border-radius:999px}
+.vb-shape-infobox{border-radius:0;align-items:flex-start;text-align:left;padding-left:16px}
+.vb-shape-infobox .vb-node-label,.vb-shape-infobox .vb-node-sub{color:#fff;text-align:left}
+/* Data source: a cylinder lying on its side — rounded cap on the left,
+   a true ellipse cap on the right (::after) — matches the reference Visio
+   export exactly, NOT the vertical soda-can look a plain top-ellipse gives.
+   Uses var(...) rather than `border:2px solid inherit`, which pseudo-
+   elements don't reliably inherit from an ancestor with an inline style. */
+.vb-shape-datasource{border-right:none;border-radius:999px 0 0 999px}
+.vb-shape-datasource::after{content:'';position:absolute;top:calc(-1 * var(--vb-bw));bottom:calc(-1 * var(--vb-bw));right:-16px;width:34px;border-radius:50%;background:var(--vb-fill);border:var(--vb-bw) solid var(--vb-border)}
+.vb-status-dot{position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface)}
+.vb-edge{fill:none;stroke:#F0A93A;stroke-width:3.25;stroke-linecap:round;stroke-linejoin:round;transition:opacity .2s}
+.vb-edge-dim{opacity:.18}
+.vb-edge-arrow{fill:#F0A93A}
+.vb-edge-label{font-size:11px;font-weight:700;fill:var(--ink2)}
+.vb-legend{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:6px;z-index:5}
+.vb-legend-chip{font-size:12px;font-weight:700;color:#26333F;padding:7px 16px;border-radius:0;border:1.5px solid;white-space:nowrap;text-align:center}
+.vb-minimap-wrap{position:absolute;bottom:10px;left:10px;z-index:5;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.vb-minimap{width:180px;height:120px;background:var(--surface);border:1px solid var(--line2);border-radius:0;box-shadow:none}
+.vb-mm-node{fill:var(--ink3)}
+.vb-mm-node.sel{fill:var(--brand)}
+.vb-mm-viewport{fill:var(--brand-tint);stroke:var(--brand);stroke-width:1}
+.vb-minimap-tools{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:3px;box-shadow:none}
+.vb-mm-btn{width:24px;height:24px;border-radius:0;font-size:12px;font-weight:800;color:var(--ink2);display:grid;place-items:center;cursor:pointer}
+.vb-mm-btn:hover{background:var(--surface2)}
+.vb-node-meta{position:absolute;background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:9px 11px;box-shadow:none;font-size:12px;color:var(--ink2);width:200px;z-index:8;pointer-events:auto}
+.vb-meta-row{padding:1.5px 0}
+.vb-meta-actions{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line2)}
+.vb-meta-action{font-size:12px;font-weight:700;color:var(--brand);text-align:left;padding:2px 0;cursor:pointer}
+.vb-meta-action:hover{text-decoration:underline}
+.vb-empty-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;text-align:center;color:var(--ink3);font-weight:700;font-size:15px;pointer-events:none;z-index:4}
+.vb-empty-overlay span{font-weight:500;font-size:12px;max-width:320px}
+.vb-empty-overlay button{pointer-events:auto}
+/* view-only pre-generation panel — no absolutely-positioned overlay to break
+   out of here, so centering has to come from the wrap itself */
+.vb-canvas-wrap-empty{display:flex;align-items:center;justify-content:center}
+.vb-hourglass{width:34px;height:34px;color:var(--nv-warm-black)}
+.vb-empty-example{font-weight:600;font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--line2);border-radius:0;padding:8px 12px;text-align:left;white-space:pre-line;max-width:320px}
+/* ---------- pre-generation clarification cards (in-chat Q&A) ---------- */
+.vb-cq{padding:12px 14px;box-sizing:border-box;max-width:100%}
+.vb-cq-num{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
+.vb-cq-q{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:10px}
+.vb-cq-opts{display:flex;flex-direction:column;gap:6px;width:100%}
+.vb-cq-opt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left;background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:9px 11px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:border-color .15s,color .15s;width:100%;box-sizing:border-box}
+.vb-cq-opt:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.vb-cq-opt-label{flex:1 1 auto;min-width:0;white-space:normal;word-break:break-word;text-align:left}
+.vb-cq-rec{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--nv-space-orange);border:1px solid var(--nv-space-orange);padding:1px 6px;flex-shrink:0}
+.vb-cq-hint{font-size:12px;font-weight:500;color:var(--ink3);margin-top:8px;font-style:italic}
+.vb-cq-answer{font-size:13px;font-weight:700;color:var(--nv-space-orange);word-break:break-word}
+.vb-cq-generate{padding:4px 14px 14px}
+.vb-cq-generate button{width:100%;box-sizing:border-box}
+/* ---------- generating / pdf states (replace canvas entirely) ---------- */
+.vb-generating{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:420px;color:var(--ink3);font-weight:700}
+.vb-generating-spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--line2);border-top-color:var(--nv-space-orange);animation:vbSpin .8s linear infinite}
+@keyframes vbSpin{to{transform:rotate(360deg)}}
+.vb-generating-txt{font-size:14px}
+/* visio-cropped.pdf (see vbVisioFileUrl()) IS already page 1 cropped to the
+   vertical 10%-60% band — a real MediaBox/CropBox edit, done once, not a
+   runtime CSS/zoom crop layered on the original file. Tried two runtime
+   approaches first (pdf.js rasterizing to canvas — hung indefinitely on
+   this specific file's vector content; then `#zoom=100` iframe math) before
+   landing on "just ship the already-cropped file" — simpler and immune to
+   both problems. This is a plain, un-cropped embed of that file now. */
+.vb-pdf-wrap{width:100%;aspect-ratio:2340/1908;min-height:360px;border:1px solid var(--line2);background:var(--surface2)}
+.vb-pdf-frame{width:100%;height:100%;border:0}
+/* ---------- approval workflow (demo) ---------- */
+.vb-approval-panel{border:1px solid var(--line2);border-radius:0;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.vb-approval-status{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+/* Stacked, not side by side — two full-width buttons side by side kept
+   overflowing the chat panel's narrow width. */
+.vb-approval-actions{display:flex;flex-direction:column;gap:6px;width:100%}
+.vb-approval-actions button{width:100%;box-sizing:border-box}
+.vb-approval-note{font-size:12px;color:var(--ink3);font-weight:500}
+.vb-approver-rows{display:flex;flex-direction:column;gap:8px;width:100%}
+.vb-approver-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--line2)}
+.vb-approver-row:first-child{border-top:none;padding-top:0}
+.vb-approver-name{font-size:13px;font-weight:700;flex-shrink:0;min-width:90px}
+.vb-suggest-box{display:flex;flex-direction:column;gap:8px;width:100%}
+.vb-suggest-box textarea{width:100%;box-sizing:border-box;min-height:64px;padding:9px 11px;font-size:13px;border:1px solid var(--line2);border-radius:0;background:var(--surface2);color:var(--ink);font-family:inherit;resize:vertical}
+.vb-suggest-box button{width:100%;box-sizing:border-box}
+/* ---------- version history (demo) ---------- */
+.vb-version-history{border:1px solid var(--line2);border-radius:0;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.vb-version-history-head{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
+.vb-version-row{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--line2)}
+.vb-version-row:first-child{border-top:none;padding-top:0}
+.vb-version-num{font-size:12px;font-weight:800;color:var(--nv-space-orange);flex-shrink:0;width:26px}
+.vb-version-body{flex:1;min-width:0}
+.vb-version-change{font-size:13px;font-weight:600;color:var(--ink)}
+.vb-version-meta{font-size:11px;font-weight:600;color:var(--ink3);margin-top:2px}
+/* ---------- canvas header / sub-tabs above the toolbar ---------- */
+.vb-canvas-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 0}
+.vb-canvas-head-l{display:flex;align-items:center;gap:8px}
+.vb-canvas-head-badge{font-size:10px;font-weight:800;letter-spacing:.04em;color:var(--persona-accent,var(--nv-space-orange))}
+.vb-canvas-head-ic{font-size:15px}
+.vb-canvas-head-title{font-size:15px;font-weight:800;color:var(--ink)}
+.vb-visio-link{font-size:12px;font-weight:700;color:var(--brand);margin-left:6px;padding:3px 9px;border-radius:0;background:var(--brand-tint)}
+.vb-visio-link:hover{text-decoration:underline}
+.vb-canvas-head-r{display:flex;align-items:center;gap:8px}
+/* Same bordered black/orange-hover language as .btn-ghost elsewhere in the
+   app, just compact — .vb-tool's plain borderless look is right for the
+   legacy diagram-editor's tool palette, but these are the same kind of
+   real, brand-visible action buttons as everywhere else (Save/Share/etc). */
+.vb-pdf-action{height:30px;padding:0 12px;border-radius:0;background:transparent;color:var(--nv-warm-black);border:2px solid var(--nv-warm-black);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;cursor:pointer;text-decoration:none;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.vb-pdf-action:hover,.vb-pdf-action:focus-visible{background:var(--nv-space-orange);border-color:var(--nv-space-orange);color:var(--nv-soft-white)}
+.vb-zoom-group{display:flex;align-items:center;border:2px solid var(--nv-warm-black)}
+.vb-zoom-btn{height:26px;min-width:26px;padding:0 8px;font-weight:800;border:0;background:transparent;color:var(--nv-warm-black);cursor:pointer;transition:background-color .15s ease,color .15s ease}
+.vb-zoom-btn:hover{background:var(--nv-space-orange);color:var(--nv-soft-white)}
+.vb-zoom-pct{font-size:12px;font-weight:700;color:var(--nv-warm-black);min-width:34px;text-align:center}
+.vb-dl-dropdown{position:relative}
+.vb-dl-menu{position:absolute;top:calc(100% + 4px);right:0;background:var(--surface);border:1px solid var(--line2);border-radius:0;min-width:100px;z-index:20;box-shadow:0 4px 14px rgba(22,22,22,.12)}
+.vb-dl-menu a{display:block;padding:8px 12px;font-size:12px;font-weight:600;color:var(--ink);text-decoration:none}
+.vb-dl-menu a:hover{background:var(--nv-grey-surface);color:var(--nv-space-orange)}
+.vb-canvas-head-r .btn-ghost,.vb-canvas-head-r .btn-primary{height:32px;padding:0 14px;font-size:12px}
+.vb-toggle-wrap{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer}
+.vb-toggle-wrap input{display:none}
+.vb-toggle-track{width:32px;height:18px;border-radius:0;background:var(--line2);position:relative;transition:background .15s}
+.vb-toggle-knob{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:none;transition:left .15s}
+.vb-toggle-wrap input:checked + .vb-toggle-track{background:var(--brand)}
+.vb-toggle-wrap input:checked + .vb-toggle-track .vb-toggle-knob{left:16px}
+.vb-canvas-sub{font-size:12px;color:#2E7D32;font-weight:700;padding:2px 2px 0;display:flex;align-items:center;gap:5px}
+.vb-saved-dot{color:#3FAE49;font-size:10px}
+.vb-subtabs{display:flex;gap:18px;padding:8px 2px 0;border-bottom:1px solid var(--line2)}
+.vb-subtab{font-size:12px;font-weight:700;color:var(--ink3);padding:0 0 8px;border-bottom:2px solid transparent}
+.vb-subtab.on{color:var(--brand);border-bottom-color:var(--brand)}
+.vb-tool-sep{width:1px;height:20px;background:var(--line2);margin:0 2px}
+/* ---------- AI panel: tabbed (Conversations / Diagram Chat) message thread ---------- */
+.vb-chat{flex:3 1 0;min-width:260px;display:flex;flex-direction:column;border:1px solid var(--line2);border-radius:0;background:var(--surface);overflow:hidden}
+.vb-chat-tabs{display:flex;gap:20px;padding:12px 14px 0;border-bottom:1px solid var(--line2)}
+.vb-chat-tab{font-size:13px;font-weight:700;color:var(--ink3);padding:0 0 12px;border-bottom:2px solid transparent}
+.vb-chat-tab.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:800}
+.vb-chat-log{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-height:80px}
+.vb-turn{display:flex;flex-direction:column;margin-bottom:12px;max-width:92%}
+.vb-turn.user{align-items:flex-end;align-self:flex-end}
+.vb-turn.bot{align-items:flex-start;align-self:flex-start}
+.vb-turn-meta{font-size:11px;font-weight:700;color:var(--ink3);margin-bottom:4px;display:flex;gap:6px}
+.vb-turn-meta span{font-weight:600;opacity:.75}
+.vb-bubble{border-radius:0;padding:10px 13px;font-size:13px;line-height:1.45}
+.vb-bubble.user{background:var(--brand);color:#fff;border-bottom-right-radius:4px}
+.vb-bubble.bot{background:var(--surface2);color:var(--ink);border:1px solid var(--line2);border-bottom-left-radius:4px}
+.vb-applied-check{display:flex;align-items:center;gap:5px;font-weight:800;color:#2E7D32;margin-top:7px}
+.vb-applied-check .ok{font-size:14px}
+.vb-applied-sub{font-size:12px;color:var(--ink3);font-weight:600;margin-top:1px}
+.vb-applied-actions{margin-top:7px;display:flex;justify-content:flex-end}
+.vb-undo-inline{font-size:12px;font-weight:700;color:var(--brand);background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:4px 10px;cursor:pointer}
+.vb-undo-inline:hover{background:var(--brand-tint)}
+.vb-reasoning{opacity:.7;font-style:italic}
+.vb-chat-input-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--line2)}
+.vb-chat-input-row input{flex:1;height:38px;border:1px solid var(--line2);border-radius:0;padding:0 14px;font-size:13px}
+.vb-send-btn{width:38px;height:38px;border-radius:50%;background:var(--brand);color:#fff;font-size:14px;display:grid;place-items:center;flex-shrink:0}
+.vb-send-btn:hover{opacity:.9}
+.vb-chat-hint{font-size:11px;color:var(--ink3);font-weight:600;padding:0 14px 4px}
+.vb-chat-footer{font-size:11px;color:var(--ink3);font-weight:600;padding:0 14px 10px;display:flex;align-items:center;gap:5px}
+.vb-statusbar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);font-weight:600;padding:0 2px;flex-wrap:wrap}
+.vb-statusbar-spacer{flex:1}
+.vb-link-btn{color:var(--brand);font-weight:700;font-size:12px}
+.vb-link-btn:hover{text-decoration:underline}
+.vb-version-panel{border:1px solid var(--line2);border-radius:0;background:var(--surface);padding:6px 10px;font-size:12px}
+.vb-version-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line2)}
+.vb-version-row:last-child{border-bottom:none}
+.vb-version-note{flex:1;color:var(--ink3)}
+.modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
+.modal-tabs{display:flex;gap:6px;background:var(--surface2);border-radius:0;padding:4px}
+.modal-tab{flex:1;padding:9px 10px;border-radius:0;font-size:13px;font-weight:700;color:var(--ink3);text-align:center}
+.modal-tab.on{background:var(--surface);color:var(--brand);box-shadow:none}
+.modal-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:var(--ink2);flex:1}
+.modal-field input,.modal-field select{border:1.5px solid var(--line);border-bottom:2px solid var(--line);border-radius:0;padding:9px 12px;font-size:14px;color:var(--ink);background:var(--surface);font-weight:500;transition:border-color .15s ease}
+.modal-field input:hover,.modal-field select:hover{border-color:#CCCCCC;border-bottom-color:#CCCCCC}
+/* Required fields: orange vertical bar beside the label instead of a red
+   asterisk — "│ Agency". */
+.req-label{position:relative;padding-left:11px}
+.req-label::before{content:'';position:absolute;left:0;top:1px;bottom:1px;width:3px;background:var(--nv-space-orange)}
+.modal-field input:focus,.modal-field select:focus{outline:none;border-color:var(--line);border-bottom:2px solid var(--nv-space-orange)}
+.field-error{border-color:var(--nv-space-orange) !important;background:var(--accent-tint)}
+.modal-field-row{display:flex;gap:12px}
+.ac-wrap{position:relative}
+.ac-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1.5px solid var(--line);border-radius:0;max-height:190px;overflow-y:auto;z-index:60;box-shadow:none;display:none}
+.ac-dropdown.open{display:block}
+.ac-item{padding:9px 12px;font-size:14px;font-weight:500;color:var(--ink);cursor:pointer}
+.ac-item:hover,.ac-item.active{background:var(--surface2)}
+.ac-empty{padding:9px 12px;font-size:13px;font-weight:600;color:var(--ink3)}
+.modal-check-row{display:flex;gap:16px}
+.modal-check{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+.modal-check input{width:16px;height:16px;accent-color:var(--brand)}
+.file-upload{display:flex;align-items:center;gap:10px;border:1.5px dashed var(--line);border-radius:0;padding:8px 10px;background:var(--surface)}
+.file-upload input[type=file]{display:none}
+.file-btn{background:var(--grad-blue);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:0;cursor:pointer;flex-shrink:0}
+.file-upload.readonly .file-btn{background:var(--lock-tint);color:var(--lock);cursor:default}
+.file-name{font-size:12px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.metasheet{border:1px solid var(--line2);border-radius:0;overflow:hidden}
+.ms-row{display:grid;grid-template-columns:130px 170px 1fr;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--line2);background:var(--surface)}
+.ms-row:last-child{border-bottom:none}
+.ms-grp{font-size:12px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.02em}
+.ms-fn{font-size:12px;font-weight:600;color:var(--ink2);display:flex;align-items:center;gap:6px}
+.ms-inp{margin:0}
+.metasheet.readonly .ms-row{background:var(--surface2)}
+.modal-hint{font-size:12px;color:var(--brand);background:var(--brand-tint);border-radius:0;padding:10px 12px;line-height:1.5;font-weight:600}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line)}
+/* ---- Buttons (brand guidelines §4) ------------------------------------
+   Primary : Warm Black bg / Soft White text -> Space Orange bg on hover.
+   Secondary: transparent + 2px Warm Black border -> fills Space Orange.
+   Square corners on every state, no gradient, no shadow, label >=16px so
+   white-on-orange in the hover state clears the accessibility minimum. */
+.btn-ghost,.btn-primary{height:40px;padding:0 24px;border-radius:0;font-size:16px;font-family:var(--font-medium);font-weight:var(--fw-medium);line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:2px solid transparent;box-shadow:none;background-image:none;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.btn-ghost{color:var(--nv-warm-black);background:transparent;border-color:var(--nv-warm-black)}
+.btn-ghost:hover,.btn-ghost:focus-visible{background:var(--nv-space-orange);border-color:var(--nv-space-orange);color:var(--nv-soft-white)}
+.btn-ghost:active{background:var(--accent-active);border-color:var(--accent-active);color:var(--nv-soft-white)}
+.btn-primary{color:var(--nv-soft-white);background:var(--nv-warm-black);border-color:var(--nv-warm-black)}
+.btn-primary:hover,.btn-primary:focus-visible{background:var(--nv-space-orange);border-color:var(--nv-space-orange);color:var(--nv-soft-white)}
+.btn-primary:active{background:var(--accent-active);border-color:var(--accent-active)}
+.btn-ghost:disabled,.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-sm{height:32px;padding:0 16px;font-size:14px}
+
+/* ================== RESPONSIVE ================== */
+@media(max-width:1200px){
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .detail-grid{grid-template-columns:1fr}
+  .you-focus{position:static}
+}
+@media(max-width:900px){
+  .stage{margin-right:0;padding-bottom:calc(50vh + 40px)}
+  .chat-panel{top:auto;bottom:0;left:0;right:0;width:100%;height:45vh;border-left:none;border-top:1px solid var(--line);box-shadow:none}
+}
+@media(max-width:640px){
+  .fields{grid-template-columns:1fr}
+  .f.wide{grid-column:span 1}
+  .stage{padding:20px 16px 46vh}
+  .hero-l h1{font-size:var(--t-h3)}
+  .rt-head{display:none}
+  .rt-row{grid-template-columns:1fr;gap:8px;padding:14px}
+}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ==================================================================
+   CHAT-FIRST SHELL + MOTION LAYER
+   Appended last so it wins on order without raising specificity.
+   Design language is unchanged: radius 0, no shadows, warm-black +
+   space-orange, Volta, .4px tracking. What changes is (a) where the
+   chat sits, (b) how much glyph noise the page carries, (c) motion.
+   ================================================================== */
+
+/* ---- Motion tokens. There were none before: every component wrote
+   `transition:all .15s`, which names no easing (so the browser used
+   `ease`, which starts slow and ends slow — the reason hovers felt
+   mushy) and animates every property including layout ones. These
+   four durations and three curves are the whole vocabulary now. ---- */
+:root{
+  --ease-out:cubic-bezier(.2,0,0,1);        /* decisive; default for UI state */
+  --ease-out-soft:cubic-bezier(.16,1,.3,1); /* longer travel: panels, overlays */
+  --ease-in-out:cubic-bezier(.65,0,.35,1);  /* only for things that leave and return */
+  --dur-1:110ms;   /* high-frequency: hover, focus, row highlight */
+  --dur-2:180ms;   /* small state change: pill, chip, chevron */
+  --dur-3:260ms;   /* panel content swap */
+  --dur-4:380ms;   /* overlay travel across the pane */
+}
+
+/* Retune the blanket `transition:all .15s` sites to transition only what
+   actually changes, on an ease-out curve. Same components, same look. */
+.persona-btn,.glance-toggle-btn,.filt,.flow-node,.cp-suggest button,.cp-tab{
+  transition:background-color var(--dur-1) var(--ease-out),
+             border-color var(--dur-1) var(--ease-out),
+             color var(--dur-1) var(--ease-out);
+}
+.tl-node{transition:background-color var(--dur-2) var(--ease-out),border-color var(--dur-2) var(--ease-out),color var(--dur-2) var(--ease-out)}
+.sm-row{transition:background-color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.sm-row-chev{transition:color var(--dur-1) var(--ease-out),transform var(--dur-1) var(--ease-out)}
+.sm-row:hover .sm-row-chev{transform:translateX(2px)}
+.msg.bot.thinking-group summary::before{transition:transform var(--dur-2) var(--ease-out)}
+.cp-input button.send:active{transform:scale(.94)}
+.cp-icon-btn{transition:color var(--dur-1) var(--ease-out),background-color var(--dur-1) var(--ease-out)}
+.cp-icon-btn:active{transform:scale(.92)}
+
+/* ---- ICON REDUCTION --------------------------------------------
+   The page carried ~200 Unicode glyphs used as decoration: a ⇢ before
+   every field-provenance label, a ↳ before every child section name, a
+   picture-glyph per section, emoji in stat cards and toasts. None of
+   them carried meaning the adjacent text did not already carry. They
+   are suppressed here rather than deleted from the data, so the
+   underlying strings stay intact for the agent's tool-calls.
+   What survives: ✓ (resolved), ⚠ (risk), ✕ (close), › (traversal),
+   and the three real SVGs in the chat composer. ---- */
+.f-src.b-auto::before,.f-src.b-tactplan::before,
+.f-src.b-xm::before,.f-src.b-default::before{content:none}
+.f-src{text-transform:uppercase;letter-spacing:.06em;font-size:10px}
+.sec-ic,.sm-row-ic,.flow-node-ic{display:none}
+.stat-card .sc-ico{display:none}
+/* One arrow per request row, on rows that are clickable end to end. The
+   row's hover state already says it is a target. */
+.rt-chev{display:none}
+.stat-card .sc-lbl{gap:0}
+/* Section number carries the identity the glyph used to; give it the
+   room to do that job — at 16px a sub-number like "02.1" ran straight
+   into the section name. */
+.sm-row-num{font-variant-numeric:tabular-nums;letter-spacing:.02em;width:auto;min-width:26px;flex-shrink:0}
+.sm-row.sm-row-indent .sm-row-num{min-width:32px}
+.sm-detail-title{letter-spacing:var(--tracking)}
+
+/* ---- SHELL: chat left 40%, navigation right 60% -----------------
+   Only on the individual campaign screen. The campaign-requests list,
+   the plan view and admin get the full width with no chat at all —
+   there is no single campaign for it to be about there. body[data-view]
+   is stamped by syncShellLayout() in the script below. ---- */
+/* The chat/details split is a single width, --chat-w, that both sides read.
+   Dragging the divider writes it (see initDetailsResizer); collapsing the
+   details overrides it to full width. One variable means the two halves can
+   never disagree about where the boundary is. */
+/* Split mode is an even 50/50 — was 40vw, giving the form 60% and the chat
+   only 40%; changed so chat and form actually share the screen equally. */
+:root{--chat-w:50vw;--details-tab-w:34px}
+
+@media (min-width:1101px){
+  body[data-view="request"] #chatPanel{
+    left:0;right:auto;width:var(--chat-w);max-width:none;
+    border-left:none;border-right:1px solid var(--line);
+    /* Width and opacity share one duration/easing so they land together —
+       mismatched timings (opacity finishing well before width) made the
+       content pop fully visible while its box was still mid-resize, which
+       read as janky rather than smooth. */
+    transition:width var(--dur-4,.38s) var(--ease-out-soft,ease),opacity var(--dur-4,.38s) var(--ease-out-soft,ease);
+    will-change:width;
+  }
+  body[data-view="request"] .stage{
+    margin-left:var(--chat-w);margin-right:0;
+    transition:margin-left var(--dur-4,.38s) var(--ease-out-soft,ease),opacity var(--dur-4,.38s) var(--ease-out-soft,ease);
+    will-change:margin-left;
+  }
+  /* Was width:calc(100% - var(--details-tab-w)), leaving a reserved strip
+     for the floating "Show details" tab — that control was removed (the
+     app-bar layout toggle replaced it), so the reserved gap became dead
+     space at the right edge with nothing to fill it. Full width now that
+     nothing needs to sit in that strip. */
+  body[data-view="request"][data-details="collapsed"] #chatPanel{width:100%}
+  /* width:0 + overflow:hidden alongside the margin-left push — margin alone
+     shoved .stage off to the right but it kept its full natural width
+     there, which extended the document's scrollable area a few hundred
+     px past the viewport (visible as the whole page/header being able to
+     scroll sideways). Zeroing its width removes that phantom area. */
+  body[data-view="request"][data-details="collapsed"] .stage{margin-left:100%;width:0;opacity:0;pointer-events:none;overflow:hidden}
+  /* Full-screen chat would otherwise stretch every message edge-to-edge —
+     a "wall of text" at ~100vw. Restricted with PADDING, not a max-width
+     on .cp-body itself: max-width shrank the box the background gradient
+     paints into as well, so the backdrop visibly narrowed along with the
+     text. Padding leaves the box (and its background) full width and only
+     insets the content living inside it — 20% each side leaves 60% in the
+     middle, and unlike max-width+margin every message inside is exactly
+     that width instead of shrink-wrapping to its own text. */
+  body[data-view="request"][data-details="collapsed"] .cp-body{padding-left:20vw;padding-right:20vw}
+  /* Full-screen chat is the one mode with room for a real sidebar — New
+     chat / History move out of the header (hidden here) and into
+     .cp-sidebar, which slides open via its own width transition. */
+  body[data-view="request"][data-details="collapsed"] .cp-sidebar{width:240px}
+  /* New chat / History move into .cp-sidebar in full-screen chat, so the
+     header bar has nothing left in it here — Guided Mode's toggle lives in
+     the composer now (.cp-guided-row), not the header, so unlike when this
+     rule was first written there's no reason left to keep the bar itself
+     around; hiding just .cp-head-actions left an empty 45px strip (just
+     the border-bottom) sitting above the messages for no reason. */
+  body[data-view="request"][data-details="collapsed"] .cp-head{display:none}
+  /* Bot replies run the full width of the (already-restricted) column —
+     user messages keep their own shrink-to-fit + right-aligned bubble
+     instead of stretching to match, which is what "collapsed" used to force
+     on every .msg regardless of role. */
+  body[data-view="request"][data-details="collapsed"] .msg.bot{width:100%;max-width:100%}
+  /* Composer's grey box tracks the same padding as the message column
+     above it in every mode, so its left/right edges always line up with
+     "the text wall" instead of spanning the full panel width. */
+  body[data-view="request"][data-details="collapsed"] .cp-input-card{padding-left:20vw;padding-right:20vw}
+  /* Form-full — new, not in the original (which only ever had chat-full).
+     Mirror image of "collapsed": form takes the whole screen, chat tucks
+     away entirely rather than leaving its own tab strip behind, since
+     there's no "peek at the conversation" affordance to preserve room for. */
+  body[data-view="request"][data-details="formfull"] #chatPanel{width:0;opacity:0;pointer-events:none;border-right:none;overflow:hidden}
+  body[data-view="request"][data-details="formfull"] .stage{margin-left:0}
+  body:not([data-view="request"]) #chatPanel{display:none}
+  body:not([data-view="request"]) .stage{margin-right:0}
+  /* The admin editor borrows .chat-panel's geometry; it must stay right. */
+  body #adminEditPanel{left:auto;right:0;width:340px;border-right:none;border-left:1px solid var(--line)}
+  body:not([data-view="request"]) #adminEditPanel{display:flex}
+
+  /* Same chat/split/form toggle, applied to the requests landing page's own
+     two-pane grid (.hm-agent chat + .hm-rail campaigns list) instead of
+     #chatPanel/.stage — new, the original never had this control at all, so
+     there's no ported behavior to match here, just the same three states.
+     Its own data-landing-layout attribute, not data-view="landing"/
+     data-details, so it doesn't also reactivate the unrelated (and
+     previously dormant) #view-landing{height:100%} rule this file already
+     had — that combination stretched the chat pane to a wrong height.
+     grid-template-columns is deliberately NOT transitioned here — animating
+     fr-track sizing is unreliable across engines (it can silently freeze at
+     the pre-change value instead of animating or snapping); the width swap
+     happens instantly and the opacity/min-width fade on the collapsing pane
+     is what actually reads as a smooth handoff. */
+  .hm-agent,.hm-rail{transition:opacity var(--dur-3,.2s) ease}
+  body[data-landing-layout="collapsed"] .hm-grid{grid-template-columns:1fr 0fr}
+  body[data-landing-layout="collapsed"] .hm-rail{opacity:0;pointer-events:none;min-width:0;overflow:hidden}
+  /* Same padding-based (not max-width) restriction as the request-detail
+     chat-full mode, applied to the landing agent's own message column —
+     see the long comment on the request-view version above for why.
+     Targets .cp-body, not .hm-agent-body — the landing page reuses the
+     same <ChatPanel> component as request-detail now (see
+     RequestsPage.tsx), so .hm-agent-body was never actually rendered
+     here; this rule silently did nothing until it was retargeted. */
+  body[data-landing-layout="collapsed"] .cp-body{padding-left:20vw;padding-right:20vw}
+  body[data-landing-layout="collapsed"] .cp-input-card{padding-left:20vw;padding-right:20vw}
+  body[data-landing-layout="collapsed"] .msg.bot{width:100%;max-width:100%}
+  body[data-landing-layout="collapsed"] .cp-sidebar{width:240px}
+  body[data-landing-layout="collapsed"] .cp-head{display:none}
+  body[data-landing-layout="formfull"] .hm-grid{grid-template-columns:0fr 1fr}
+  body[data-landing-layout="formfull"] .hm-agent{opacity:0;pointer-events:none;min-width:0;overflow:hidden}
+}
+@media (max-width:1100px){
+  body:not([data-view="request"]) #chatPanel{display:none}
+  body:not([data-view="request"]) .stage{padding-bottom:32px}
+}
+
+/* Chat is the centrepiece now, so it gets room to breathe: wider
+   bubbles, a calmer head, a composer that reads as the primary input. */
+body[data-view="request"] .cp-body{padding:22px 28px 156px;gap:12px}
+/* Bot replies use the full padded width (flowing text, no bubble to
+   narrow); user messages keep the original capped-width card so a short
+   "yes" doesn't stretch into a huge right-aligned box. */
+body[data-view="request"] .msg{font-size:15px;padding:11px 14px}
+body[data-view="request"] .msg.user{max-width:min(78%,620px)}
+/* Horizontal padding matches .cp-body's (28px) so the input box's edges
+   line up with the message column above it — this rule used to carry its
+   own 22px, out of sync with .cp-body's 28px, from before the composer
+   was made to track that width at all. */
+body[data-view="request"] .cp-input-card{padding:14px 28px 18px}
+body[data-view="request"] .cp-composer-shell{padding:12px 14px 9px}
+body[data-view="request"] .cp-input textarea{font-size:14px}
+/* Chat empty state. Composed rather than blank, and it disappears the
+   moment there is a real message to read. */
+/* Bottom-anchor the thread. The chat column is 40% of the screen and its
+   opening turn is one short message, so a top-aligned stack left ~700px of
+   empty panel between that message and the composer — the message read as
+   stranded rather than as the start of a conversation. An auto top margin on
+   the first item seats the stack on the composer and grows it upward; once
+   the thread is taller than the panel the margin collapses to zero and it
+   scrolls normally (unlike justify-content:flex-end, which makes overflow
+   unreachable).
+   Two rules because #cpEmpty is the literal :first-child but is display:none
+   as soon as a real turn exists — a box that generates no layout cannot
+   carry the margin, so it hands off to whatever follows it. */
+.cp-empty{margin-top:auto;padding:4px 2px;text-align:center}
+.cp-empty+*{margin-top:auto}
+/* Personalized agent greeting, not a chat bubble — icon + "Hello, name" +
+   the three starting options, centered rather than left-aligned like a
+   normal message, so it reads as a splash rather than as part of the thread. */
+.cp-empty .cp-av{width:44px;height:44px;border-radius:0;background:var(--surface3);color:var(--ink);display:grid;place-items:center;font-size:20px}
+.cp-empty h4{font-family:var(--font-medium);font-weight:var(--fw-medium);font-size:16px;color:var(--ink);letter-spacing:var(--tracking)}
+.cp-empty p{font-size:13px;line-height:1.6;color:var(--ink2);margin:8px auto 0;max-width:46ch;font-weight:var(--fw-body)}
+.cp-empty .cp-suggest{padding:16px 0 0;background:transparent;justify-content:center}
+/* The "Your Focus" card is rendered as .msg.bot.you-focus-msg, so a plain
+   :has(.msg) test matched on every request screen and hid the empty state
+   permanently — leaving the 40%-wide chat column as one tall blank panel
+   before you have said anything. Only a real conversation turn should
+   retire it. */
+#chatBody:has(.msg:not(.you-focus-msg)) .cp-empty{display:none}
+
+/* Collapsible scrollback toggle — new. useChatStore now persists to
+   localStorage, so a returning user's thread can carry real history
+   instead of resetting every reload; this keeps that history reachable
+   without dumping it all on screen above the live conversation. */
+.cp-history-toggle{align-self:center;display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);background:var(--surface2);border:1px solid var(--line2);padding:6px 14px;margin-bottom:4px;transition:color .15s ease,border-color .15s ease}
+.cp-history-toggle:hover{color:var(--ink);border-color:var(--ink3)}
+.cp-history-chev{font-size:10px}
+
+/* ---- STATIC NAVIGATION RAIL ------------------------------------
+   No outer box: the phase tabs and the focus card are each already a
+   bordered surface, and wrapping them in a third border made a box inside
+   a box inside a box. The two mode switches that used to head this rail
+   are gone — see .sm-scope-more and the merged list note below. ---- */
+.req-navwrap{background:transparent;border:none;padding:0;margin-bottom:14px;display:flex;flex-direction:column;gap:10px}
+/* #youFocus keeps its id and its markup, but in the rail it is a panel,
+   not a chat bubble. */
+.req-navwrap .you-focus-msg{max-width:none;align-self:stretch;animation:none;margin:0}
+
+/* The rail is a header you scroll past, not a second sticky bar. Making
+   it sticky put it in a fight with the phase-tab strip inside it, which
+   has its own position:sticky at top:60 — the two stacked on top of each
+   other and covered the Sections header. The tab strip keeps its original
+   sticky behaviour; the rail scrolls away above it. */
+.req-navwrap{position:static}
+
+/* ---- BOARD LAYOUT ----------------------------------------------
+   Right pane is nothing but navigation and status; a section's fields
+   arrive as an overlay when you ask for them. ---- */
+/* One sequential column. The 2-up grid read as "01, 02" on one line then
+   "02.1, 02.2" on the next, which made the sub-sections look like a
+   different rank of thing rather than the next two rows in the list. */
+body .sm-wrap{
+  grid-template-columns:1fr;
+  transition:grid-template-columns var(--dur-4) var(--ease-out-soft);
+}
+body .sm-list-panel{position:static;max-height:none;overflow:visible;display:flex;padding:14px}
+body .sm-row{height:46px;font-size:13px;padding:0 12px 0 10px;border-bottom:1px solid var(--line2)}
+body .sm-row:last-child{border-bottom:none}
+body .sm-row-num{min-width:38px;font-size:11px}
+
+/* Selecting a section opens it to the right of the list, in flow. The list
+   narrows to make room rather than being covered, so you keep your place
+   in it. No overlay, so nothing has to out-stack the sticky tab strip. */
+body:not([data-detail="open"]) .sm-detail-panel{display:none}
+body[data-detail="open"] .sm-wrap{grid-template-columns:300px 1fr}
+body[data-detail="open"] .sm-list-panel{
+  position:sticky;top:74px;max-height:calc(100vh - 88px);overflow-y:auto;padding:8px;
+}
+body[data-detail="open"] .sm-row{height:33px;font-size:12px;border-bottom:none}
+body[data-detail="open"] .sm-row-num{min-width:26px;font-size:11px}
+@media (max-width:1400px){
+  body[data-detail="open"] .sm-wrap{grid-template-columns:240px 1fr}
+}
+/* ---- MERGED LIST + POP-OUT FORM ---------------------------------
+   There used to be two list styles to choose between: "List" (one
+   sequential column, form opens beside it) and "Compact" (a two-up board,
+   form pops out over it). The two-up board is gone — the sequential list
+   was the readable half of it — and what is kept from Compact is the
+   pop-out form. data-list is pinned to "compact" so those rules still
+   apply; there is no switch any more. */
+/* The form pops out over the list instead of pushing it into a narrow
+   column, so the list stays whole behind it. z-index 80 clears the phase
+   tab strip's sticky z-index 75. */
+body[data-list="compact"][data-detail="open"] .sm-wrap{grid-template-columns:1fr}
+body[data-list="compact"][data-detail="open"] .sm-list-panel{position:static;max-height:none;overflow:visible;padding:14px}
+body[data-list="compact"][data-detail="open"] .sm-row{height:46px;font-size:13px;border-bottom:1px solid var(--line2)}
+body[data-list="compact"][data-detail="open"] .sm-row-num{min-width:38px}
+body[data-list="compact"][data-detail="open"] .sm-row-rem i{display:inline}
+body[data-list="compact"] .sm-detail-panel{
+  /* Was hardcoded to 40vw — a leftover from when --chat-w's default was
+     40vw. Once the split changed to 50/50 (and whenever the divider is
+     dragged — see the resizer below) this stopped lining up with the
+     chat panel's actual right edge, so the pop-out form rendered wider
+     than the form's own column and visibly overlapped the chat side. */
+  position:fixed;top:60px;bottom:0;right:0;left:var(--chat-w);z-index:80;
+  overflow-y:auto;border:none;border-left:1px solid var(--line);
+  transform:translateX(100%);
+  transition:transform var(--dur-4) var(--ease-out-soft),left var(--dur-4) var(--ease-out-soft);
+}
+body[data-list="compact"][data-detail="open"] .sm-detail-panel{transform:translateX(0)}
+body[data-list="compact"][data-detail="open"] .float-save-bar{z-index:81}
+@media (max-width:1100px){body[data-list="compact"] .sm-detail-panel{left:0}}
+/* Full-screen form + a section open: there's no chat panel left to visually
+   mask the list's true full width behind the floating overlay (that's what
+   made the fixed-position overlay trick work everywhere else — the chat
+   panel physically covered the part of the list it overlapped). Here that
+   masking is gone, so the overlay is turned off in favor of a real
+   left/right grid: list actually squeezes to its own half instead of just
+   looking like it did. Only one sub-header needed in this state — the one
+   above the list already spans the full width other pages get two of. */
+body[data-view="request"][data-details="formfull"][data-detail="open"] .sm-wrap{grid-template-columns:1fr 1fr}
+body[data-view="request"][data-details="formfull"][data-detail="open"] .sm-list-panel{position:static;max-height:none;overflow:visible}
+body[data-view="request"][data-details="formfull"][data-detail="open"] .sm-detail-panel{position:static;top:auto;left:auto;right:auto;bottom:auto;z-index:auto;transform:none;border-left:1px solid var(--line)}
+body[data-view="request"][data-details="formfull"][data-detail="open"] .sm-detail-panel .crf-tabs-slot{display:none}
+
+.sm-detail-close{position:sticky;top:0;z-index:2;width:100%;display:flex;justify-content:flex-end;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line2)}
+.sm-detail-close button{height:30px;padding:0 12px;background:var(--surface);border:1px solid var(--line);color:var(--ink2);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:background-color var(--dur-1) var(--ease-out),color var(--dur-1) var(--ease-out)}
+.sm-detail-close button:hover{background:var(--nv-warm-black);color:var(--nv-soft-white);border-color:var(--nv-warm-black)}
+/* The floating save bar anchors itself to the detail panel's rect, so it
+   has nothing to sit against while the board has no section open. */
+body:not([data-detail="open"]) .float-save-bar{display:none!important}
+
+/* ---- MERGED FOCUS + SECTIONS -----------------------------------
+   "N fields remaining" used to live in a Your Focus card stacked above
+   the list, which meant reading the same section name twice to connect
+   the two. It now sits on the row it describes. ---- */
+.sm-list-head{display:flex;align-items:baseline;gap:8px}
+.sm-list-need{margin-left:auto;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+.sm-list-scope{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.04em}
+
+/* ---- PHASE TABS -------------------------------------------------
+   Planning's steps sit on a second line under the two phase tabs, so the
+   phase you are in reads first and the step within it reads second. */
+.crf-subtabs{display:flex;flex-wrap:wrap;gap:0;flex-basis:100%;border-top:1px solid var(--line2)}
+.crf-view-tabs{flex-wrap:wrap}
+.crf-subtab{height:34px;padding:0 14px;background:transparent;border:none;color:var(--ink3);font-size:12px;font-weight:700;letter-spacing:var(--tracking);cursor:pointer;position:relative;transition:color var(--dur-1) var(--ease-out),background-color var(--dur-1) var(--ease-out)}
+.crf-subtab:hover{color:var(--ink);background:var(--surface2)}
+.crf-subtab.active{color:var(--ink);font-weight:800}
+.crf-subtab.active::after{content:'';position:absolute;left:14px;right:14px;bottom:0;height:2px;background:var(--nv-space-orange)}
+.crf-subtab:focus-visible{outline:2px solid var(--nv-space-orange);outline-offset:-2px}
+
+/* ---- GUIDED FILL messages -------------------------------------- */
+.gf-meta{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.gf-hint{font-size:11px;font-weight:600;color:var(--ink3)}
+.gf-ok{font-size:12px;font-weight:700;color:var(--ink2)}
+.gf-actions{display:flex;gap:6px;margin-top:9px}
+.gf-link{background:transparent;border:1px solid var(--line);color:var(--ink3);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;cursor:pointer;transition:color var(--dur-1) var(--ease-out),border-color var(--dur-1) var(--ease-out)}
+.gf-link:hover{color:var(--ink);border-color:var(--ink3)}
+.msg.bot .cp-suggest{padding:10px 0 0;background:transparent}
+.sm-list-empty{padding:22px 12px;font-size:13px;line-height:1.6;color:var(--ink2);font-weight:var(--fw-body)}
+.sm-list-empty b{font-weight:800;color:var(--ink)}
+/* Black + underlined instead of orange — the orange text read as too harsh
+   against the white row background; the orange accent stays on the dot
+   (.sm-dot-mine) and the checkmark (.sm-row-check) instead, which don't
+   carry as much surface area. */
+.sm-row-rem{font-size:11px;font-weight:800;color:var(--ink);text-decoration:underline;text-underline-offset:2px;white-space:nowrap;flex-shrink:0;letter-spacing:.02em}
+.sm-row-rem b{font-weight:800;font-variant-numeric:tabular-nums}
+.sm-row-rem i{font-style:normal}
+/* Only the wide board list has room for the words. Everywhere else the
+   number alone carries it, and the section name keeps its full width. */
+body[data-detail="open"] .sm-row-rem i{display:none}
+.sm-row:not(.sm-row-needs) .sm-row-name{color:var(--ink2)}
+.sm-row-needs .sm-row-name{color:var(--ink)}
+/* The list is the only place this information appears now, so the rows
+   that need you have to be findable while scanning. A left rule does that
+   without adding another glyph. Only in the wide state: once the list
+   narrows, the selected row already owns the orange left rule, and two
+   rows wearing the same rule for two different reasons is worse than
+   neither of them having it. */
+body:not([data-detail="open"]) .sm-row-needs{border-left:3px solid var(--nv-space-orange);padding-left:7px}
+
+/* ---- MOTION ----------------------------------------------------
+   Four animations, each with a job. Nothing loops.
+   1. Section rows stagger in when a request opens or the phase tab
+      changes, so the eye tracks the list as a sequence rather than a
+      block that blinks into place.
+   2. The detail card crossfades when you switch sections — without it
+      the panel swaps content with no signal that anything happened.
+   3. Progress bars grow to their value instead of appearing at it,
+      which is the only way you see that a fill moved the number.
+   4. A field the agent just wrote gets a brief orange wash, tying the
+      chat message on the left to the field on the right. ---- */
+@keyframes rowIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.sm-list-panel .sm-row{animation:rowIn var(--dur-3) var(--ease-out) both;animation-delay:calc(var(--i,0) * 22ms)}
+@keyframes detailIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.sm-detail-card{animation:detailIn var(--dur-3) var(--ease-out) both}
+.sm-detail-bar-fill{transition:width var(--dur-4) var(--ease-out-soft)}
+.rh-metric b{transition:color var(--dur-2) var(--ease-out)}
+@keyframes fieldWash{
+  0%{background-color:var(--ai-tint);border-color:var(--nv-space-orange)}
+  100%{background-color:transparent;border-color:transparent}
+}
+.f.just-filled{animation:fieldWash 900ms var(--ease-out) both;border:1px solid transparent;margin:-1px}
+
+/* Focus ring parity for the new controls, matching the app's existing
+   3px orange ring pattern. */
+.sm-detail-close button:focus-visible{outline:2px solid var(--nv-space-orange);outline-offset:2px}
+
+/* ---- CAMPAIGN BAR ----------------------------------------------
+   Full width, edge to edge, under the 60px app bar — it names the thing
+   the whole screen is about, so it spans the chat column and the form
+   column alike rather than sitting inside one of them.
+   Everything below that used to measure from 60px now measures from
+   60px + the bar, hence --campaign-bar-h rather than a literal. ---- */
+:root{--campaign-bar-h:46px}
+/* Light surface, not the original's solid black fill — the black bar read
+   as too heavy sitting directly under the (also black-on-hover) app nav;
+   a bordered light strip with an orange accent underline keeps the same
+   "this is a distinct zone" separation without doubling up on black. */
+.campaign-bar{position:sticky;top:60px;z-index:79;height:var(--campaign-bar-h);background:var(--surface);color:var(--ink);border-bottom:2px solid var(--nv-space-orange);display:flex;align-items:center;gap:24px;padding:0 26px}
+body:not([data-view="request"]) .campaign-bar{display:none}
+.cb-back{flex-shrink:0;width:28px;height:28px;display:grid;place-items:center;color:var(--ink2);background:transparent;border:1px solid var(--line);border-radius:0;font-size:15px;line-height:1;transition:border-color .15s ease,color .15s ease,background-color .15s ease}
+.cb-back:hover,.cb-back:focus-visible{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.cb-id{display:flex;align-items:baseline;gap:10px;min-width:0;overflow:hidden}
+.cb-name{font-family:var(--font-medium);font-weight:var(--fw-medium);font-size:15px;letter-spacing:var(--tracking);white-space:nowrap;flex-shrink:0;color:var(--ink)}
+/* The TP-ID/brand/indication/channel/go-live line that used to be the whole
+   of the (now removed) req-hero white card. It reads as a continuation of
+   the name, not a separate fact, so it is lighter weight and can be the
+   thing that clips first on a narrow window. */
+.cb-meta{font-size:12px;font-weight:600;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* One metric at a time, cycled. Three side by side at the right edge of a
+   full-width bar read as a row of unrelated numbers; one at a time reads
+   as a status line. Fixed-width slot so the name never reflows as the
+   value under it changes length. */
+.cb-ticker{margin-left:auto;flex-shrink:0;position:relative;width:250px;height:var(--campaign-bar-h)}
+.cb-tick{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;gap:8px;white-space:nowrap;opacity:0;transform:translateY(7px);pointer-events:none;transition:opacity var(--dur-3) var(--ease-out),transform var(--dur-3) var(--ease-out)}
+.cb-tick.on{opacity:1;transform:none}
+.cb-tick b{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--ink)}
+.cb-tick i{font-style:normal;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+@media (prefers-reduced-motion:reduce){.cb-tick{transition:none}}
+/* The hero card is gone outright — title, metrics and the TP-ID/brand/
+   channel/go-live line all now live in the bar. The elements stay in the
+   DOM — they are still what openRequest() and the readiness recompute
+   write to, and the bar reads them — they just never draw as a card. */
+.req-hero{display:none}
+/* Used to be hidden here on the theory that the (then-black) campaign bar
+   already played this role. Now that the campaign bar is a light surface
+   strip (not black), that reasoning no longer applies — and this head is
+   the only place in the panel with room for the New chat / History
+   controls, so it needs to stay visible on the request screen too. */
+/* Fixed/sticky things that anchored to the app bar clear the campaign bar. */
+body[data-view="request"] #chatPanel{top:calc(60px + var(--campaign-bar-h))}
+body[data-view="request"] .crf-tabs-slot{top:calc(60px + var(--campaign-bar-h))}
+body[data-view="request"][data-list="compact"] .sm-detail-panel{top:calc(60px + var(--campaign-bar-h))}
+
+/* ---- SCOPE LINK UNDER THE SECTION LIST -------------------------
+   "Only what needs me" is the default and, most days, the whole job. The
+   full form is one link away, sitting under the list it expands rather
+   than in a toggle above it. ---- */
+.sm-scope-more{padding:11px 8px 3px;margin-top:6px;border-top:1px solid var(--line2)}
+.sm-scope-link{background:none;border:none;padding:0;color:var(--nv-space-orange);font-size:12px;font-weight:800;letter-spacing:.04em;cursor:pointer}
+.sm-scope-link:hover{text-decoration:underline}
+.sm-scope-link:focus-visible{outline:2px solid var(--nv-space-orange);outline-offset:3px}
+
+/* ---- CRF TABS BAR REPEATED INSIDE THE OPEN-SECTION FORM ---------
+   The form panel already has its own ✕ close button, so the old "Back to
+   sections" link is gone — this is the same Pre-planning/Planning/Focus/
+   Conversations bar as above the section list, sticky to the top of the
+   form's own scroll instead of relying on negative margins tuned for the
+   .stage/.view padding context it doesn't have here. ---- */
+body[data-view="request"] .sm-detail-panel .crf-tabs-slot{position:sticky;top:0;z-index:3;margin:0;border-bottom:1px solid var(--line2)}

@@ -19,6 +19,51 @@ export interface FormField {
   order: number;
 }
 
+export interface Form {
+  id: string;
+  name: string;
+  description?: string | null;
+  active: boolean;
+  order: number;
+}
+
+export interface NudgeRule {
+  id: string;
+  trigger: string;
+  triggerSectionId?: string | null;
+  triggerPhase?: string | null;
+  triggerFieldDrives?: string | null;
+  triggerValue?: string | null;
+  triggerSectionIds?: string | null;
+  triggerFieldKey?: string | null;
+  conditionsJson?: string | null;
+  message: string;
+  nudgeMessage?: string | null;
+  nudgeToOwner?: string | null;
+  active: boolean;
+  order: number;
+}
+
+export interface TacticFieldTemplate {
+  id: string;
+  tacticType: string;
+  fieldKey: string;
+  phase: 'preplan' | 'plan' | 'exec';
+  label: string;
+  type: string;
+  owner: string;
+  bucket?: string | null;
+  source?: string | null;
+  opts?: string[];
+  cond?: Record<string, unknown>;
+  drives?: string | null;
+  cascadeFromField?: string | null;
+  locked: boolean;
+  lockedValue?: string | null;
+  wide: boolean;
+  order: number;
+}
+
 export interface FormSection {
   id: string;
   num: string;

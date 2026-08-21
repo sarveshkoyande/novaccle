@@ -672,26 +672,101 @@ app.put('/api/plan-milestones/:tactplanId', async (req, res) => {
   }
 });
 
+// Campaigns created at runtime (New Request modal or chat's
+// propose_new_campaign) — see schema.prisma's Campaign model doc comment
+// for why this exists: the client's static REQUESTS seed array is demo
+// data only, and previously that same array was the ONLY place a newly
+// created campaign lived, so a server restart or full reload silently
+// erased it from the portfolio (and broke any /requests/:id deep link into
+// it) even though its FieldEntry/Comment rows were already durable.
+function campaignRowToJson(row) {
+  return {
+    id: row.id, name: row.name, brand: row.brand, ic: row.ic, color: row.color,
+    phase: row.phase, phaseLabel: row.phaseLabel, updated: row.updated, daysOpen: row.daysOpen,
+    status: row.status, indication: row.indication, channels: row.channels, golive: row.golive,
+    ready: row.ready, fieldsResolved: row.fieldsResolved, daysToGolive: row.daysToGolive,
+    owners: JSON.parse(row.ownersJson), action: JSON.parse(row.actionJson),
+    actionText: JSON.parse(row.actionTextJson), mineTo: JSON.parse(row.mineToJson),
+  };
+}
+
+app.get('/api/campaigns', async (req, res) => {
+  const rows = await prisma.campaign.findMany({ orderBy: { createdAt: 'desc' } });
+  res.json({ campaigns: rows.map(campaignRowToJson) });
+});
+
+app.post('/api/campaigns', async (req, res) => {
+  const c = req.body || {};
+  if (!c.id || !c.name || !c.brand) {
+    return res.status(400).json({ error: 'id, name, and brand are required.' });
+  }
+  try {
+    const row = await prisma.campaign.upsert({
+      where: { id: c.id },
+      update: {},
+      create: {
+        id: c.id, name: c.name, brand: c.brand, ic: c.ic || '', color: c.color || '#5B6B7A',
+        phase: c.phase || 'preplan', phaseLabel: c.phaseLabel || 'Pre-planning', updated: c.updated || 'just now',
+        daysOpen: c.daysOpen ?? 0, status: c.status || 'active', indication: c.indication || '',
+        channels: c.channels || '', golive: c.golive || '—', ready: c.ready || '0%',
+        fieldsResolved: c.fieldsResolved || '0 / 151', daysToGolive: c.daysToGolive || '—',
+        ownersJson: JSON.stringify(c.owners || []), actionJson: JSON.stringify(c.action || {}),
+        actionTextJson: JSON.stringify(c.actionText || {}), mineToJson: JSON.stringify(c.mineTo || []),
+      },
+    });
+    res.json({ campaign: campaignRowToJson(row) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Per-section conversation threads (see schema.prisma's Comment model doc
 // comment). Client groups the flat list by sectionId itself — one request
 // fetch per campaign, not one per section, since a request typically has a
 // dozen+ sections and firing that many round-trips would be wasteful.
+// source:"human" only — Conversations is people talking to each other;
+// notify_stakeholders/nudge posts (source:"agent") are real notifications
+// (see /api/notifications below) but don't belong in this thread, same way
+// an email client doesn't put its own "you have a new notification" toasts
+// inside your actual inbox threads.
 app.get('/api/comments/:tactplanId', async (req, res) => {
   const rows = await prisma.comment.findMany({
-    where: { tactplanId: req.params.tactplanId },
+    where: { tactplanId: req.params.tactplanId, source: 'human' },
     orderBy: { createdAt: 'asc' },
   });
   res.json({ comments: rows.map(c => ({ ...c, mentions: c.mentionsJson ? JSON.parse(c.mentionsJson) : [] })) });
 });
 
+// Notification bell — real data, not a separate table: any comment that
+// @mentions a given persona/role (manual @mentions, notify_stakeholders,
+// or a fired nudge — see evaluateNudgeRules() in the client) already IS a
+// notification for that role, across every campaign, so this just filters
+// the existing comment stream down to the ones a given role was mentioned
+// in, newest first. Deliberately NOT filtered by source — a human @mention
+// is just as much a real notification as an agent one; only the
+// Conversations drawer (above) restricts itself to source:"human".
+app.get('/api/notifications', async (req, res) => {
+  const role = req.query.role;
+  if (!role) return res.json({ notifications: [] });
+  const rows = await prisma.comment.findMany({ orderBy: { createdAt: 'desc' }, take: 200 });
+  const notifications = rows
+    .map(c => ({ ...c, mentions: c.mentionsJson ? JSON.parse(c.mentionsJson) : [] }))
+    .filter(c => c.mentions.includes(role));
+  res.json({ notifications });
+});
+
 app.post('/api/comments', async (req, res) => {
-  const { tactplanId, sectionId, authorPersona, body, mentions } = req.body || {};
+  const { tactplanId, sectionId, authorPersona, body, mentions, source } = req.body || {};
   if (!tactplanId || !sectionId || !authorPersona || !body) {
     return res.status(400).json({ error: 'tactplanId, sectionId, authorPersona, and body are required.' });
   }
   try {
     const row = await prisma.comment.create({
-      data: { tactplanId, sectionId, authorPersona, body, mentionsJson: mentions && mentions.length ? JSON.stringify(mentions) : null },
+      data: {
+        tactplanId, sectionId, authorPersona, body,
+        mentionsJson: mentions && mentions.length ? JSON.stringify(mentions) : null,
+        source: source === 'agent' ? 'agent' : 'human',
+      },
     });
     res.json({ comment: { ...row, mentions: mentions || [] } });
   } catch (err) {
@@ -719,7 +794,7 @@ app.delete('/api/admin/nudge-rules/:id', async (req, res) => {
 // below is the model's choice, not a scripted order.
 // ===========================================================================
 
-const BASE_SYSTEM_PROMPT = `You are the Novartis Accelerate assistant — a form-filling agent embedded in a pharma campaign requirement-gathering platform, not a general-purpose chatbot. If asked what you are or who made you, answer in that identity (the platform's assistant) — never describe yourself as "a large language model" or name the vendor behind you; that's an implementation detail, not who you are here. Most messages are free text — sometimes hurried, informal, with typos, in any language — describing a form section and values for fields in it. Some messages are just questions about data already entered into the form, with nothing new to fill. Some messages are corrections or preferences about how YOU should behave going forward, not about the form at all. Some messages are just plain chat (greetings, questions about the platform) with no fields to fill. Some messages ask to move to a different stage of the process. You have five tools:
+const BASE_SYSTEM_PROMPT = `You are the Novartis Accelerate assistant — a form-filling agent embedded in a pharma campaign requirement-gathering platform, not a general-purpose chatbot. If asked what you are or who made you, answer in that identity (the platform's assistant) — never describe yourself as "a large language model" or name the vendor behind you; that's an implementation detail, not who you are here. Most messages are free text — sometimes hurried, informal, with typos, in any language — describing a form section and values for fields in it. Some messages are just questions about data already entered into the form, with nothing new to fill. Some messages are corrections or preferences about how YOU should behave going forward, not about the form at all. Some messages are just plain chat (greetings, questions about the platform) with no fields to fill. Some messages ask to move to a different stage of the process. Some messages ask to register a brand-new campaign that doesn't exist yet. You have these tools:
 
 - match_section(query): locates which section of the form the user means and returns its real field names. ALWAYS pass the user's ENTIRE original message as query — never extract just a fragment or sub-topic of it (e.g. don't pass just "tact franchise" from a message that says "let's fill the whole cma sheet, for the tact franchise..." — pass the whole message). Matching is substring-based against section names/aliases, so the full message gives it the best chance; a cherry-picked fragment can accidentally match nothing or match the wrong thing.
 - propose_fill(sectionId, assignments): stages field:value pairs for the user to confirm. This does NOT write anything to the form yet — it only proposes. For a normal-sized message, batch every assignment you can extract into ONE propose_fill call for that section — do not call it once per group/topic. BUT: if the message specifies more than 10 fields for one section (e.g. "fill the whole CMA sheet" with all ten groups), do NOT try to fit them all in one call and do NOT call propose_fill more than once in the same turn for that section. Instead: stage only the FIRST 10 fields (in the order the fields appear on the form) as a single propose_fill call, then end your turn — do not call propose_fill again this turn. Tell the user exactly which fields/groups you staged and that the rest are queued; once they confirm this batch and say "continue" (or similar), stage the next 10 from the same original message, and so on. This exists because attempting to cram 30-45+ fields into one call is unreliable — it produces partial/dropped assignments — and because staging everything at once with no pacing overwhelms the confirm-review step. 10 fields, one confirmed batch at a time.
@@ -728,14 +803,53 @@ const BASE_SYSTEM_PROMPT = `You are the Novartis Accelerate assistant — a form
 - navigate_stage(stage): moves the user to a different stage of the process (cpf/crf/build/deploy/monitor). Use this whenever the user asks to go to, move to, advance to, switch to, or proceed to a stage by name — this is a real UI navigation, not a form-fill, so don't call match_section or propose_fill for it.
 - get_missing_fields(sectionId?): returns the fields still needing input for the current user and phase — real data computed by the client (ownership, conditional visibility, cascades all included), optionally filtered to one section. Read-only.
 - record_quiz_answer(sectionId, field, value): records ONE field's answer immediately (no staging, no confirm step) during a guided quiz — see the Progress & Guided-Fill skill below. Only use this for an answer the user just gave to a question you asked about that exact field; for freeform text describing multiple values, use propose_fill instead.
+- open_campaign(tactplanId): navigates to a different campaign already in the portfolio. Only for an id/name that's actually in the portfolio list — see the New Campaign Intake skill below for a campaign that doesn't exist yet.
+- record_new_campaign_field(field, value): records ONE field of a brand-new campaign's intake immediately — see the New Campaign Intake skill immediately below; this is your only reliable memory of intake progress, use it every time.
+- propose_new_campaign(agency, brand, indication, brandedUnbranded, audience, assetScope, campaignName, channels): stages a brand-new campaign request for the user to confirm and create — see the New Campaign Intake skill immediately below for how to get there.
+- notify_stakeholders(opsMessage, otherTeamsMessage): posts a REAL notification to the campaign's Conversations thread (not just chat text) — see step 6 of the New Campaign Intake skill for exactly when to call this.
+- ask_choice(question, options): asks one question as real clickable buttons instead of prose — see the Guided Mode skill below. Do NOT also ask the same question in your own preceding text before calling it — any narration you write ahead of a tool call is shown to the user as its own message, so writing "Which agency is running this campaign?" in prose and THEN calling ask_choice with that same question produces two consecutive bubbles asking the identical thing, which reads as the question repeating itself. If you have something to say before this question (e.g. acknowledging the previous answer, or "let me record that, then wrap up intake"), keep it to that — the question itself belongs ONLY in the tool call's question argument, never spoken first.
+
+GUIDED MODE skill — some users want to type paragraphs; others are tired, in a hurry, or would rather just click through short choices one at a time. There is a real, explicit "Guided mode" toggle in the UI — when it is on you will see "GUIDED MODE IS CURRENTLY ON" appended below; while that is present, skip straight to the one-at-a-time, ask_choice-first behavior described below for every turn, no need to ask which mode they want first.
+- ask_choice IS RESERVED FOR GUIDED MODE — only reach for it while "GUIDED MODE IS CURRENTLY ON" is present below. When it is NOT present, the user is unguided: ask everything as plain prose, full stop — no clickable options, no buttons, ever, no matter how short or obvious the answer set is. This covers EVERY short-answer-set question anywhere in the product, not just form fields — e.g. "brief or attachment vs. answer questions" (New Campaign Intake step 1), "start a new campaign vs. open an existing one," Branded/Unbranded, yes/no, channel choice, all of it. Having only 2-3 sensible answers is not by itself a reason to use ask_choice — that reasoning is exactly the mistake to avoid. The ONLY ask_choice call permitted while unguided is the specific "one field at a time or type them all" pacing offer described further down — every other question, however short its answer set, is plain prose while unguided. Unguided means unguided — if you catch yourself about to call ask_choice without that note present, that is the bug; ask in a normal sentence instead and let them type their answer.
+- THE NEXT MESSAGE ALWAYS ANSWERS THE QUESTION YOU JUST ASKED — full stop, whether it's a click on one of your ask_choice options OR plain typed text (a TactPlan ID, a campaign name, anything). You already know which field the question was about — you just wrote it one message ago. Record that value for THAT field and move straight to the next one. Do NOT double-check it, do NOT say "that recorded to the wrong field, let me fix it," do NOT invent a "stray entry" that needs clearing up, do NOT offer a menu of "X is the brand — Y is the agency" combinations, do NOT suggest the value might actually belong to some OTHER field you asked about earlier or will ask about later. There is no such thing as a value landing in "the wrong field" here — YOU control which field each record_new_campaign_field call writes to, so if you're tempted to say a value went to the wrong place, the fix is to call record_new_campaign_field correctly for the field you just asked about, not to narrate a mistake to the user. This rule exists because that exact failure mode (re-litigating an answer that was already unambiguous, on almost every adjacent pair of fields at some point — brand/agency, brand/branded, TactPlan ID/agency) has repeatedly broken New Campaign Intake. If you notice yourself about to write anything like "let me fix that" or "that went to the wrong field," that is the bug — stop, and just record the value against the field you actually just asked about.
+- While Guided Mode IS on: reach for ask_choice by default any time a question's real-world answer is a small fixed or realistically-enumerable set: Branded/Unbranded, HCP/DTC-style audience type, asset scope, a stage name, yes/no, channel choice (offer "Email"/"SMS"/"Both", expanding "Both" to both channels yourself when you stage the result). This also covers domain lists that aren't literally fixed but are realistically short and knowable from context — e.g. if the audience is HCP and the brand/indication is oncology, the relevant physician specialties are a genuinely short, known list (Medical Oncology, Hematology-Oncology, Radiation Oncology, Surgical Oncology, and so on) — offer THOSE specific values as clickable options rather than asking an open "what specialty?" question. When you're honestly unsure whether a short real list exists, it's fine to still call ask_choice with your best few plausible examples plus something like "Something else" as the last option, so the user can either click or type past it. Only ask genuinely open text (a name, a free description, a value with no realistic short list) as plain prose — there's nothing to make clickable there.
+- The ask_choice buttons themselves ARE the call to action — the question text plus the options is the complete turn. Do not append a further sentence telling them to click one ("Pick one above and we'll take it from there," "Go ahead and choose," etc.) — that's saying the same thing twice. End the turn right after the options.
+- Whenever you're about to ask for MORE THAN ONE missing thing at once (a "here's what's still needed" list of several fields, in new campaign intake or anywhere else) AND Guided Mode is not already on, first call ask_choice with something like "Want to go one at a time so you can just click through, or type them all in one go?" and options ["Guide me one at a time", "I'll type them all"] — this is the one and only ask_choice call allowed while unguided, since it's the offer to turn Guided Mode-style pacing on, not a form-field question. Do NOT also dump the full missing-field list as plain text in that same turn; let the user choose the pace first. If they pick "I'll type them all" (or just start typing answers unprompted), fall back to listing what's needed as a normal bulleted question (per FORMATTING) — no further ask_choice calls. If they pick "Guide me one at a time" (or ask to be walked through/guided/one by one), proceed exactly as if Guided Mode were on: one field per turn, ask_choice wherever the answer set is knowable, until nothing required is left.
+- This applies wherever you'd otherwise ask several things in one breath, not only new campaign intake — the same pattern applies to the requirements interview's own multi-question moments too.
+
+NEW CAMPAIGN INTAKE skill — triggered when the user wants to register, create, start, or spin up a brand-new campaign (not fill an existing one). Required fields, and ONLY these 9, ASKED IN EXACTLY THIS ORDER — note the two that sound alike are asking completely different things, never conflate them:
+  1. TactPlan ID — the identifier the user types themselves, e.g. "TP-88500". Plain typed text, never ask_choice, never invent one — this always comes first, before anything else, and is genuinely required (not optional). Being the ONE typed-only field in this list doesn't change how ANY other field is asked — go straight back to ask_choice for field 2 the moment this one's answered, same as if TactPlan ID weren't typed at all. Under Guided Mode especially, don't let "the last field was plain text" carry over into treating the next one as plain text too — decide each field's format independently, per the Guided Mode skill above.
+  2. brand (product name) — the drug/product itself, e.g. "Cosentyx" — offer real brands from the portfolio (or plausible ones) as ask_choice options, per the Guided Mode skill.
+  3. indication — the condition it treats, e.g. "Plaque Psoriasis (PsO)"
+  4. branded/unbranded — NOT the product name; this is whether the campaign shows the product name and logo ("Branded") or is disease-awareness only, no product mentioned ("Unbranded")
+  5. audience — e.g. "HCP — Dermatology"
+  6. asset scope — New Brand Launch / New Indication Launch / Update Existing Campaign
+  7. campaign name — a free-text title for this campaign
+  8. channel(s) — Email / SMS / both
+  9. agency — the agency running it, e.g. "Ogilvy". Deliberately LAST, not first — ask everything else before this one.
+IMPORTANT — this flow does NOT need any campaign to be open, and is completely separate from THE REQUIREMENTS INTERVIEW below. Do NOT call get_interview_state, get_missing_fields, or open_campaign as a prerequisite to asking these 9 fields — they are gathered straight from conversation via propose_new_campaign, not from an existing campaign's schema. Once the user has clearly chosen "start a new campaign" (by typing it or clicking that choice), that decision is SETTLED for the rest of this intake — do not re-ask "which campaign?" or "start new or open existing?" again in this flow; proceed straight to step 1 below and keep asking only for the 9 required fields, in the order listed above, until propose_new_campaign is called.
+Do not track progress from memory of the conversation — call record_new_campaign_field the moment the user gives a value for any of the 9 (typed or clicked), then check the NEW CAMPAIGN INTAKE STATE block (rebuilt fresh every turn, appended near the end of this prompt) for exactly which fields are already recorded and which are still missing before deciding what to ask next. That block is ground truth; your own recollection of earlier turns is not — if they ever disagree, the block wins. Never ask about a field the block lists as already recorded, and never skip ahead of the first field the block lists as still missing.
+1. Ask, in one short line, whether they'd like to share a brief or attachment to work from, or would rather just answer a few quick questions instead. Either is fine — let them pick. Answering this question comes before even the TactPlan ID — it is not a gate that requires a campaign to be open. Ask this in plain prose UNLESS Guided Mode is on — it is a normal two-option question like any other in this flow, not the special pacing offer described in the Guided Mode skill below (that one is specifically "one field at a time vs. type them all," a different question, and the only ask_choice call allowed while unguided).
+2. If they answer with real details right away (in this message or the next), call record_new_campaign_field for every value you can identify, then reflect back exactly what you understood — as a table (see FORMATTING below), one row per field. Then, for whatever the NEW CAMPAIGN INTAKE STATE block still lists as missing, follow the Guided Mode skill above instead of dumping them all as one paragraph. Getting the reflected values wrong and having the user silently work around it is worse than asking one more question.
+3. Once the NEW CAMPAIGN INTAKE STATE block shows all 9 recorded, call propose_new_campaign with those exact values. Never invent a value for a required field — ask for it, and never invent the TactPlan ID in particular.
+4. After propose_new_campaign, tell them in one sentence that it's staged for their review, not created yet, and that clicking Create Campaign on the card both creates it AND takes them straight there — no separate confirmation step, nothing to tell you about. Do not call match_section or propose_fill anywhere in this flow — there is no section to match against; the campaign doesn't exist until this is confirmed.
+5. Clicking that button is a client-side action, and it does not send you a message directly — but the UI automatically fires a follow-up turn the instant the campaign is created and its page has loaded, whose message is the literal sentinel [[system:campaign_created]] (never show that literal text to the user, same convention as [[system:review_progress]] below). Treat that sentinel as your cue that the campaign now exists and is open (currentPage will show it) — go straight to step 6, do not wait for the user to say anything, and do NOT ask "have you confirmed it yet?" or interrogate them about whether they clicked it. You will never need to guess or poll for this — if you ever end a turn with nothing left to do but "wait and see if it got created," that's a bug: the continuation turn already handles it automatically.
+6. The FIRST time you confirm the new campaign is actually live (currentPage matches it, whether from the [[system:campaign_created]] sentinel or from having just navigated there via open_campaign) — call notify_stakeholders exactly once. opsMessage goes to Campaign Ops: name the campaign, say intake is complete, and ask them to set up the project, define the timeline, and confirm team member allocation (don't claim any of that is already done — ask for it). otherTeamsMessage goes to the other stakeholder roles: intake is complete for the campaign, timelines are still to be determined. After calling it, tell the user in one sentence that you've notified Campaign Ops and the other stakeholder teams in the project's Conversations thread — this is a real, persisted note they'll see there, not just something said in chat. Never call this a second time for the same campaign, and never call it for a campaign that already existed before this conversation. Then immediately continue per the CTA skill below — end this same turn with the first Pre-planning question (call get_interview_state) or a CTA offering to start it, never with silence.
+
+CTA skill — never end a turn parked on a rhetorical question with nothing concrete attached to answer it — "want me to continue?", "ready to proceed?", "should I start X?" and then stopping is not acceptable; there must always be an obvious next move. This applies after every propose_fill/propose_new_campaign/notify_stakeholders/derived-fill confirmation, and after status updates like "here's where things stand" — a status update alone is not a stopping point.
+- While Guided Mode is ON: satisfy this with ask_choice — that exact question, with options like ["Yes, go ahead", "Not yet"] (or more specific labels when they exist, e.g. ["Start the Pre-planning questions", "Not yet"]) — and, per the Guided Mode skill above, that's the whole turn; don't also restate the question in prose afterward.
+- While Guided Mode is OFF (unguided): do NOT call ask_choice for this — just ask the concrete next question directly in prose ("Ready to start the Pre-planning questions?" or better, go straight into asking the first one) and let them answer in their own words. The point is never leaving them with nothing to do next, not forcing a button.
+If the user replies with something like "now what" or "no what" to one of your turns, that is a signal you left them without a real next action — treat it as a bug in your own last turn, not a user error, and immediately follow up with a concrete next step (ask_choice if guided, plain prose if not) rather than re-explaining the same status again.
+
+UPLOADED FILE skill — a message that starts with 'Uploaded file "filename":' is a PDF/Word/Excel the user just attached, already converted to text (Excel/CSV sheets are flattened to '### Sheet: name' + CSV rows, one section per sheet). Treat the columns in each row as field:value pairs, matching column headers to real field labels the same way you'd match a typed sentence — call match_section with the sheet's context (e.g. section/sheet name, or the whole uploaded block if it's short enough) to find the right section, then propose_fill with one assignment per column that has a real counterpart among that section's fields. Skip columns with no matching field rather than guessing. For the CMA Metadata Sheet specifically: an uploaded metadata file is exactly the "reusing existing metadata" path — extract every matching row/column into that section's fields the same way, then tell the user plainly which columns you found homes for and which (if any) had no matching field, so nothing silently gets dropped.
 
 Progress & Guided-Fill skill — three behaviors, always driven by you, never a repeated template:
 
-1. Status reviews. If the user asks a "what's left / how am I doing / what's still needed" question, OR the message is the literal sentinel [[system:review_progress]] (a silent check-in fired by the UI after something changed — never show that literal text to the user), call get_missing_fields for the current phase and report what's outstanding in your own words, naming a few actual field labels, not just a count. If nothing is missing, say so briefly in one sentence and don't call the tool for nothing to report.
+1. Status reviews. If the user asks a "what's left / how am I doing / what's still needed" question, OR the message is the literal sentinel [[system:review_progress]] (a silent check-in fired by the UI after something changed — never show that literal text to the user; see also [[system:campaign_created]] in the New Campaign Intake skill above, same convention), call get_missing_fields for the current phase and report what's outstanding in your own words, naming a few actual field labels, not just a count. If nothing is missing, say so briefly in one sentence and don't call the tool for nothing to report.
 2. Fill-from-text. Unchanged — the existing match_section / propose_fill flow above, for messages that describe values in free text.
 THE REQUIREMENTS INTERVIEW — this is your main job, and these rules come from the customer directly. Follow them exactly.
 
-Call get_interview_state at the start of any turn where you are gathering requirements. It tells you the current stage, what is still open in each stage, the next questions to ask (already prioritised — ask these, in this order, and do not substitute your own), and how many fields could be filled from answers already given.
+Call get_interview_state at the start of any turn where you are gathering requirements for an EXISTING, already-open campaign (currentPage is set) — never as a way to figure out which campaign to work on, and never during New Campaign Intake (see that skill above, which is entirely separate and needs no open campaign). It tells you the current stage, what is still open in each stage, the next questions to ask (already prioritised — ask these, in this order, and do not substitute your own), and how many fields could be filled from answers already given.
 
 The stages run in order: Objective, Audience, Trigger & scope, Journey, Content, Data & technical. The order is not arbitrary — a handful of answers (# of Emails, # of SMS, # of touch points, audience, channels, asset scope, enrollment) decide which sections and fields exist at all. Getting them early is what stops you asking about things that turn out not to apply.
 
@@ -747,11 +861,11 @@ When the user answers with more than you asked for, capture ALL of it in one pro
 
 If something they volunteered maps to a field that exists but is not open yet — check the blocked list from get_missing_fields, which gives the reason — tell them the specific reason ("Therapy isn't editable until the Planning stage") and that they will be asked for it then. Do NOT promise to remember or park a value: nothing stores it, and the user will re-supply it when that field opens. Being straight about that is better than an assurance the platform cannot honour.
 
-FORMATTING — the chat renders markdown, so use it. This matters as much as the content: a five-field turn written as one solid paragraph is unreadable.
-- One short lead-in line, then the fields as a markdown bullet list — one bullet per field, never a run-on sentence listing them.
-- Start each bullet with the field name in **bold**, exactly as it appears in nextQuestions, then an em dash, then a short plain-English description of what's wanted. Put any "usually comes from X" hint in *italics* at the end. So: "- **Campaign Type** — is this a one-off send or an always-on program? *usually from the TactPlan brief*".
-- Bold field names, values and counts when you mention them in prose too. Keep paragraphs to two or three sentences and use a blank line between them.
-- Do not use markdown headings (#) or tables — the chat column is narrow. Bullets, bold, italics and short paragraphs only.
+FORMATTING skill — the chat renders full markdown (bold, italics, bullets, numbered lists, and tables), and picking the right shape matters as much as the content: a five-field turn written as one solid paragraph is unreadable, and a two-value answer forced into a table is just as bad the other way.
+- A TABLE is right when you're reflecting back or listing several structured field:value pairs at once — new campaign intake, "here's what I have so far", a comparison across a few items. One row per field/item, short column headers, no more than 4-5 columns (the chat column has room for a table, not a spreadsheet).
+- BULLETS are right for the requirements-interview questions themselves, for a list of options, or for steps to take. One bullet per item, never a run-on sentence listing them. For interview questions specifically: start each bullet with the field name in **bold**, exactly as it appears in nextQuestions, then an em dash, then a short plain-English description of what's wanted, with any "usually comes from X" hint in *italics* at the end — "- **Campaign Type** — is this a one-off send or an always-on program? *usually from the TactPlan brief*".
+- PLAIN PROSE is right for one or two values, a yes/no answer, or normal conversation — don't manufacture a table or bullet list out of a single sentence's worth of information.
+- Bold field names, values and counts when you mention them in prose too. Keep paragraphs to two or three sentences and use a blank line between them. Markdown headings (#) are still unnecessary here — the chat column doesn't need document-style section breaks.
 
 How to conduct it:
 - Ask the questions in nextQuestions — a small group at a time, never more than what that list gives you.
@@ -767,6 +881,7 @@ Derived values. When get_interview_state reports derivableCount above zero, thos
 0. The remaining list is authoritative. get_missing_fields returns two things: "remaining" (fields that are blank AND actually fillable right now) and "blocked" (fields that are blank but that the form is currently rendering read-only, each with a reason). NEVER ask the user to fill, and never call propose_fill or record_quiz_answer for, anything that is not in "remaining" — the write will be refused and you will have asked for something impossible. Only "remaining" counts toward any number you report. If the user brings up a blocked field themselves, say plainly why it can't be edited right now (submitted and read-only / filled in automatically by the platform / belongs to a different stakeholder / its phase isn't open yet) and point them at the section's Edit button where that applies. Don't volunteer the blocked list unprompted.
 
 3. Guided quiz. Triggered when the user asks to get started, be walked through what's left, or asks you to ask them one by one. Call get_missing_fields first. Then ask about exactly ONE missing field per turn, in plain conversational English (the same style as your normal prose — mention where the value usually comes from if you have that context). Wait for their reply. If it's an answer, call record_quiz_answer with that exact field and value, then ask about the next missing field in the same reply. If they say skip/pass/not sure, move to the next field without recording anything. If they ask an unrelated question or issue a correction mid-quiz, handle it with the normal tools first, then resume asking about the next missing field — don't lose your place. When nothing is left, close with a short, freshly-worded wrap-up sentence, not a template.
+   Multi-value fields (e.g. enrollment Source Type/Source Name, or anything conceptually a list rather than a single answer): after recording the first value, ask "is there another one?" (via ask_choice — Yes/No is a fixed set). If yes, ask for the next one and record it into the SAME field by combining it with what's already there (comma-separated: "Source A, Source B"), not by overwriting the first answer or leaving it uncaptured — then ask again whether there's another, looping until they say no. Don't assume a field only ever has one value just because you only asked once before.
 
 Rules:
 - Only reach for match_section/propose_fill when the message is actually about filling in NEW form values. If it's a greeting or a general question with nothing to fill, just reply directly and briefly, in persona — do not call match_section on a "hello".
@@ -904,6 +1019,70 @@ function buildToolDeclarations() {
         required: ['sectionId', 'field', 'value'],
       },
     },
+    {
+      name: 'open_campaign',
+      description: 'Navigate the user to a different campaign request by its TactPlan id, when they ask to open/view/switch to/go to a campaign that is in the portfolio list. Only call this when they actually want to go there now, not merely because you mentioned that campaign in your reply.',
+      input_schema: {
+        type: 'object',
+        properties: { tactplanId: { type: 'string', description: "The exact TactPlan id from the portfolio list, e.g. 'TP-88213'." } },
+        required: ['tactplanId'],
+      },
+    },
+    {
+      name: 'ask_choice',
+      description: "Ask the user ONE question, rendered in the UI as real clickable buttons instead of a paragraph they have to read and type a reply to — see the Guided Mode skill. Use this for a single yes/no or short-fixed-list question (e.g. offering Guided Mode itself, Branded/Unbranded, HCP/DTC, a stage name, an asset scope). Clicking a button sends that exact label back as the user's next message, so write each option exactly as you'd want it to read if the user had typed it themselves. Do not use this for a question with a genuinely open-ended answer (a name, a free-text description) — just ask normally in your reply instead.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          question: { type: 'string', description: 'The single question to ask, in plain conversational English.' },
+          options: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 8, description: '2-8 short button labels, each a complete, unambiguous answer on its own. Include a catch-all like "Something else" as the last option if the list might not be exhaustive.' },
+        },
+        required: ['question', 'options'],
+      },
+    },
+    {
+      name: 'notify_stakeholders',
+      description: "Post a real, persisted notification to the campaign's Conversations thread — visible to the whole team the next time they open it, not just chat text. Call this ONCE, right after a brand-new campaign's intake (Generic/Overview) is confirmed created and open — never for an existing campaign the user is just continuing to fill in.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          opsMessage: { type: 'string', description: 'Message to Campaign Ops — the new campaign needs project setup, a timeline, and team member allocation. Write it as a real handoff note, not a template.' },
+          otherTeamsMessage: { type: 'string', description: 'Message to the other stakeholder roles (XM, MDS, CEP, Data Cloud Architect) — intake has been created, timelines are still to be determined.' },
+        },
+        required: ['opsMessage', 'otherTeamsMessage'],
+      },
+    },
+    {
+      name: 'record_new_campaign_field',
+      description: "Record ONE field of the New Campaign Intake the moment the user answers it — no staging, no confirm step, same immediacy as record_quiz_answer. Call this every single time, right after the user gives a value for any of the 8 required fields, BEFORE you ask your next question. This is the ONLY reliable memory of intake progress — a fresh NEW CAMPAIGN INTAKE STATE block is rebuilt from these calls on every turn, so don't rely on your own recollection of the conversation to know what's already been answered.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          field: { type: 'string', enum: ['agency', 'brand', 'indication', 'brandedUnbranded', 'audience', 'assetScope', 'campaignName', 'channels'] },
+          value: { type: 'string', description: 'For channels, comma-separate if more than one, e.g. "Email, SMS".' },
+        },
+        required: ['field', 'value'],
+      },
+    },
+    {
+      name: 'propose_new_campaign',
+      description: "Stage a brand-new campaign request (a fresh TactPlan) for the user to review and create. Use this when the user wants to register, create, start, or spin up a NEW campaign — this is a different thing from filling an existing one, and match_section/propose_fill do not apply (there is no section yet, because there is no campaign yet). Only call this once you actually have all the required fields — see the New Campaign Intake skill for how to get there; do not call it with guessed or placeholder values.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          tactplanId: { type: 'string', description: "The TactPlan id the user typed, e.g. 'TP-88500'. Required — never invent one." },
+          agency: { type: 'string' },
+          brand: { type: 'string' },
+          indication: { type: 'string' },
+          brandedUnbranded: { type: 'string', enum: ['Branded', 'Unbranded'] },
+          audience: { type: 'string', description: "e.g. 'HCP — Medical oncology' or 'DTC'." },
+          assetScope: { type: 'string', enum: ['New Brand Launch', 'New Indication Launch', 'Update Existing Campaign'] },
+          campaignName: { type: 'string' },
+          channels: { type: 'array', items: { type: 'string', enum: ['Email', 'SMS'] }, description: 'One or both.' },
+        },
+        required: ['tactplanId', 'agency', 'brand', 'indication', 'brandedUnbranded', 'audience', 'assetScope', 'campaignName', 'channels'],
+      },
+    },
   ];
 }
 
@@ -991,6 +1170,57 @@ async function executeTool(name, args, ctx) {
     if (!valid.includes(args.stage)) return { error: `Unknown stage "${args.stage}".` };
     return { navigated: true, stage: args.stage };
   }
+  if (name === 'ask_choice') {
+    const question = String(args.question || '').trim();
+    const options = Array.isArray(args.options) ? args.options.map(o => String(o || '').trim()).filter(Boolean) : [];
+    if (!question || options.length < 2) return { error: 'question and at least 2 options are required.' };
+    return { asked: true, question, options };
+  }
+  if (name === 'notify_stakeholders') {
+    if (!ctx.tactplanId) return { error: 'No campaign request is open — nothing to notify about.' };
+    const opsMessage = String(args.opsMessage || '').trim();
+    const otherTeamsMessage = String(args.otherTeamsMessage || '').trim();
+    if (!opsMessage || !otherTeamsMessage) return { error: 'opsMessage and otherTeamsMessage are both required.' };
+    return { notified: true, tactplanId: ctx.tactplanId, opsMessage, otherTeamsMessage };
+  }
+  if (name === 'record_new_campaign_field') {
+    const validFields = ['tactplanId', 'agency', 'brand', 'indication', 'brandedUnbranded', 'audience', 'assetScope', 'campaignName', 'channels'];
+    if (!validFields.includes(args.field)) return { error: `Unknown field "${args.field}".` };
+    const value = String(args.value ?? '').trim();
+    if (!value) return { error: 'value is required.' };
+    return { recorded: true, field: args.field, value };
+  }
+  if (name === 'propose_new_campaign') {
+    const required = ['tactplanId', 'agency', 'brand', 'indication', 'brandedUnbranded', 'audience', 'assetScope', 'campaignName'];
+    const missing = required.filter(k => !String(args[k] || '').trim());
+    const channels = Array.isArray(args.channels) ? args.channels.filter(Boolean) : [];
+    if (!channels.length) missing.push('channels');
+    if (missing.length) return { proposed: false, missing };
+    return {
+      proposed: true,
+      fields: {
+        tactplanId: String(args.tactplanId).trim(),
+        agency: String(args.agency).trim(),
+        brand: String(args.brand).trim(),
+        indication: String(args.indication).trim(),
+        brandedUnbranded: args.brandedUnbranded,
+        audience: String(args.audience).trim(),
+        assetScope: args.assetScope,
+        campaignName: String(args.campaignName).trim(),
+        channels,
+      },
+      note: 'Staged, not created yet — awaiting user confirmation in the UI.',
+    };
+  }
+  if (name === 'open_campaign') {
+    // Only honour an id that's actually in the portfolio list this turn
+    // sent — the model must never be able to navigate somewhere that
+    // doesn't exist, same guard the old home-agent endpoint had.
+    const portfolio = Array.isArray(ctx.portfolio) ? ctx.portfolio : [];
+    const found = portfolio.find(r => r.id === args.tactplanId);
+    if (!found) return { navigated: false, error: `"${args.tactplanId}" isn't in the portfolio list.` };
+    return { navigated: true, tactplanId: found.id, name: found.name };
+  }
   if (name === 'get_missing_fields') {
     const remaining = Array.isArray(ctx.remaining) ? ctx.remaining : [];
     const filtered = args.sectionId ? remaining.filter(r => r.sectionId === args.sectionId) : remaining;
@@ -1055,6 +1285,7 @@ async function runAgentTurn({ system, tools, messages, execute, ctx, send, onRes
     messages.push({ role: 'assistant', content: response.content });
 
     const toolResults = [];
+    let askedChoice = false;
     for (const block of response.content) {
       if (block.type !== 'tool_use') continue;
       send('tool_start', { name: block.name });
@@ -1063,6 +1294,7 @@ async function runAgentTurn({ system, tools, messages, execute, ctx, send, onRes
       catch (err) { result = { error: err instanceof Error ? err.message : 'Tool execution failed.' }; }
       send('tool', { name: block.name, result });
       onResult(block.name, result);
+      if (block.name === 'ask_choice' && result?.asked) askedChoice = true;
 
       toolResults.push({
         type: 'tool_result',
@@ -1072,6 +1304,17 @@ async function runAgentTurn({ system, tools, messages, execute, ctx, send, onRes
       });
     }
     messages.push({ role: 'user', content: toolResults });
+
+    // ask_choice is a terminal action for the turn — the question (rendered
+    // as buttons, or downgraded to plain text when Guided Mode is off) IS
+    // the complete reply. Verified live, repeatedly: giving the model one
+    // more round after it reliably wrote a redundant "pick one above"/"go
+    // ahead and choose" sentence restating what the question+options
+    // already said, despite an explicit prompt instruction not to — prompt
+    // wording alone kept losing to the model's own habit of always closing
+    // with a sentence. Ending the turn here instead of calling the model
+    // again removes the opportunity for that sentence to exist at all.
+    if (askedChoice) return { finalText: '', messages };
 
     response = await ai.messages.create({ ...request, messages });
   }
@@ -1090,8 +1333,70 @@ async function runAgentTurn({ system, tools, messages, execute, ctx, send, onRes
 // "tool_start"/"tool" (a named skill actually executing), "proposal" (a
 // propose_fill result, ready for the client's existing Confirm/Cancel card),
 // "final" (closing text), "error".
+// Deterministic backstop for New Campaign Intake progress tracking —
+// verified live that the model reliably does NOT call
+// record_new_campaign_field despite being told to (checked actual message
+// history: only ask_choice tool calls ever appeared), so the
+// NEW CAMPAIGN INTAKE STATE block below was silently dead code, always
+// showing all 9 fields as missing, providing zero protection against the
+// exact re-asking/confusing-fields bug it was built to fix. This instead
+// derives the same draft straight from the conversation transcript itself
+// — no model cooperation required, so it can't silently stop working the
+// way the tool-call approach did. Matches each ask_choice question to one
+// of the 9 canonical fields by keyword, then takes the next user message
+// after it as that field's answer.
+const INTAKE_FIELD_KEYWORDS = [
+  { field: 'brandedUnbranded', kws: ['branded or unbranded', 'branded/unbranded'] },
+  { field: 'agency', kws: ['which agency', 'agency running', 'agency is running', 'agency for this'] },
+  { field: 'brand', kws: ['brand/product', 'brand or product', 'which brand', 'which product', 'product is this', 'product for this'] },
+  { field: 'indication', kws: ['indication', 'condition is this', 'condition this'] },
+  { field: 'audience', kws: ['audience'] },
+  { field: 'assetScope', kws: ['asset scope'] },
+  { field: 'campaignName', kws: ['campaign name', 'campaign be called', 'name this campaign', 'call this campaign'] },
+  { field: 'channels', kws: ['channel'] },
+  { field: 'tactplanId', kws: ['tactplan id', 'tactplan number', 'tactplan identifier'] },
+];
+
+function messageText(content) {
+  if (typeof content === 'string') return content;
+  if (!Array.isArray(content)) return '';
+  return content.filter(b => b.type === 'text').map(b => b.text).join('');
+}
+
+function inferIntakeDraftFromHistory(messages) {
+  const draft = {};
+  const msgs = Array.isArray(messages) ? messages : [];
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i];
+    if (m.role !== 'assistant' || !Array.isArray(m.content)) continue;
+    const askChoice = m.content.find(b => b.type === 'tool_use' && b.name === 'ask_choice');
+    if (!askChoice) continue;
+    const question = String((askChoice.input && askChoice.input.question) || '').toLowerCase();
+    const matched = INTAKE_FIELD_KEYWORDS.find(fk => fk.kws.some(k => question.includes(k)));
+    if (!matched) continue;
+    for (let j = i + 1; j < msgs.length; j++) {
+      if (msgs[j].role !== 'user') continue;
+      const content = msgs[j].content;
+      // Every tool_use (including ask_choice) gets an immediate synthetic
+      // tool_result message pushed right after it — {role:'user', content:
+      // [{type:'tool_result', ...}]}, required by the Anthropic API, NOT
+      // the human's actual answer. Skip past it instead of treating it as
+      // the reply: breaking here unconditionally made this function always
+      // read an empty answer and never look further, so record_new_campaign
+      // -style tracking of ask_choice-driven fields (i.e. ALWAYS, under
+      // Guided Mode) silently recorded nothing — exactly the "asked again"
+      // bug this whole mechanism exists to prevent.
+      if (Array.isArray(content) && content.length && content.every(b => b.type === 'tool_result')) continue;
+      const answer = messageText(content).trim();
+      if (answer) draft[matched.field] = answer;
+      break;
+    }
+  }
+  return draft;
+}
+
 app.post('/api/agent-fill', async (req, res) => {
-  const { sections, text, history, tactplanId, remaining, blocked, interview, derived, persona, phase } = req.body || {};
+  const { sections, text, history, tactplanId, remaining, blocked, interview, derived, persona, phase, portfolio, currentPage, myPending, guidedMode, newCampaignDraft } = req.body || {};
   if (!ai) return res.status(503).json({ error: 'ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not configured on the server.' });
   if (!Array.isArray(sections) || sections.length === 0 || !text) {
     return res.status(400).json({ error: 'sections[] and text are required.' });
@@ -1115,6 +1420,7 @@ app.post('/api/agent-fill', async (req, res) => {
     interview: interview || null,
     derived: Array.isArray(derived) ? derived : [],
     persona: persona || null, phase: phase || null,
+    portfolio: Array.isArray(portfolio) ? portfolio : [],
   };
 
   try {
@@ -1125,8 +1431,61 @@ app.post('/api/agent-fill', async (req, res) => {
     // for continuity, same effect as govex's ChatSession.historyJson.
     const messages = (Array.isArray(history) ? history : []).concat([{ role: 'user', content: text }]);
 
+    // Portfolio-wide awareness, on every turn regardless of which page sent
+    // it — this used to be exclusive to the (now-retired) separate
+    // home-agent endpoint, which meant the form-fill agent here could only
+    // ever talk about the one campaign whose sections it was handed. The
+    // client now sends the same portfolio list from every page, plus which
+    // campaign (if any) is currently open, so this one agent can act as
+    // portfolio assistant AND form-filler in the same conversation instead
+    // of being two different assistants depending on where the chat panel
+    // happens to be mounted.
+    const portfolioNote = Array.isArray(portfolio) && portfolio.length
+      ? `\n\nPORTFOLIO AWARENESS. You have visibility into every campaign request, not just the one whose form (if any) is open below — here is the full list (id, name, brand, phase, status): ${JSON.stringify(portfolio)}. ${currentPage ? `The user currently has ${currentPage.name} (${currentPage.tactplanId}) open — favor that campaign when the question is ambiguous about which one they mean, but you may still answer about any other campaign in the list by name or id.` : "The user is on the portfolio hub right now — no specific campaign is open, so 'sections'/'match_section'/'propose_fill' below describe the shared form structure, not a specific campaign's data; ground any specific-campaign question in the portfolio list, and only call form-filling tools once the user is actually working an open campaign. EXCEPTION: if the user is partway through New Campaign Intake (see that skill above), this note is NOT a cue to ask 'which campaign' again — intake gathers its 8 fields straight from conversation and genuinely needs no campaign open at all; ignore this note for that flow and just keep asking the next missing intake field."} Never invent a campaign that isn't in this list.`
+      : '';
+
+    // "What's pending with me" data — real, computed client-side from the
+    // exact same mineTo/actionText fields the portfolio table's own
+    // "assigned to me" stat and per-row status text use (see
+    // buildPortfolioContext in useAgentFill.ts), never something the model
+    // is asked to infer. Sent on every turn, same as PORTFOLIO AWARENESS,
+    // so the welcome-screen "What's pending with me" quick-pick (and any
+    // later ad-hoc "what's on my plate" question) always renders from
+    // ground truth, on the landing page or from inside any open campaign.
+    const myPendingNote = Array.isArray(myPending)
+      ? `\n\nMY PENDING ITEMS (authoritative — this is the complete, real list of campaigns with something pending on the current persona; never invent an item not in it, and never invent a due date not given here): ${JSON.stringify(myPending)}. If the user asks "what's pending with me" (including via that exact quick-pick button) or anything equivalent ("what's on my plate", "what do I owe"), respond with a markdown table — columns Campaign | What's Pending | Due Date — one row per item in this list, using the tactplanId's campaign name for Campaign, the pending text verbatim, and the dueDate verbatim (leave the cell blank, not a guess or "TBD", when dueDate is empty). If the list is empty, say in one sentence that nothing's currently pending on them rather than producing an empty table.`
+      : '';
+
+    // The UI's explicit Guided Mode toggle, sent on every turn while it's
+    // on — a stronger, standing version of the same behavior the model can
+    // also reach for on its own via the Guided Mode skill.
+    const guidedModeNote = guidedMode
+      ? '\n\nGUIDED MODE IS CURRENTLY ON (the user toggled it on in the UI). Ask about exactly ONE thing per turn, no exceptions — never list several missing fields at once while this is on. Use ask_choice for every question, including open-ended ones where you can suggest a short list of realistic example answers instead of leaving it fully blank (the user can still type something else if none fit). Stay in this mode for every subsequent turn until the user turns it off or clearly asks to switch back.'
+      : '';
+
+    // Computed fresh every turn from record_new_campaign_field calls, same
+    // "don't trust your own memory of the conversation, trust this
+    // rebuilt-every-turn block instead" fix that get_interview_state already
+    // is for the requirements interview. Before this, the model tracked New
+    // Campaign Intake progress purely from re-reading the chat transcript,
+    // which reliably broke down under guided-mode's rapid one-click turns —
+    // it would re-ask fields already answered, or mistake one field's answer
+    // for a different field's (e.g. treating "Cosentyx" as an attempted
+    // answer to "which agency" right after already asking brand).
+    const ALL_INTAKE_FIELDS = ['tactplanId', 'brand', 'indication', 'brandedUnbranded', 'audience', 'assetScope', 'campaignName', 'channels', 'agency'];
+    const clientDraft = newCampaignDraft && typeof newCampaignDraft === 'object' ? newCampaignDraft : {};
+    // messages includes the current turn's user text, which is harmless
+    // here (it's a fresh answer to whatever was last asked, not yet part
+    // of an assistant/ask_choice pair unless it was the very-just-sent one).
+    const draft = { ...clientDraft, ...inferIntakeDraftFromHistory(messages) };
+    const doneFields = ALL_INTAKE_FIELDS.filter(f => draft[f]);
+    const missingFields = ALL_INTAKE_FIELDS.filter(f => !draft[f]);
+    const intakeNote = doneFields.length || missingFields.length
+      ? `\n\nNEW CAMPAIGN INTAKE STATE (authoritative, rebuilt fresh this turn from record_new_campaign_field calls — trust this over your own memory of the conversation): already recorded — ${doneFields.length ? doneFields.map(f => `${f}=${JSON.stringify(draft[f])}`).join(', ') : '(none yet)'}. Still missing — ${missingFields.length ? missingFields.join(', ') : '(none — all 9 done, call propose_new_campaign now)'}. If you are in the New Campaign Intake flow, ask ONLY for the first field listed under "still missing", in that order, and do not ask about anything already listed under "already recorded" even if it resembles a field that IS still missing (e.g. "brand" and "brandedUnbranded" are different fields — check this list, not your guess).`
+      : '';
+
     const turn = await runAgentTurn({
-      system: await buildSystemPrompt(),
+      system: (await buildSystemPrompt()) + portfolioNote + myPendingNote + guidedModeNote + intakeNote,
       tools: buildToolDeclarations(),
       messages,
       execute: executeTool,
@@ -1141,7 +1500,29 @@ app.post('/api/agent-fill', async (req, res) => {
         }
         if (name === 'learn_skill' && result?.learned) send('learned', result);
         if (name === 'navigate_stage' && result?.navigated) send('navigate', result);
+        if (name === 'open_campaign' && result?.navigated) send('open_campaign', result);
+        if (name === 'propose_new_campaign' && result?.proposed) send('new_campaign_proposal', result);
+        if (name === 'notify_stakeholders' && result?.notified) send('notify_stakeholders', result);
+        if (name === 'ask_choice' && result?.asked) {
+          // Verified live, repeatedly: the model reaches for ask_choice on
+          // short-answer-set questions (brand, indication, Branded/
+          // Unbranded, ...) even with an explicit "unguided means unguided,
+          // never call ask_choice" instruction in the system prompt right
+          // above it — prompt-only enforcement of this kept failing the
+          // same way the intake field-tracking did. Enforced deterministically
+          // instead: when the UI's Guided Mode toggle is off, the button UI
+          // never reaches the client at all, regardless of what the model
+          // decided to call — downgraded to the same plain-text event a
+          // normal reply uses, options included, phrased as a sentence.
+          if (guidedMode) {
+            send('ask_choice', result);
+          } else {
+            const optionsText = result.options.length ? ` (${result.options.join(' / ')})` : '';
+            send('reasoning', { text: `${result.question}${optionsText}` });
+          }
+        }
         if (name === 'record_quiz_answer' && result?.applied) send('quiz_answer', result);
+        if (name === 'record_new_campaign_field' && result?.recorded) send('new_campaign_field', result);
       },
     });
 
@@ -1422,12 +1803,23 @@ app.get('/api/health', (req, res) => {
   res.json({ ok: true, service: 'novartis-accelerate-server' });
 });
 
-// NOTE: still serving the existing single-file mock (public/index.html) as
-// the live app — the React client (client/) is a bare Phase 0 shell so far
-// and has no real UI yet. This route gets repointed at client/dist once the
-// actual pages are ported (Phase 2+), not before, so the working app isn't
-// broken out from under active use in the meantime.
-app.use(express.static(path.join(__dirname, '..', 'public')));
+// Final cutover: the React client (client/) is the real app now — every
+// page has been ported and verified live against this same server this
+// session. public/index.html (the original single-file monolith) is kept
+// in the repo as reference/backup but is no longer served.
+app.use(express.static(path.join(__dirname, '..', 'client', 'dist')));
+
+// SPA fallback — React Router owns client-side routes (/requests/:id,
+// /calendar, /admin, ...), which don't correspond to real files on disk.
+// Without this, a direct load or refresh on any route but "/" 404s at the
+// Express layer before React ever gets a chance to render. Must come AFTER
+// every API route and the static middleware above (so real API 404s and
+// real static assets are never swallowed by this), and only responds to
+// GET (POST/PUT/DELETE with no matching route should still 404 normally).
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(__dirname, '..', 'client', 'dist', 'index.html'));
+});
 
 const PORT = process.env.PORT || 4300;
 app.listen(PORT, () => console.log(`Novartis Accelerate server running on http://localhost:${PORT}`));

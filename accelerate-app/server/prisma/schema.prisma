@@ -216,6 +216,39 @@ model NudgeRule {
   order              Int
 }
 
+// A campaign created via the New Request modal or the chat's
+// propose_new_campaign flow. The seeded demo portfolio (REQUESTS in the
+// client) stays static mock data, same as before — this table only holds
+// campaigns actually created at runtime, which previously lived ONLY in
+// that client-side array: any server restart or full page reload silently
+// wiped them from the portfolio list (and any /requests/:id deep link into
+// one), even though their FieldEntry/Comment rows were already durable.
+// Array-shaped fields are stored as JSON text, same convention as
+// FormField.optionsJson elsewhere in this schema.
+model Campaign {
+  id            String   @id // TactPlan id, e.g. "TP-84486"
+  name          String
+  brand         String
+  ic            String
+  color         String
+  phase         String   // preplan | plan | exec
+  phaseLabel    String
+  updated       String
+  daysOpen      Int
+  status        String   // active | completed
+  indication    String
+  channels      String
+  golive        String
+  ready         String
+  fieldsResolved String
+  daysToGolive  String
+  ownersJson    String   // JSON array of PersonaKey
+  actionJson    String   // JSON Partial<Record<PersonaKey,'me'|'block'|'wait'>>
+  actionTextJson String  // JSON Partial<Record<PersonaKey,string>>
+  mineToJson    String   // JSON array of PersonaKey
+  createdAt     DateTime @default(now())
+}
+
 // Per-section conversation threads — comments AOR/XM/MDS/CEP/Ops/DCA leave on
 // a specific section of a specific campaign request (sectionId reuses the
 // exact same id scheme SECTIONS already uses client-side — "oms", "sms-t1",
@@ -229,6 +262,15 @@ model Comment {
   authorPersona String   // aor | xm | mds | cep | ops | dca
   body          String
   mentionsJson  String?  // JSON array of persona keys tagged in this comment, e.g. ["xm","mds"] — denormalized so "who do I owe a reply to" doesn't need to parse body text
+  // "human" = a real person wrote this in the Conversations drawer.
+  // "agent" = the assistant posted it on someone's behalf — notify_stakeholders
+  // and fired NudgeRule mentions. Both are real, persisted comments in the
+  // SAME table (the notification bell reads across both, by mention,
+  // regardless of source), but Conversations is human-to-human by design —
+  // the drawer filters to source="human" only, so an agent notification
+  // shows up in the bell without also cluttering the thread meant for
+  // people actually talking to each other.
+  source        String   @default("human")
   createdAt     DateTime @default(now())
 
   @@index([tactplanId, sectionId])

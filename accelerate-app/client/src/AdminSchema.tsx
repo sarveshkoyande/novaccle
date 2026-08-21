@@ -5,7 +5,7 @@ import './AdminSchema.css';
 
 const PHASES = ['preplan', 'plan', 'exec'] as const;
 const TYPES = ['text', 'ta', 'sel', 'multi', 'date', 'file', 'metasheet'];
-const OWNERS = ['aor', 'xm', 'mds', 'cep', 'ops', 'dca'];
+const OWNERS = ['aor', 'xm', 'mds', 'cep', 'ops', 'dca', 'oms'];
 
 // Minimal admin UI for FormSection/FormField (Phase 1) — proves the schema
 // is genuinely editable via the API, not a code change. Full polish

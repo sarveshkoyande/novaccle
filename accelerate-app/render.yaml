@@ -16,7 +16,12 @@ services:
     runtime: node
     plan: free
     rootDir: accelerate-app/server
-    buildCommand: npm install && npx prisma generate && npx prisma migrate deploy && npm run seed
+    # Builds the React client first (client/dist is what server.js now
+    # serves — see its express.static/SPA-fallback routes), then the
+    # server itself: installs, generates the Prisma client, applies
+    # migrations, and seeds the schema/demo data. cd ../client is relative
+    # to rootDir above.
+    buildCommand: cd ../client && npm install && npm run build && cd ../server && npm install && npx prisma generate && npx prisma migrate deploy && npm run seed
     # Render injects PORT; server.js already honours process.env.PORT.
     # --use-system-ca is harmless here (it is required only on the corporate
     # laptop, where TLS is intercepted) and is kept so local and deployed runs
