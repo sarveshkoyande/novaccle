@@ -1,9 +1,8 @@
 # Render blueprint for the Accelerate backend + served front end.
 #
-# NOTE: Render's Blueprint auto-detection only reads render.yaml at the REPO
-# ROOT — the authoritative copy is /render.yaml (one level up from
-# accelerate-app/). This copy is kept for local reference; if you change one,
-# change both.
+# This file must live at the REPO ROOT for Render's Blueprint auto-detection
+# to find it — a copy also lives at accelerate-app/render.yaml for local
+# reference/history, but Render only reads this one. Keep the two in sync.
 #
 # Deploy: Render dashboard > New > Blueprint > pick this repo. Render reads
 # this file, creates the service, and then prompts for the two secret values
