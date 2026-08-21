@@ -88,7 +88,12 @@ export const api = {
   getSchemaFor: (formId: string) =>
     fetch(`/api/schema?formId=${encodeURIComponent(formId)}`).then((r) => json<{ sections: FormSection[] }>(r)),
 
-  addSection: (data: Partial<FormSection> & { id: string; name: string }) =>
+  // formId isn't part of FormSection itself (the schema response never
+  // includes it — sections are already scoped to a form by the time the
+  // client sees them), but the server's create route reads it to know
+  // which Form the new section belongs to (defaults to "form-default" if
+  // omitted), so the create payload accepts it separately here.
+  addSection: (data: Partial<FormSection> & { id: string; name: string; formId?: string }) =>
     fetch('/api/admin/sections', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
