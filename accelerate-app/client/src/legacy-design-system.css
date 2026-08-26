@@ -1,4 +1,4 @@
-/* ===========================================================================
+﻿/* ===========================================================================
    NOVARTIS WEBSITE UI BRAND SYSTEM
    Source: brandguidelines/Novartis_Website_Brand_Guidelines.docx +
            brandguidelines/brand-tokens.css (both supplied in this repo),
@@ -15,7 +15,7 @@
         exception is a true circle (50%), which the live site also uses for
         avatars/status dots — a circle has no corners to round.
      4. NO SHADOWS on buttons; structure comes from 1px borders, not elevation.
-     5. Black → orange hover on every interactive element.
+     5. Black â†’ orange hover on every interactive element.
 
    Greys: the guidelines name two colors, but a data-dense application needs
    structural neutrals for borders and table rules. Rather than invent them,
@@ -130,9 +130,9 @@ input,select,textarea{font-family:inherit;font-weight:var(--fw-body);letter-spac
 h1,h2,h3,h4,h5,h6{font-family:var(--font-medium);font-weight:var(--fw-medium);letter-spacing:var(--tracking);line-height:1.2}
 .mono,.fid,.rt-id{font-variant-numeric:tabular-nums;letter-spacing:0;font-weight:var(--fw-medium)}
 
-/* ---- Global interaction pattern: black → orange, square, 3px focus ring.
+/* ---- Global interaction pattern: black â†’ orange, square, 3px focus ring.
         Mirrors the live novartis.com link treatment exactly (underline
-        offset 5px, thickness 1px → 2px on hover). ---- */
+        offset 5px, thickness 1px â†’ 2px on hover). ---- */
 a{color:var(--ink);transition:color .15s ease}
 a:hover,a:focus-visible{color:var(--nv-space-orange)}
 :focus-visible{outline:3px solid var(--nv-warm-black);outline-offset:3px}
@@ -197,7 +197,7 @@ input,select,textarea,button{border-radius:0}
    "Dashboard"/"Calendar". */
 .top-nav a{height:100%;width:112px;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;border-radius:0;font-size:16px;font-weight:var(--fw-body);color:var(--ink);text-decoration:none;border-bottom:4px solid transparent;box-sizing:border-box;transition:background-color .15s ease,color .15s ease,border-color .15s ease}
 .top-nav a:hover,.top-nav a:focus-visible{background:var(--nv-grey-surface);color:var(--nv-space-orange)}
-/* Only ONE nav item is ever "on" at a time — spec §2: solid Warm Black,
+/* Only ONE nav item is ever "on" at a time — spec Â§2: solid Warm Black,
    white text, orange left border. */
 .top-nav a.on{color:var(--nv-soft-white);background:var(--nv-warm-black);font-family:var(--font-medium);font-weight:var(--fw-medium);border-bottom-color:var(--nv-space-orange)}
 .top-nav a.on:hover{color:var(--nv-soft-white);background:var(--nv-warm-black)}
@@ -512,7 +512,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .crf-comments-badge{background:var(--ink);color:#fff;font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:0;display:inline-grid;place-items:center;padding:0 4px}
 .sm-wrap{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;margin-top:0}
 @media (max-width:900px){.sm-wrap{grid-template-columns:1fr}}
-.sm-list-panel{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;padding:8px;display:flex;flex-direction:column;gap:1px;position:sticky;top:74px;max-height:calc(100vh - 88px);overflow-y:auto}
+.sm-list-panel{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;padding:8px;display:flex;flex-direction:column;gap:1px;position:sticky;top:157px;max-height:calc(100vh - 199px);overflow-y:auto}
 .glance-toggle-row{display:flex;gap:8px;margin:16px 0 12px}
 .glance-toggle-btn{height:32px;padding:0 14px;border-radius:0;font-size:12px;font-weight:700;color:var(--ink2);background:var(--surface);border:1px solid var(--line);transition:all .15s}
 .glance-toggle-btn:hover{border-color:var(--brand)}
@@ -522,7 +522,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .sm-row{display:flex;align-items:center;gap:7px;width:100%;height:33px;padding:0 9px 0 6px;border-radius:0;border:none;border-left:4px solid transparent;background:transparent;text-align:left;cursor:pointer;font-size:12px;color:var(--ink2);font-weight:600;transition:background .15s ease,border-color .15s ease}
 .sm-row:hover{background:var(--nv-grey-surface)}
 /* Active selection: white bg (not a tint fill), 4px Space Orange left bar,
-   bold title — spec §1. */
+   bold title — spec Â§1. */
 .sm-row.on{background:var(--surface);color:var(--ink);font-weight:800;border-left-color:var(--nv-space-orange)}
 .sm-row.sm-row-indent{padding-left:22px}
 .sm-row.sm-row-indent .sm-row-num{opacity:.6}
@@ -543,7 +543,17 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .sm-row-chev{color:var(--nv-warm-black);font-size:14px;flex-shrink:0;transition:color .15s ease}
 .sm-row:hover .sm-row-chev{color:var(--nv-space-orange)}
 .sm-row.on .sm-row-chev{color:var(--nv-space-orange)}
-.sm-detail-panel{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;min-height:200px}
+/* Independently scrollable, same recipe as .sm-list-panel just above —
+   before this, the field list had no height/overflow constraint of its
+   own, so a long section just grew the whole page and scrolled it as one
+   unit, taking the app bar and section list along with it. */
+.sm-detail-panel{background:var(--surface);border:1px solid var(--line);border-radius:0;box-shadow:none;min-height:200px;position:sticky;top:157px;max-height:calc(100vh - 199px);overflow-y:auto}
+/* Flow Design's own panel — same independent-scroll recipe as
+   .sm-detail-panel above. Without this it had no height/overflow
+   constraint of its own (just inline padding), so a tall Flow (PDF +
+   approval panel + version history) grew the whole page and scrolled it
+   as one unit along with the app bar, same bug .sm-detail-panel had. */
+.vb-flow-wrap{background:var(--surface);border:1px solid var(--line);box-sizing:border-box;position:sticky;top:157px;max-height:calc(100vh - 199px);overflow-y:auto}
 .sm-detail-card{scroll-margin-top:76px}
 .sm-detail-empty{padding:32px;text-align:center;color:var(--ink3);font-size:14px;font-weight:600}
 /* Project-level conversation — one @mention comment thread per whole
@@ -595,7 +605,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .sm-detail-x:focus-visible{outline:2px solid var(--nv-space-orange);outline-offset:2px}
 .sm-detail-num{font-size:11px;font-weight:800;color:var(--ink3)}
 .sm-detail-title{font-size:var(--t-h4);font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink)}
-/* Section status badges — spec §3: IN PROGRESS is solid black; COMPLETE is
+/* Section status badges — spec Â§3: IN PROGRESS is solid black; COMPLETE is
    white with an orange check (glyph prepended by JS, see below) and dark
    text; "Your input needed" gets its own outlined-orange variant. */
 .sm-status-pill{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;padding:3px 9px;border-radius:0;display:inline-flex;align-items:center;gap:4px}
@@ -607,7 +617,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .sm-detail-sub{font-size:12px;color:var(--ink3);font-weight:600;margin-top:2px}
 .sm-detail-progress-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .sm-detail-progress-row .sm-count{font-size:12px;color:var(--ink3);font-weight:700;white-space:nowrap}
-/* Progress bars — spec §6: 4px tall, orange completed / light-grey
+/* Progress bars — spec Â§6: 4px tall, orange completed / light-grey
    remaining track, animated width transitions. */
 .sm-detail-bar{flex:1;height:4px;border-radius:0;background:var(--nv-grey-line);overflow:hidden}
 .sm-detail-bar-fill{height:100%;border-radius:0;transition:width .35s ease}
@@ -625,7 +635,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .search-input{margin-left:auto;position:relative}
 .search-input input{width:260px;padding:8px 14px 8px 34px;border:1px solid var(--line);border-radius:0;font-size:var(--t-13);background:var(--surface);transition:border-color .15s ease}
 .search-input input:focus{outline:none;border-color:var(--nv-warm-black);box-shadow:0 0 0 2px var(--nv-warm-black)}
-.search-input::before{content:'⌕';position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:var(--t-14)}
+.search-input::before{content:'âŒ•';position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:var(--t-14)}
 
 /* ================== ADMIN: MANAGE FORM FIELDS (Drupal Field UI-style) ================== */
 .admin-tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--line2)}
@@ -687,7 +697,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 
 /* table-layout:fixed is what actually makes this work — without it, a table
    sizes itself to fit its widest cell's content, so the Gantt's naturally-
-   wide inner block (16 weeks × 64px) grows the whole table/page instead of
+   wide inner block (16 weeks Ã— 64px) grows the whole table/page instead of
    scrolling inside its own td. Fixed layout ignores content width and just
    uses the available column width, so the overflow gets contained where
    intended: inside .gantt-scroll. */
@@ -735,7 +745,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .gantt-status-pill.notstarted{background:var(--surface3);color:var(--ink3)}
 .gantt-track{position:relative;min-height:38px;flex-shrink:0}
 .gantt-bar{position:absolute;top:50%;transform:translateY(-50%);height:22px;border-radius:0;display:flex;align-items:center;gap:6px;padding:0 8px;font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden}
-/* Gantt track categories: a monochrome Warm-Black→grey ramp rather than a
+/* Gantt track categories: a monochrome Warm-Blackâ†’grey ramp rather than a
    rainbow. Space Orange is deliberately NOT used here — it is reserved for
    interaction, and a always-on bar colour is not an interaction state. */
 .gantt-bar.c-discovery{background:#0460A9}
@@ -746,7 +756,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .gantt-bar.c-mlr{background:#C23B6B}
 .gantt-bar.c-deploy{background:var(--ink4)}
 .gantt-bar-tag{font-size:10px;font-weight:800;background:rgba(255,255,255,.25);padding:0 5px;border-radius:0}
-.gantt-bar-risk::before{content:'⚠';margin-right:1px}
+.gantt-bar-risk::before{content:'⚠ ';margin-right:1px}
 .gantt-milestone{position:absolute;top:50%;width:16px;height:16px;background:var(--brand-dk);transform:translateY(-50%) rotate(45deg);border-radius:0}
 .gantt-dep-arrow{position:absolute;border-top:1.5px dashed var(--ink4);pointer-events:none}
 
@@ -777,7 +787,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .ai-conf-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-top:3px;font-weight:600}
 .ai-list{list-style:none;display:flex;flex-direction:column;gap:7px}
 .ai-list li{font-size:12px;color:var(--ink2);font-weight:600;padding-left:14px;position:relative;line-height:1.4}
-.ai-list.risks li::before{content:'⚠';position:absolute;left:0;color:var(--warn);font-size:11px}
+.ai-list.risks li::before{content:'⚠ ';position:absolute;left:0;color:var(--warn);font-size:11px}
 .ai-list.recs li::before{content:'✦';position:absolute;left:0;color:var(--brand);font-size:11px}
 .ai-plan-actions{display:flex;flex-direction:column;gap:8px;margin-top:6px}
 .ai-plan-updated{font-size:11px;color:var(--ink3);font-weight:600;text-align:center;margin-top:12px}
@@ -984,7 +994,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 }
 @media(prefers-reduced-motion:reduce){.pulse-dot::before{animation:none}}
 /* Blinking live/online status dot — reusable everywhere "LIVE"/"ONLINE"
-   appears: ● LIVE, ● ONLINE. */
+   appears: â— LIVE, â— ONLINE. */
 .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--nv-space-orange);animation:livePulse 1.5s infinite;flex-shrink:0}
 @keyframes livePulse{
   0%{opacity:1;transform:scale(1)}
@@ -995,7 +1005,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .flow-arrow{display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:14px;font-weight:600;padding:0 4px;flex-shrink:0}
 .flow-parallel{margin-top:8px;padding-top:8px;border-top:1px dashed var(--ai-line);display:flex;flex-direction:column;gap:5px}
 .flow-parallel-label{font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--nv-space-orange);display:flex;align-items:center;gap:5px}
-.flow-parallel-label::before{content:'⇄';font-size:11px}
+.flow-parallel-label::before{content:'â‡„';font-size:11px}
 .flow-node.parallel{border-style:dashed;border-color:var(--ai-line);background:var(--accent-tint)}
 .flow-node.parallel b{color:var(--nv-space-orange)}
 .flow-node.parallel.now{border-style:solid}
@@ -1090,7 +1100,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .sec-title h3{font-size:var(--t-lg);font-family:var(--font-medium);font-weight:var(--fw-medium);color:var(--ink);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .sec-title p{font-size:11px;color:var(--ink3);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap;font-weight:600}
 .sec-title .mine-tag{background:var(--grad-orange);color:#fff;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:0;display:inline-flex;align-items:center;gap:5px}
-.sec-title .mine-tag::before{content:'●';font-size:10px}
+.sec-title .mine-tag::before{content:'â—';font-size:10px}
 .sec-title .submitted-tag{background:var(--ok-tint);color:var(--ok);font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:0;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--ok-tint)}
 .sec-title .submitted-tag::before{content:'✓';font-size:10px}
 .section.submitted{opacity:.88}
@@ -1110,7 +1120,7 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .pg-state{font-size:11px;font-weight:700;padding:3px 9px;border-radius:0}
 .pg-editable{background:var(--brand-tint);color:var(--brand)}
 .pg-editable::before{content:'✎ ';font-size:.7em}
-/* Read-only: subtle outlined pill — spec §7 (🔒 Read-only). */
+/* Read-only: subtle outlined pill — spec Â§7 (ðŸ”’ Read-only). */
 .pg-locked{background:transparent;color:var(--nv-grey-text);border:1px solid var(--nv-grey-line)}
 .pg-locked::before{content:none}
 .phase-group.locked{background:var(--surface2);margin:12px -16px 0 -16px;padding:12px 16px 4px}
@@ -1127,7 +1137,7 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .f-remaining-dot{position:relative;width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .f-remaining-dot::before{content:'';position:absolute;inset:0;border-radius:50%;background:inherit;animation:dotPulse 1.6s ease-in-out infinite}
 .f-lbl .fid{font-size:10px;color:var(--ink3);font-weight:600;margin-left:auto}
-/* Form inputs — spec §8: hover border #CCCCCC; focus drops the box/ring
+/* Form inputs — spec Â§8: hover border #CCCCCC; focus drops the box/ring
    entirely in favour of a 2px orange border-bottom; no native blue outline. */
 .inp,.sel,.ta{width:100%;border:1px solid var(--line);border-bottom:2px solid var(--line);border-radius:0;padding:0 12px;font-size:13px;background:var(--surface);color:var(--ink);transition:border-color .15s ease,background-color .15s ease;font-weight:500}
 .inp,.sel{height:40px}
@@ -1145,21 +1155,23 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .f-src.b-newapp{color:var(--ink3)}
 .f-src.b-newapp.b-tag{background:var(--ai-tint);color:var(--ai-dk)}
 .f-src.b-auto,.f-src.b-tactplan{color:var(--brand)}
-.f-src.b-auto::before,.f-src.b-tactplan::before{content:'⇢';color:var(--brand)}
+.f-src.b-auto::before,.f-src.b-tactplan::before{content:'â‡¢';color:var(--brand)}
 .f-src.b-xm{color:var(--nv-space-orange)}
-.f-src.b-xm::before{content:'⇢';color:var(--nv-space-orange)}
+.f-src.b-xm::before{content:'â‡¢';color:var(--nv-space-orange)}
 .f-src.b-default{color:var(--ok)}
-.f-src.b-default::before{content:'⇢';color:var(--ok)}
+.f-src.b-default::before{content:'â‡¢';color:var(--ok)}
 .f-src.b-ops{color:var(--gold-dk)}
-.f-src.b-ops::before{content:'⏳';font-size:10px}
+.f-src.b-ops::before{content:'â³';font-size:10px}
 .f-src.b-tbd{color:var(--risk)}
-.f-src.b-tbd::before{content:'⚠';font-size:10px}
+.f-src.b-tbd::before{content:'⚠ ';font-size:10px}
 .f-src.b-unmapped.b-tag{background:var(--lock-tint);color:var(--lock)}
 .pg-empty{padding:14px 16px;background:var(--surface2);border-radius:0;font-size:12px;color:var(--ink3);text-align:center;line-height:1.5;border:1px dashed var(--line);font-weight:600}
 .pg-empty b{color:var(--ink2);font-weight:800}
 .sec-note{padding:11px 14px;background:var(--gold-tint);border:1px solid var(--warn-tint);color:var(--gold-dk);border-radius:0;font-size:12px;line-height:1.5;margin-bottom:14px;font-weight:600}
 .sec-note b{font-weight:800}
-.sec-submit{margin-top:18px;padding-top:16px;border-top:1px solid var(--line2);display:flex;justify-content:flex-end}
+.sec-submit{margin-top:18px;padding-top:16px;border-top:1px solid var(--line2);display:flex;justify-content:flex-end;align-items:center;gap:12px}
+.sec-submit-blocked-note{font-size:13px;color:var(--warn,#b45309)}
+.sec-submit .btn-primary:disabled{opacity:.5;cursor:not-allowed}
 .sec-indent-group .section{margin-top:10px}
 .sec-indent-group .sec-title{padding-left:24px;position:relative}
 .sec-indent-group .sec-title::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--line2)}
@@ -1438,7 +1450,7 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 /* One shape now holds both the Guided Mode row and the input, instead of
    the toggle floating loose above a separate boxed field. Top-left keeps
    the small original corner chamfer; the top edge then runs flat as a
-   raised "tab" behind the Guided Mode label/switch, then a true 45°
+   raised "tab" behind the Guided Mode label/switch, then a true 45Â°
    diagonal (equal run and drop, --guided-notch-y) down to the divider
    line under the guided row, THEN flat the rest of the way to the right
    edge at that height — the diagonal ends once it reaches the divider
@@ -1622,7 +1634,7 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .vb-cq{padding:12px 14px;box-sizing:border-box;max-width:100%}
 .vb-cq-num{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px}
 .vb-cq-q{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:10px}
-.vb-cq-opts{display:flex;flex-direction:column;gap:6px;width:100%}
+.vb-cq-opts{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
 .vb-cq-opt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;text-align:left;background:var(--surface);border:1px solid var(--line2);border-radius:0;padding:9px 11px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;transition:border-color .15s,color .15s;width:100%;box-sizing:border-box}
 .vb-cq-opt:hover{border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
 .vb-cq-opt-label{flex:1 1 auto;min-width:0;white-space:normal;word-break:break-word;text-align:left}
@@ -1748,7 +1760,7 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .modal-field input,.modal-field select{border:1.5px solid var(--line);border-bottom:2px solid var(--line);border-radius:0;padding:9px 12px;font-size:14px;color:var(--ink);background:var(--surface);font-weight:500;transition:border-color .15s ease}
 .modal-field input:hover,.modal-field select:hover{border-color:#CCCCCC;border-bottom-color:#CCCCCC}
 /* Required fields: orange vertical bar beside the label instead of a red
-   asterisk — "│ Agency". */
+   asterisk — "â”‚ Agency". */
 .req-label{position:relative;padding-left:11px}
 .req-label::before{content:'';position:absolute;left:0;top:1px;bottom:1px;width:3px;background:var(--nv-space-orange)}
 .modal-field input:focus,.modal-field select:focus{outline:none;border-color:var(--line);border-bottom:2px solid var(--nv-space-orange)}
@@ -1777,7 +1789,7 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .metasheet.readonly .ms-row{background:var(--surface2)}
 .modal-hint{font-size:12px;color:var(--brand);background:var(--brand-tint);border-radius:0;padding:10px 12px;line-height:1.5;font-weight:600}
 .modal-footer{display:flex;justify-content:flex-end;gap:10px;padding:16px 22px;border-top:1px solid var(--line)}
-/* ---- Buttons (brand guidelines §4) ------------------------------------
+/* ---- Buttons (brand guidelines Â§4) ------------------------------------
    Primary : Warm Black bg / Soft White text -> Space Orange bg on hover.
    Secondary: transparent + 2px Warm Black border -> fills Space Orange.
    Square corners on every state, no gradient, no shadow, label >=16px so
@@ -1852,13 +1864,13 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .cp-icon-btn:active{transform:scale(.92)}
 
 /* ---- ICON REDUCTION --------------------------------------------
-   The page carried ~200 Unicode glyphs used as decoration: a ⇢ before
-   every field-provenance label, a ↳ before every child section name, a
+   The page carried ~200 Unicode glyphs used as decoration: a â‡¢ before
+   every field-provenance label, a â†³ before every child section name, a
    picture-glyph per section, emoji in stat cards and toasts. None of
    them carried meaning the adjacent text did not already carry. They
    are suppressed here rather than deleted from the data, so the
    underlying strings stay intact for the agent's tool-calls.
-   What survives: ✓ (resolved), ⚠ (risk), ✕ (close), › (traversal),
+   What survives: ✓ (resolved), ⚠  (risk), ✕ (close), › (traversal),
    and the three real SVGs in the chat composer. ---- */
 .f-src.b-auto::before,.f-src.b-tactplan::before,
 .f-src.b-xm::before,.f-src.b-default::before{content:none}
@@ -1973,7 +1985,13 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
      is what actually reads as a smooth handoff. */
   .hm-agent,.hm-rail{transition:opacity var(--dur-3,.2s) ease}
   body[data-landing-layout="collapsed"] .hm-grid{grid-template-columns:1fr 0fr}
-  body[data-landing-layout="collapsed"] .hm-rail{opacity:0;pointer-events:none;min-width:0;overflow:hidden}
+  /* min-width:0 alone doesn't get a 0fr grid track fully to 0 — an
+     element's own padding still counts as its minimum footprint (padding
+     isn't "content" that overflow:hidden/min-width:0 exempt), so
+     .hm-rail's 18px left/right padding was leaving a real, visible 36px
+     grey strip on the right in Full-screen chat mode. Zeroing padding
+     here too is what actually collapses it to 0. */
+  body[data-landing-layout="collapsed"] .hm-rail{opacity:0;pointer-events:none;min-width:0;overflow:hidden;padding:0}
   /* Same padding-based (not max-width) restriction as the request-detail
      chat-full mode, applied to the landing agent's own message column —
      see the long comment on the request-view version above for why.
@@ -1987,7 +2005,9 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
   body[data-landing-layout="collapsed"] .cp-sidebar{width:240px}
   body[data-landing-layout="collapsed"] .cp-head{display:none}
   body[data-landing-layout="formfull"] .hm-grid{grid-template-columns:0fr 1fr}
-  body[data-landing-layout="formfull"] .hm-agent{opacity:0;pointer-events:none;min-width:0;overflow:hidden}
+  /* Same fix as .hm-rail above — .hm-agent's own border-right still
+     counted toward its minimum footprint even at min-width:0. */
+  body[data-landing-layout="formfull"] .hm-agent{opacity:0;pointer-events:none;min-width:0;overflow:hidden;border-right:0}
 }
 @media (max-width:1100px){
   body:not([data-view="request"]) #chatPanel{display:none}
@@ -2084,7 +2104,7 @@ body .sm-row-num{min-width:38px;font-size:11px}
 body:not([data-detail="open"]) .sm-detail-panel{display:none}
 body[data-detail="open"] .sm-wrap{grid-template-columns:300px 1fr}
 body[data-detail="open"] .sm-list-panel{
-  position:sticky;top:74px;max-height:calc(100vh - 88px);overflow-y:auto;padding:8px;
+  position:sticky;top:157px;max-height:calc(100vh - 199px);overflow-y:auto;padding:8px;
 }
 body[data-detail="open"] .sm-row{height:33px;font-size:12px;border-bottom:none}
 body[data-detail="open"] .sm-row-num{min-width:26px;font-size:11px}

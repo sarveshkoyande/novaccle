@@ -1,11 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useChatStore, LANDING_PROJECT } from '../stores/useChatStore';
+import { useQueryClient } from '@tanstack/react-query';
+import { useChatStore, LANDING_PROJECT, type ChatMessage } from '../stores/useChatStore';
 import { useSessionStore } from '../stores/useSessionStore';
 import { useAgentFill } from '../hooks/useAgentFill';
-import { PERSONAS } from '../personas';
+import { PERSONAS, VB_APPROVER_KEYS } from '../personas';
+import { useVisioStore, VB_CLARIFY_QUESTIONS, DEFAULT_VISIO_STATE } from '../stores/useVisioStore';
 import { renderMarkdown } from '../markdown';
 import { pendingIntakeContinuations } from '../pendingIntake';
+import { api } from '../api';
 import type { FormSection } from '../types';
+
+let cpSeq = 0;
+const cpNextId = () => `msg-${Date.now()}-${cpSeq++}`;
+
+// StrictMode double-invokes effects in dev — the visio-clarify-intro effect
+// below has no cleanup, so both invocations run before either one's
+// addMessage calls trigger a re-render the second invocation could see,
+// producing a genuine duplicate post. useVisioStore's own persisted
+// chatIntroPosted flag doesn't help here (same reason). A plain in-memory
+// Set, checked and filled synchronously before anything else in the
+// effect, closes the same class of race pendingIntakeContinuations
+// already exists to close.
+const visioIntroInFlight = new Set<string>();
 
 // How many of the most recent messages stay visible by default — the rest
 // collapse behind the "earlier messages" toggle below. Bumped up from 8,
@@ -37,10 +53,16 @@ export default function ChatPanel({
   interviewData,
   onQuizAnswer,
   onNotifyStakeholders,
+  entriesLoaded = true,
   variant = 'panel',
 }: {
   sections: FormSection[];
   tactplanId: string | null;
+  // Gates the [[system:campaign_created]] auto-continuation below — see
+  // its own comment for the race this closes. Defaults to true so pages
+  // with no entries to load (the landing page, where tactplanId is always
+  // null anyway) aren't forced to pass it.
+  entriesLoaded?: boolean;
   onApplyProposal: (assignments: { fieldId: string; value: string }[]) => void;
   onOpenCampaign?: (tactplanId: string) => void;
   // Confirming a new_campaign_proposal card calls this with the staged
@@ -65,7 +87,7 @@ export default function ChatPanel({
   interviewData?: {
     remaining: { sectionId: string; sectionName: string; field: string }[];
     blocked: { sectionId: string; sectionName: string; field: string; reason: string }[];
-    derived: { sectionId: string; sectionName: string; field: string; value: string }[];
+    derived: { sectionId: string; sectionName: string; field: string; fieldId: string; value: string }[];
     interview: { stage: string; stageOpen: { sectionId: string; field: string }[]; nextQuestions: unknown[]; derivableCount: number };
   };
   // record_quiz_answer's real, immediate write (no staging) — sectionId +
@@ -91,6 +113,7 @@ export default function ChatPanel({
   const projectKey = tactplanId || LANDING_PROJECT;
   const thread = useChatStore((s) => s.threads[currentPersona]?.[projectKey]) || [];
   const archives = useChatStore((s) => s.archives[currentPersona]?.[projectKey]) || [];
+  const addMessage = useChatStore((s) => s.addMessage);
   const updateMessage = useChatStore((s) => s.updateMessage);
   const startNewChat = useChatStore((s) => s.startNewChat);
   const restoreSession = useChatStore((s) => s.restoreSession);
@@ -130,11 +153,247 @@ export default function ChatPanel({
   // moment THIS campaign's own ChatPanel instance mounts with its sections
   // loaded — see pendingIntakeContinuations' own comment for why the flag
   // lives outside the persisted store.
+  //
+  // entriesLoaded is required too, not just sections — /api/schema and
+  // /api/entries are two independent requests that race each other, and
+  // this used to fire as soon as the SCHEMA loaded regardless of whether
+  // the campaign's own just-saved field values (Channel Type, Agency, ...)
+  // had come back yet. When schema won the race, the continuation ran
+  // against an empty fieldValues, so get_missing_fields reported every
+  // Generic/Overview field as still open and the agent re-asked things
+  // already answered during intake — even though the real data was
+  // already correctly persisted, just not loaded into this component yet.
   useEffect(() => {
-    if (!tactplanId || !sections.length || !pendingIntakeContinuations.has(tactplanId)) return;
+    if (!tactplanId || !sections.length || !entriesLoaded || !pendingIntakeContinuations.has(tactplanId)) return;
     pendingIntakeContinuations.delete(tactplanId);
     send('[[system:campaign_created]]', sections);
-  }, [tactplanId, sections, send]);
+  }, [tactplanId, sections, entriesLoaded, send]);
+
+  // Flow Design's clarify Q&A — fixed, scripted questions (not model-
+  // driven), posted straight into the Solution Architect's own chat thread
+  // rather than going through the agent. The form-pane canvas
+  // (VisioBuilderPanel) only ever displays the resulting state; this is
+  // where the actual answering happens now. chatIntroPosted (persisted in
+  // useVisioStore) guards against re-posting the intro paragraph every
+  // time this campaign is reopened — the still-unanswered question card
+  // from last time is already sitting in the persisted thread either way.
+  const visioState = useVisioStore((s) => (tactplanId ? s.byCampaign[tactplanId] ?? DEFAULT_VISIO_STATE : undefined));
+  const visioAnswerClarify = useVisioStore((s) => s.answerClarify);
+  const visioStartGenerating = useVisioStore((s) => s.startGenerating);
+  const visioGenerateVisio = useVisioStore((s) => s.generateVisio);
+  const visioCreateDraftFromOms = useVisioStore((s) => s.createDraftFromOms);
+  const visioSendForApproval = useVisioStore((s) => s.sendForApproval);
+  const visioMarkChatIntroPosted = useVisioStore((s) => s.markChatIntroPosted);
+  const visioApprove = useVisioStore((s) => s.approve);
+  const visioRequestChanges = useVisioStore((s) => s.requestChanges);
+  const queryClient = useQueryClient();
+  // Suggesting changes (either as an approver, or the Solution Architect
+  // describing changes before send-for-approval) is a normal typed chat
+  // message, not a form field embedded in the card — clicking "Suggest
+  // modifications"/"Yes" just tells the user to type it in the chat box
+  // and arms this, so the very next plain message they send is routed to
+  // the right handler instead of going to the agent.
+  const [awaitingTypedInput, setAwaitingTypedInput] = useState<{ kind: 'visio_review' | 'visio_sa_review'; messageId: string } | null>(null);
+  useEffect(() => {
+    if (currentPersona !== 'solutionArchitect' || !tactplanId || !visioState) return;
+    if (visioState.ready || visioState.chatIntroPosted) return;
+    const step = VB_CLARIFY_QUESTIONS.findIndex((q) => !(q.id in visioState.answers));
+    if (step === -1) return;
+    const introKey = `${currentPersona}:${tactplanId}`;
+    if (visioIntroInFlight.has(introKey)) return;
+    visioIntroInFlight.add(introKey);
+    visioMarkChatIntroPosted(tactplanId);
+    addMessage(currentPersona, projectKey, {
+      id: cpNextId(),
+      role: 'bot',
+      kind: 'text',
+      text: "Before the Flow can be generated, a few things aren't in this campaign's documents and need your call — just the questions, straight from the source docs.",
+    });
+    const q = VB_CLARIFY_QUESTIONS[step];
+    addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'visio_clarify', visioClarify: { qid: q.id, question: q.q, options: q.options } });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPersona, tactplanId, visioState?.ready, visioState?.chatIntroPosted]);
+
+  function handleVisioAnswer(m: ChatMessage, value: string, label: string) {
+    if (!tactplanId || !m.visioClarify) return;
+    const qid = m.visioClarify.qid;
+    visioAnswerClarify(tactplanId, qid, value, label);
+    updateMessage(currentPersona, projectKey, m.id, { visioClarify: { ...m.visioClarify, answered: { value, label } } });
+    const freshAnswers = (useVisioStore.getState().byCampaign[tactplanId] ?? DEFAULT_VISIO_STATE).answers;
+    const nextIdx = VB_CLARIFY_QUESTIONS.findIndex((q) => !(q.id in freshAnswers));
+    if (nextIdx === -1) {
+      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'text', text: 'All set — every open question is answered.' });
+      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'visio_generate', visioGenerate: {} });
+    } else {
+      const q = VB_CLARIFY_QUESTIONS[nextIdx];
+      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'visio_clarify', visioClarify: { qid: q.id, question: q.q, options: q.options } });
+    }
+  }
+
+  async function handleVisioGenerate(m: ChatMessage) {
+    if (!tactplanId || m.visioGenerate?.resolved) return;
+    updateMessage(currentPersona, projectKey, m.id, { visioGenerate: { resolved: true } });
+    addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'text', text: 'Generating diagram…' });
+    visioStartGenerating(tactplanId);
+    await new Promise((r) => setTimeout(r, 2200));
+    visioGenerateVisio(tactplanId, 'solutionArchitect');
+    const names = VB_APPROVER_KEYS.map((k) => PERSONAS[k].name).join(' and ');
+    await api.addComment({
+      tactplanId,
+      sectionId: 'flow',
+      authorPersona: currentPersona,
+      body: `The Flow for this campaign is ready for your review — sent for approval to ${names}.`,
+      mentions: VB_APPROVER_KEYS,
+      source: 'agent',
+    });
+    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    addMessage(currentPersona, projectKey, {
+      id: cpNextId(),
+      role: 'bot',
+      kind: 'text',
+      text: `Flow generated and sent to ${names} for approval. Every answer above is on record with who chose it — head to the Flow Design tab to track review status.`,
+    });
+  }
+
+  // Fires the OMS -> Solution Architect handoff once the OMS enrollment
+  // source proposal (Source Type/Source Name/Suvery Q&A pairs, extracted
+  // from an uploaded metadata sheet) is actually CONFIRMED into the form —
+  // not right after upload, which used to notify the Solution Architect
+  // before the sources were even applied. Detected by section + field
+  // pattern rather than a dedicated flag, since the proposal is a normal
+  // propose_fill card like any other.
+  async function maybeNotifySaFromOmsProposal(p: NonNullable<ChatMessage['proposal']>) {
+    if (!tactplanId || currentPersona !== 'oms' || visioState?.ready) return;
+    const isOmsSourceFields = p.sectionId === 'oms' && p.assignments.some((a) => /source type|source name|suvery q&a|survey q&a/i.test(a.fieldLabel || a.fieldId));
+    if (!isOmsSourceFields) return;
+    addMessage(currentPersona, projectKey, {
+      id: cpNextId(),
+      role: 'bot',
+      kind: 'text',
+      text: "Extracted the survey name and Q&A pairs from the metadata sheet — that's sufficient detail to create the segmentation flow.",
+    });
+    addMessage(currentPersona, projectKey, {
+      id: cpNextId(),
+      role: 'bot',
+      kind: 'text',
+      text: `I'll notify ${PERSONAS.solutionArchitect.name} (Solution Architect) so they can review and build it.`,
+    });
+    visioCreateDraftFromOms(tactplanId, 'oms');
+    await api.addComment({
+      tactplanId,
+      sectionId: 'flow',
+      authorPersona: 'oms',
+      body: 'OMS extracted the enrollment survey details (source type/name, Q&A pairs) — sufficient to draft the segmentation flow. Ready for the Solution Architect to review and build.',
+      mentions: ['solutionArchitect'],
+      source: 'agent',
+    });
+    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+  }
+
+  // Posted into an approver's own thread when they click a Flow "ready for
+  // review" notification (see NotificationBell) — approve or suggest
+  // changes right here, same actions/side-effects the Flow Design tab's
+  // static buttons trigger, so it doesn't matter which surface is used.
+  async function handleVisioApprove(m: ChatMessage) {
+    if (!m.visioReview || m.visioReview.resolved) return;
+    const tpId = m.visioReview.tactplanId;
+    visioApprove(tpId, currentPersona);
+    updateMessage(currentPersona, projectKey, m.id, { visioReview: { ...m.visioReview, resolved: 'approved' } });
+    await api.addComment({
+      tactplanId: tpId,
+      sectionId: 'flow',
+      authorPersona: currentPersona,
+      body: `${PERSONAS[currentPersona].name} approved the Flow.`,
+      mentions: ['solutionArchitect'],
+      source: 'agent',
+    });
+    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'text', text: 'Approved — thanks.' });
+  }
+
+  // Arms awaitingTypedInput instead of opening an inline textarea — the
+  // next plain message the user types IS the suggestion.
+  function promptForVisioSuggestion(m: ChatMessage) {
+    if (!m.visioReview || m.visioReview.resolved) return;
+    setAwaitingTypedInput({ kind: 'visio_review', messageId: m.id });
+    addMessage(currentPersona, projectKey, {
+      id: cpNextId(),
+      role: 'bot',
+      kind: 'text',
+      text: "Sure — go ahead and type what you'd like changed, right here in the chat.",
+    });
+  }
+
+  async function handleVisioSuggest(m: ChatMessage, note: string) {
+    const trimmed = note.trim();
+    if (!trimmed || !m.visioReview || m.visioReview.resolved) return;
+    const tpId = m.visioReview.tactplanId;
+    visioRequestChanges(tpId, currentPersona, trimmed);
+    updateMessage(currentPersona, projectKey, m.id, { visioReview: { ...m.visioReview, resolved: 'changes_requested' } });
+    await api.addComment({
+      tactplanId: tpId,
+      sectionId: 'flow',
+      authorPersona: currentPersona,
+      body: `${PERSONAS[currentPersona].name} requested changes to the Flow: "${trimmed}"`,
+      mentions: ['solutionArchitect'],
+      source: 'agent',
+    });
+    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'text', text: 'Sent to the Solution Architect.' });
+  }
+
+  // The Solution Architect's side of the OMS-sourced draft — posted by
+  // NotificationBell when they open the "OMS extracted enough to draft the
+  // segmentation flow" notification. Confirm -> optionally describe
+  // changes -> Send for Approval, entirely in chat.
+  function handleSaWantsChanges(m: ChatMessage, choice: 'yes' | 'no') {
+    if (!m.visioSaReview) return;
+    updateMessage(currentPersona, projectKey, m.id, { visioSaReview: { ...m.visioSaReview, wantsChanges: choice } });
+    if (choice === 'yes') {
+      setAwaitingTypedInput({ kind: 'visio_sa_review', messageId: m.id });
+      addMessage(currentPersona, projectKey, {
+        id: cpNextId(),
+        role: 'bot',
+        kind: 'text',
+        text: "Go ahead — type what you'd like changed, right here in the chat.",
+      });
+    }
+  }
+
+  function handleSaSubmitChangeNote(m: ChatMessage, note: string) {
+    const trimmed = note.trim();
+    if (!trimmed || !m.visioSaReview) return;
+    updateMessage(currentPersona, projectKey, m.id, { visioSaReview: { ...m.visioSaReview, changeNote: trimmed } });
+    addMessage(currentPersona, projectKey, {
+      id: cpNextId(),
+      role: 'bot',
+      kind: 'text',
+      text: "Noted — that's folded into the draft. Ready to send for approval whenever you are.",
+    });
+  }
+
+  async function handleSaSendForApproval(m: ChatMessage) {
+    if (!tactplanId || !m.visioSaReview || m.visioSaReview.sentForApproval) return;
+    visioSendForApproval(tactplanId, 'solutionArchitect');
+    updateMessage(currentPersona, projectKey, m.id, { visioSaReview: { ...m.visioSaReview, sentForApproval: true } });
+    const names = VB_APPROVER_KEYS.map((k) => PERSONAS[k].name).join(' and ');
+    await api.addComment({
+      tactplanId,
+      sectionId: 'flow',
+      authorPersona: currentPersona,
+      body: `The Flow for this campaign is ready for your review — sent for approval to ${names}.`,
+      mentions: VB_APPROVER_KEYS,
+      source: 'agent',
+    });
+    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    addMessage(currentPersona, projectKey, {
+      id: cpNextId(),
+      role: 'bot',
+      kind: 'text',
+      text: `Shared for approval with ${names} — you'll be notified once they respond.`,
+    });
+  }
+
   const [input, setInput] = useState('');
   // The server's /api/upload (PDF/Word/Excel -> text) already existed and
   // worked — nothing in the UI ever called it. A CSV/Excel upload is how
@@ -156,6 +415,14 @@ export default function ChatPanel({
   const composerShellRef = useRef<HTMLDivElement>(null);
   const guidedRowRef = useRef<HTMLDivElement>(null);
   const guidedSwitchRef = useRef<HTMLButtonElement>(null);
+  // "Create campaign" is async and its own first line (updateMessage
+  // setting resolved:'confirmed') doesn't hide the button until React
+  // re-renders — a real reported bug: a double click/double-fire in that
+  // window ran the whole stage-create-notify sequence twice for the same
+  // campaign (duplicate "Campaign created", duplicate stakeholder
+  // notification). This is checked synchronously, before any await, so a
+  // second click inside that window is a no-op regardless of render timing.
+  const creatingCampaignIds = useRef<Set<string>>(new Set());
   const [inputExpanded, setInputExpanded] = useState(false);
   const [inputOverflowing, setInputOverflowing] = useState(false);
   const hiddenCount = Math.max(0, thread.length - VISIBLE_TAIL);
@@ -271,11 +538,20 @@ export default function ChatPanel({
     };
   }, [thread]);
 
-  const handleSendText = (text: string) => {
+  const handleSendText = (text: string, displayText?: string) => {
     if (!text.trim()) return;
     setInput('');
     setInputExpanded(false);
-    send(text, sections);
+    if (awaitingTypedInput) {
+      const pending = awaitingTypedInput;
+      setAwaitingTypedInput(null);
+      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'user', kind: 'text', text });
+      const target = thread.find((m) => m.id === pending.messageId);
+      if (target && pending.kind === 'visio_review') handleVisioSuggest(target, text);
+      else if (target && pending.kind === 'visio_sa_review') handleSaSubmitChangeNote(target, text);
+      return;
+    }
+    send(text, sections, displayText);
   };
   const handleSend = () => handleSendText(input);
 
@@ -287,7 +563,14 @@ export default function ChatPanel({
       const res = await fetch('/api/upload', { method: 'POST', body: form });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || `Upload failed (${res.status}).`);
-      handleSendText(`Uploaded file "${body.filename}":\n\n${body.text}`);
+      // Show only the filename/type in the chat bubble — the full parsed
+      // document text still goes to the model as the real turn content.
+      // The Solution Architect handoff (see handleConfirmProposal below)
+      // deliberately does NOT fire here — it used to, right after upload,
+      // which notified the Solution Architect before the extracted
+      // sources/Q&A pairs were even confirmed into the form. It now fires
+      // only once the OMS source-fields proposal is actually confirmed.
+      handleSendText(`Uploaded file "${body.filename}":\n\n${body.text}`, `Uploaded file "${body.filename}"`);
     } catch (err) {
       handleSendText(`(File upload failed: ${err instanceof Error ? err.message : String(err)})`);
     } finally {
@@ -449,6 +732,7 @@ export default function ChatPanel({
                         onClick={() => {
                           onApplyProposal(p.assignments.map((a) => ({ fieldId: a.fieldId, value: a.value })));
                           updateMessage(currentPersona, projectKey, m.id, { proposal: { ...p, resolved: 'confirmed' } });
+                          maybeNotifySaFromOmsProposal(p);
                         }}
                       >
                         Confirm
@@ -490,6 +774,88 @@ export default function ChatPanel({
               </div>
             );
           }
+          if (m.kind === 'visio_clarify' && m.visioClarify) {
+            const vc = m.visioClarify;
+            return (
+              <div className="msg bot vb-cq" key={m.id}>
+                <div className="vb-cq-q">{vc.question}</div>
+                <div className="vb-cq-opts">
+                  {vc.options.map((o) => (
+                    <button
+                      key={o.value}
+                      className="vb-cq-opt"
+                      disabled={!!vc.answered}
+                      style={vc.answered && vc.answered.value !== o.value ? { opacity: 0.5 } : undefined}
+                      onClick={() => handleVisioAnswer(m, o.value, o.label)}
+                    >
+                      <span className="vb-cq-opt-label">
+                        {vc.answered?.value === o.value ? '✓ ' : ''}
+                        {o.label}
+                      </span>
+                      {o.recommended && !vc.answered && <span className="vb-cq-rec">Recommended</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          if (m.kind === 'visio_generate' && m.visioGenerate) {
+            return (
+              <div className="msg bot vb-cq-generate" key={m.id}>
+                <button className="btn-primary" disabled={m.visioGenerate.resolved} onClick={() => handleVisioGenerate(m)}>
+                  {m.visioGenerate.resolved ? 'Flow generating…' : 'Generate Flow'}
+                </button>
+              </div>
+            );
+          }
+          if (m.kind === 'visio_review' && m.visioReview) {
+            const vr = m.visioReview;
+            return (
+              <div className="msg bot vb-cq" key={m.id}>
+                <div className="vb-cq-q">The Flow diagram for this campaign is ready for your review. Approve it, or suggest changes?</div>
+                {!vr.resolved && (
+                  <div className="vb-approval-actions">
+                    <button className="btn-primary" onClick={() => handleVisioApprove(m)}>
+                      Approve
+                    </button>
+                    <button className="btn-ghost" onClick={() => promptForVisioSuggestion(m)}>
+                      Suggest modifications
+                    </button>
+                  </div>
+                )}
+                {vr.resolved === 'approved' && <span className="sm-status-pill sm-status-done">You approved this</span>}
+                {vr.resolved === 'changes_requested' && <span className="sm-status-pill sm-status-mine">Changes requested</span>}
+              </div>
+            );
+          }
+          if (m.kind === 'visio_sa_review' && m.visioSaReview) {
+            const v = m.visioSaReview;
+            return (
+              <div className="msg bot vb-cq" key={m.id}>
+                <div className="vb-cq-q">
+                  All details for creating the segmentation are captured — a draft version has been generated for your review. Would you like to
+                  describe any changes?
+                </div>
+                {v.wantsChanges === undefined && (
+                  <div className="vb-cq-opts">
+                    <button className="vb-cq-opt" onClick={() => handleSaWantsChanges(m, 'yes')}>
+                      <span className="vb-cq-opt-label">Yes</span>
+                    </button>
+                    <button className="vb-cq-opt" onClick={() => handleSaWantsChanges(m, 'no')}>
+                      <span className="vb-cq-opt-label">No</span>
+                    </button>
+                  </div>
+                )}
+                {v.changeNote && <div className="vb-approval-note">&quot;{v.changeNote}&quot;</div>}
+                {(v.wantsChanges === 'no' || v.changeNote) && !v.sentForApproval && (
+                  <button className="btn-primary" onClick={() => handleSaSendForApproval(m)}>
+                    Send for Approval
+                  </button>
+                )}
+                {v.sentForApproval && <span className="sm-status-pill sm-status-done">Sent for approval</span>}
+              </div>
+            );
+          }
           if (m.kind === 'new_campaign_proposal' && m.newCampaign) {
             const nc = m.newCampaign;
             const rows: [string, string][] = [
@@ -524,6 +890,8 @@ export default function ChatPanel({
                       <button
                         className="btn-primary btn-sm"
                         onClick={async () => {
+                          if (creatingCampaignIds.current.has(m.id)) return;
+                          creatingCampaignIds.current.add(m.id);
                           // Baked into the thread BEFORE relocating it — once
                           // the thread moves to the new project's key, this
                           // message only exists under that key, so updating
@@ -548,10 +916,14 @@ export default function ChatPanel({
                           if (newTactplanId && projectKey === LANDING_PROJECT) {
                             relocateThreadToNewProject(currentPersona, projectKey, newTactplanId, nc.campaignName);
                           }
-                          // Intake's done — clear its draft so a stray
-                          // leftover value never bleeds into the NEXT New
-                          // Campaign Intake run in this same (persona, project).
-                          clearNewCampaignDraft(currentPersona, newTactplanId || projectKey);
+                          // Intake's done — clear the OLD (landing) draft so a
+                          // stray leftover value never bleeds into the NEXT New
+                          // Campaign Intake run there. Deliberately NOT
+                          // newTactplanId: relocateThreadToNewProject just
+                          // moved the real draft onto that key, and the
+                          // continuation turn on the new campaign's page still
+                          // needs it as the authoritative clientDraft.
+                          clearNewCampaignDraft(currentPersona, projectKey);
                           // The freshly mounted ChatPanel on the new
                           // campaign's own page (after navigation lands)
                           // picks this up and auto-continues — see the

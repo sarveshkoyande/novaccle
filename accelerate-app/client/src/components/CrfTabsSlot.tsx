@@ -29,26 +29,35 @@ export default function CrfTabsSlot({
   commentCount,
   commentsOpen,
   onToggleComments,
+  showFlowDesign,
 }: {
-  viewedGate: 'preplan' | 'planning';
-  onSelectGate: (gate: 'preplan' | 'planning') => void;
+  viewedGate: 'preplan' | 'planning' | 'flow';
+  onSelectGate: (gate: 'preplan' | 'planning' | 'flow') => void;
   scopeMode: 'focus' | 'all';
   onToggleScope: () => void;
   commentCount: number;
   commentsOpen?: boolean;
   onToggleComments: () => void;
+  // Flow Design (the Visio Builder) only makes sense once the campaign has
+  // enough context to diagram — same "past intake" gate the rest of the
+  // stage-driven UI already uses.
+  showFlowDesign?: boolean;
 }) {
-  const inPlanning = viewedGate === 'planning';
   return (
     <div className="crf-tabs-slot">
       <div className="crf-view-tabs">
         <div className="stage-track">
-          <button className={`crf-tab ${!inPlanning ? 'active' : ''}`} onClick={() => onSelectGate('preplan')}>
+          <button className={`crf-tab ${viewedGate === 'preplan' ? 'active' : ''}`} onClick={() => onSelectGate('preplan')}>
             Pre-planning
           </button>
-          <button className={`crf-tab ${inPlanning ? 'active' : ''}`} onClick={() => onSelectGate('planning')}>
+          <button className={`crf-tab ${viewedGate === 'planning' ? 'active' : ''}`} onClick={() => onSelectGate('planning')}>
             Planning
           </button>
+          {showFlowDesign && (
+            <button className={`crf-tab ${viewedGate === 'flow' ? 'active' : ''}`} onClick={() => onSelectGate('flow')}>
+              Flow Design
+            </button>
+          )}
         </div>
       </div>
       <button className={`crf-scope-toggle ${scopeMode === 'focus' ? 'on' : ''}`} onClick={onToggleScope} title="Show only sections that need your input">

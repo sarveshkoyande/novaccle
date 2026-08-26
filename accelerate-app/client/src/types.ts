@@ -13,6 +13,10 @@ export interface FormField {
   cond?: Record<string, unknown>;
   drives?: string | null;
   cascadeFromField?: string | null;
+  // The fieldKey this field's value can be inferred from (e.g. OMS's
+  // "Brand" derivesFrom Generic's "1.1.3"). Only ever PROPOSED — see
+  // propose_derived_fills — never silently applied.
+  derivesFrom?: string | null;
   locked: boolean;
   lockedValue?: string | null;
   wide: boolean;

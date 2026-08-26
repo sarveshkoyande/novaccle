@@ -11,6 +11,7 @@ import CampaignBar from '../components/CampaignBar';
 import CrfTabsSlot from '../components/CrfTabsSlot';
 import DetailsResizer from '../components/DetailsResizer';
 import CommentsDrawer from '../components/CommentsDrawer';
+import VisioBuilderPanel from '../components/VisioBuilderPanel';
 import { condMet, deriveCampaignConfig } from '../cond';
 import { evaluateNudgeRules, getFiredRuleIds, markRulesFired } from '../nudges';
 import { toPlainText } from '../plainText';
@@ -41,8 +42,16 @@ export default function RequestDetailPage() {
   // actually has editable content for this request instead of always
   // opening on Pre-planning, which would land a mid/late-phase request on
   // an empty-looking board.
-  const [viewedGateOverride, setViewedGateOverride] = useState<'preplan' | 'planning' | null>(null);
+  const [viewedGateOverride, setViewedGateOverride] = useState<'preplan' | 'planning' | 'flow' | null>(null);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  // Flips true in the SAME effect run that seeds fieldValues (below), not
+  // merely when entriesQuery.data first arrives — those aren't the same
+  // moment. Passed to ChatPanel as entriesLoaded, gating its
+  // [[system:campaign_created]] auto-continuation: firing it as soon as
+  // entriesQuery.data existed (regardless of whether fieldValues had
+  // actually been populated from it yet) was still racy in exactly the way
+  // this flag exists to prevent — see ChatPanel's own comment on it.
+  const [fieldValuesSeeded, setFieldValuesSeeded] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const commentsQuery = useQuery({ queryKey: ['comments', id], queryFn: () => api.getComments(id!), enabled: !!id });
   // Ported back from the original's formScope simple/full switch
@@ -145,15 +154,34 @@ export default function RequestDetailPage() {
   }, [id, nudgeRulesQuery.data, sections, fieldValues, submittedSections, currentPhase, currentPersona, campaignConfig]);
 
   // Seed local field-value state from the fetched entries once, then edits
-  // live purely in local state until Save writes them back.
+  // live purely in local state until Save writes them back — that was
+  // always the intent (see the comment), but the code didn't actually
+  // enforce "once": this effect's only dependency was entriesQuery.data,
+  // so it re-ran and clobbered ALL local unsaved state (every chat-
+  // confirmed proposal, every quiz answer) on every background refetch of
+  // the same campaign — and with a bare `new QueryClient()` (App.tsx),
+  // React Query's defaults (staleTime 0, refetchOnWindowFocus true) mean
+  // that's not rare: switching browser tabs and back was enough to wipe
+  // an entire in-progress chat session's worth of confirmed-but-unsaved
+  // fields back to whatever was last actually persisted. Verified this was
+  // the real cause of a reported "it confirmed my values, then later
+  // erased everything" bug — a background refetch landed between
+  // confirmations. Now seeds once per campaign (tracked by id) and never
+  // again for that same campaign, so only a genuine campaign switch
+  // re-seeds; a refetch of the SAME campaign's entries no longer touches
+  // in-progress local state at all.
+  const seededForId = useRef<string | null>(null);
   useEffect(() => {
-    if (!entriesQuery.data) return;
+    if (!entriesQuery.data || !id) return;
+    if (seededForId.current === id) return;
+    seededForId.current = id;
     const seeded: Record<string, string> = {};
     entriesQuery.data.entries.forEach((e) => {
       seeded[e.fieldId] = e.value;
     });
     setFieldValues(seeded);
-  }, [entriesQuery.data]);
+    setFieldValuesSeeded(true);
+  }, [entriesQuery.data, id]);
 
   // Auto-select the first section only ONCE, when the list first loads —
   // not on every re-render where openSectionId happens to be null, or
@@ -180,12 +208,25 @@ export default function RequestDetailPage() {
     const remaining: { sectionId: string; sectionName: string; field: string }[] = [];
     const blocked: { sectionId: string; sectionName: string; field: string; reason: string }[] = [];
     const byLabel: Record<string, string> = {};
+    // fieldKey -> answered value, so a field with an explicit derivesFrom
+    // (set via the admin schema, e.g. OMS Brand derivesFrom "1.1.3") can be
+    // matched reliably instead of only by coincidentally-identical label
+    // text — label matching alone missed anything where the source and
+    // target fields are phrased differently (Campaign <- Campaign Name).
+    const byFieldKey: Record<string, string> = {};
     sections.forEach((s) => {
       s.fields.forEach((f) => {
         const v = fieldValues[f.id];
-        if (v) byLabel[f.label.trim().toLowerCase()] = v;
+        if (v) {
+          byLabel[f.label.trim().toLowerCase()] = v;
+          if (f.fieldKey) byFieldKey[f.fieldKey] = v;
+        }
       });
     });
+    // The remaining-fields loop below also needs each field's own fieldKey
+    // and derivesFrom, so track the FormField alongside its display row
+    // rather than re-scanning sections to look it up afterward.
+    const remainingFields: { sectionId: string; sectionName: string; field: string; fieldId: string; fieldKey: string; derivesFrom?: string | null }[] = [];
     sections.forEach((s) => {
       const submitted = submittedSections.has(s.id);
       s.fields.forEach((f) => {
@@ -196,13 +237,18 @@ export default function RequestDetailPage() {
           blocked.push({ sectionId: s.id, sectionName: s.name, field: f.label, reason: `Not editable until the ${f.phase} stage.` });
         } else {
           remaining.push({ sectionId: s.id, sectionName: s.name, field: f.label });
+          remainingFields.push({ sectionId: s.id, sectionName: s.name, field: f.label, fieldId: f.id, fieldKey: f.fieldKey, derivesFrom: f.derivesFrom });
         }
       });
     });
-    const derived = remaining
+    const derived = remainingFields
       .map((r) => {
-        const value = byLabel[r.field.trim().toLowerCase()];
-        return value ? { sectionId: r.sectionId, sectionName: r.sectionName, field: r.field, value } : null;
+        const value = (r.derivesFrom && byFieldKey[r.derivesFrom]) || byLabel[r.field.trim().toLowerCase()];
+        // fieldId travels alongside the label so propose_derived_fills'
+        // Confirm button can write straight into fieldValues (keyed by
+        // fieldId, same as every other proposal) instead of silently
+        // writing to fieldValues[undefined] when only the label was sent.
+        return value ? { sectionId: r.sectionId, sectionName: r.sectionName, field: r.field, fieldId: r.fieldId, value } : null;
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
     const interview = {
@@ -234,9 +280,22 @@ export default function RequestDetailPage() {
   // always reporting the same all-phases total regardless of tab.
   const gatePhases = viewedGate === 'preplan' ? (['preplan'] as const) : (['plan', 'exec'] as const);
 
+  // This drives the row badge, "N need your input", and the Focus filter
+  // itself — all three are framed as "what's on ME", so this has to be
+  // owner-scoped. It wasn't: it counted ANY unfilled relevant field
+  // regardless of who owned it, so e.g. AOR's Focus view showed sections
+  // fully owned by OMS/CEP/XM/DCA as "needing input" — really someone
+  // else's open work, not theirs. sectionDetailMeta's "X / Y filled · all
+  // owners" line is deliberately NOT owner-scoped (it's a whole-section
+  // progress readout, says so right in its own label) — this one is the
+  // "is this actually mine to do" count, a different question.
   function sectionRemaining(s: FormSection) {
     const relevant = s.fields.filter(
-      (f) => !f.locked && (gatePhases as readonly string[]).includes(f.phase) && condMet(f.cond, fieldValues, campaignConfig),
+      (f) =>
+        !f.locked &&
+        f.owner === currentPersona &&
+        (gatePhases as readonly string[]).includes(f.phase) &&
+        condMet(f.cond, fieldValues, campaignConfig),
     );
     const filled = relevant.filter((f) => !!fieldValues[f.id]);
     return { total: relevant.length, remaining: relevant.length - filled.length };
@@ -280,8 +339,9 @@ export default function RequestDetailPage() {
   // — the original swaps to a whole different board view per gate; here,
   // with a single stacked panel, "switching gates" scrolls the matching
   // phase group into view and pops it open if it's currently collapsed.
-  function handleSelectGate(gate: 'preplan' | 'planning') {
+  function handleSelectGate(gate: 'preplan' | 'planning' | 'flow') {
     setViewedGateOverride(gate);
+    if (gate === 'flow') return;
     const targetPhase = gate === 'preplan' ? 'preplan' : 'plan';
     setTimeout(() => {
       const el = document.getElementById(`pg-${targetPhase}`);
@@ -292,8 +352,33 @@ export default function RequestDetailPage() {
     }, 0);
   }
 
+  // Looks up a field's own section/phase/label by id — every autosave path
+  // below needs this to build the {sectionId, fieldId, phase, ...} shape
+  // saveEntries expects, given only a fieldId.
+  function findFieldMeta(fieldId: string) {
+    for (const s of sections) {
+      const f = s.fields.find((x) => x.id === fieldId);
+      if (f) return { section: s, field: f };
+    }
+    return null;
+  }
+
+  // Debounced per-field autosave for direct typing — saving on every
+  // keystroke would spam the API, but typing should still end up durable
+  // without a separate save action, same as everything else now is.
+  const typingSaveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   function handleFieldChange(fieldId: string, value: string) {
     setFieldValues((prev) => ({ ...prev, [fieldId]: value }));
+    if (!id) return;
+    const meta = findFieldMeta(fieldId);
+    if (!meta) return;
+    clearTimeout(typingSaveTimers.current[fieldId]);
+    typingSaveTimers.current[fieldId] = setTimeout(async () => {
+      await api.saveEntries(id, [
+        { sectionId: meta.section.id, fieldId, phase: meta.field.phase, value, sectionName: meta.section.name, fieldLabel: meta.field.label },
+      ]);
+      await queryClient.invalidateQueries({ queryKey: ['entries', id] });
+    }, 600);
   }
 
   // record_quiz_answer's contract is "recorded immediately, no staging" —
@@ -365,7 +450,16 @@ export default function RequestDetailPage() {
     await queryClient.invalidateQueries({ queryKey: ['entries', id] });
   }
 
-  function handleApplyProposal(assignments: { fieldId: string; value: string }[]) {
+  // The real bug this was fixing: clicking Confirm on a chat proposal card
+  // only ever wrote to local fieldValues, never the server — unlike
+  // record_quiz_answer (handleQuizAnswer above), which always saved
+  // immediately. "Confirmed" fields sat as local-only state, invisible to
+  // and indistinguishable from genuinely-empty fields the moment
+  // entriesQuery refetched in the background (window focus, etc.) and
+  // reset fieldValues to what the server actually had — which was never
+  // updated. Every propose_fill/derived-fill confirmation is now durable
+  // the instant it's confirmed, same guarantee the quiz path already had.
+  async function handleApplyProposal(assignments: { fieldId: string; value: string }[]) {
     setFieldValues((prev) => {
       const next = { ...prev };
       assignments.forEach((a) => {
@@ -373,13 +467,29 @@ export default function RequestDetailPage() {
       });
       return next;
     });
+    if (!id) return;
+    const entries = assignments
+      .map((a) => {
+        const meta = findFieldMeta(a.fieldId);
+        if (!meta) return null;
+        return { sectionId: meta.section.id, fieldId: a.fieldId, phase: meta.field.phase, value: a.value, sectionName: meta.section.name, fieldLabel: meta.field.label };
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null);
+    if (!entries.length) return;
+    await api.saveEntries(id, entries);
+    await queryClient.invalidateQueries({ queryKey: ['entries', id] });
   }
 
-  const heroReady = useMemo(() => {
-    if (!sections.length) return request?.ready || '0%';
+  // Both read off the exact same allFields/filled counts — heroFieldsResolved
+  // used to just echo the seed data's frozen "0 / 151" default forever, even
+  // once a runtime-created campaign had real entries saved, because nothing
+  // here ever recomputed it the way heroReady already did for the percentage.
+  const { heroReady, heroFieldsResolved } = useMemo(() => {
+    if (!sections.length) return { heroReady: request?.ready || '0%', heroFieldsResolved: request?.fieldsResolved || '0 / 0' };
     const allFields = sections.flatMap((s) => s.fields.filter((f) => !f.locked));
     const filled = allFields.filter((f) => !!fieldValues[f.id]).length;
-    return allFields.length ? `${Math.round((filled / allFields.length) * 100)}%` : '0%';
+    const pct = allFields.length ? `${Math.round((filled / allFields.length) * 100)}%` : '0%';
+    return { heroReady: pct, heroFieldsResolved: `${filled} / ${allFields.length}` };
   }, [sections, fieldValues, request]);
 
   if (!request) {
@@ -396,7 +506,7 @@ export default function RequestDetailPage() {
 
   return (
     <>
-      <CampaignBar request={{ ...request, ready: heroReady }} />
+      <CampaignBar request={{ ...request, ready: heroReady, fieldsResolved: heroFieldsResolved }} />
       <div className="stage">
       <div className="view on" id="view-request">
         <CrfTabsSlot
@@ -407,9 +517,15 @@ export default function RequestDetailPage() {
           commentCount={commentsQuery.data?.comments.length || 0}
           commentsOpen={commentsOpen}
           onToggleComments={() => setCommentsOpen((v) => !v)}
+          showFlowDesign
         />
         {commentsOpen && id && <CommentsDrawer tactplanId={id} onClose={() => setCommentsOpen(false)} />}
 
+        {viewedGate === 'flow' && id ? (
+          <div className="vb-flow-wrap" style={{ padding: 16 }}>
+            <VisioBuilderPanel tactplanId={id} currentPersona={currentPersona} />
+          </div>
+        ) : (
         <div className="sm-wrap" id="smWrap">
           <aside className="sm-list-panel" id="smListPanel">
             {schemaQuery.isLoading && <div style={{ padding: 16 }}>Loading sections…</div>}
@@ -459,14 +575,34 @@ export default function RequestDetailPage() {
             {selected && (() => {
               const meta = sectionDetailMeta(selected);
               const isSubmitted = submittedSections.has(selected.id);
-              // Ported from index.html's restrictOwner logic: a field is
-              // read-only for anyone but its own owner ONLY when the
-              // section's current-phase owner list has more than one
-              // distinct persona — single-owner sections stay editable by
-              // whoever can reach them at all.
-              const phaseNeeds = selected.needs?.[currentPhase] || [];
-              const restrictOwner = phaseNeeds.length > 1;
-              const notMyField = (f: { owner: string }) => restrictOwner && f.owner !== currentPersona;
+              // BU Setup only exists for new-BU launches (same
+              // assetScope-gated cond as its own fields), and per the CEP/XM
+              // handoff it can't be submitted until the CMA Metadata Sheet
+              // section is complete — CMA is what actually stands up the
+              // brand/program/campaign records BU Setup's own fields
+              // reference. Gated on the section being relevant at all
+              // (its fields pass their cond) so this never blocks a
+              // campaign that doesn't even need BU Setup.
+              const cmaGateActive =
+                selected.id === 'busetup' &&
+                selected.fields.some((f) => condMet(f.cond, fieldValues, campaignConfig)) &&
+                !submittedSections.has('cma');
+              // Was ported from index.html's restrictOwner logic — read-only
+              // for anyone but a field's own owner ONLY when the section's
+              // current-phase needsJson lists more than one distinct
+              // persona, on the theory that a single-owner section is only
+              // ever looked at by its own owner anyway. That premise is
+              // false here: every persona can open every section to see
+              // what others have filled (confirmed, deliberate — see the
+              // "each person should see others' filled details" agreement),
+              // so a single-owner section left this gate permanently off
+              // and let ANY viewer edit fields that weren't theirs —
+              // caught live with Solution Architect editing AOR's Generic/
+              // Overview fields. Ownership restriction has to hold
+              // regardless of how many owners a section's needsJson lists;
+              // that list was never a reliable signal for this anyway (see
+              // the earlier OMS/generic needsJson data-drift bugs).
+              const notMyField = (f: { owner: string }) => f.owner !== currentPersona;
               const metaParts: string[] = [meta.isMine ? 'To fill' : 'Read-only'];
               if (meta.totalFields !== meta.relevantCount) metaParts.push(`${meta.relevantCount} of ${meta.totalFields} fields shown`);
               return (
@@ -479,6 +615,7 @@ export default function RequestDetailPage() {
                     commentCount={commentsQuery.data?.comments.length || 0}
                     commentsOpen={commentsOpen}
                     onToggleComments={() => setCommentsOpen((v) => !v)}
+                    showFlowDesign
                   />
                   <div className="sm-detail-head">
                     <div className="sm-detail-head-top">
@@ -544,7 +681,12 @@ export default function RequestDetailPage() {
                     })}
                     {!isSubmitted && (
                       <div className="sec-submit">
-                        <button className="btn-primary" onClick={handleSave}>
+                        {cmaGateActive && (
+                          <div className="sec-submit-blocked-note">
+                            Blocked until the CMA Metadata Sheet section is submitted.
+                          </div>
+                        )}
+                        <button className="btn-primary" onClick={handleSave} disabled={cmaGateActive}>
                           Save &amp; Continue
                         </button>
                       </div>
@@ -555,6 +697,7 @@ export default function RequestDetailPage() {
             })()}
           </section>
         </div>
+        )}
       </div>
       </div>
 
@@ -565,6 +708,7 @@ export default function RequestDetailPage() {
         onApplyProposal={handleApplyProposal}
         onOpenCampaign={(tactplanId) => navigate(`/requests/${tactplanId}`)}
         interviewData={interviewData}
+        entriesLoaded={fieldValuesSeeded}
         onQuizAnswer={handleQuizAnswer}
         onNotifyStakeholders={handleNotifyStakeholders}
         onCreateCampaign={async (fields) => {

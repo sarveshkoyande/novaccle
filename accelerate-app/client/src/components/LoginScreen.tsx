@@ -82,7 +82,20 @@ export default function LoginScreen() {
           <span>Password</span>
           <input type="password" defaultValue="demo-password-1234" readOnly />
         </label>
-        <button className="btn-primary login-btn" onClick={() => login(selected)}>
+        <button
+          className="btn-primary login-btn"
+          onClick={() => {
+            // LoginScreen renders OUTSIDE <BrowserRouter> (it's the auth
+            // gate swapped in over whatever route was already showing, e.g.
+            // a request-detail deep link) — useNavigate() isn't reachable
+            // here at all. Reset the URL directly via the History API
+            // BEFORE flipping loggedIn, so by the time BrowserRouter
+            // mounts and reads the current location, it's already "/"
+            // instead of the page that happened to be open before login.
+            window.history.replaceState(null, '', '/');
+            login(selected);
+          }}
+        >
           Log in
         </button>
         <p className="login-hint">

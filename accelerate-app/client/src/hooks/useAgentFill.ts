@@ -7,6 +7,29 @@ import type { FormSection } from '../types';
 let seq = 0;
 const nextId = () => `msg-${Date.now()}-${seq++}`;
 
+// Ported from index.html's SECTION_ALIASES — sectionsPayload below was
+// always sending an empty aliases array (a gap from the original React
+// port, never actually wired up), so match_section's tier-2 fallback
+// (server.js) never had anything to fall back to. Silently broke matching
+// on any message that names a section by a synonym rather than its literal
+// id/full name — e.g. "enrollment" alone doesn't contain the full phrase
+// "oms enrollment form details", so an enrollment metadata sheet upload
+// with no literal word "OMS" in it had no way to resolve to the OMS
+// section without this.
+const SECTION_ALIASES: Record<string, string[]> = {
+  generic: ['generic', 'overview'],
+  journey: ['journey'],
+  oms: ['oms', 'enrollment'],
+  mci: ['mci', 'performance reporting', 'campaign performance'],
+  email: ['email'],
+  mds: ['mds', 'target list', 'suppressions', 'suppression'],
+  dc: ['data cloud', 'dc'],
+  automx: ['automatrix', 'automx'],
+  sms: ['sms'],
+  cma: ['cma', 'metadata sheet'],
+  busetup: ['bu setup', 'business unit setup', 'business unit'],
+};
+
 // Sent on every turn, from every page — the full portfolio (same shape
 // useHomeAgent used to send only from the landing page) plus which page is
 // currently open. This is what makes the ONE shared chat session (see
@@ -42,7 +65,7 @@ function buildPortfolioContext(tactplanId: string | null, persona: PersonaKey) {
 interface InterviewData {
   remaining: { sectionId: string; sectionName: string; field: string }[];
   blocked: { sectionId: string; sectionName: string; field: string; reason: string }[];
-  derived: { sectionId: string; sectionName: string; field: string; value: string }[];
+  derived: { sectionId: string; sectionName: string; field: string; fieldId: string; value: string }[];
   interview: { stage: string; stageOpen: { sectionId: string; field: string }[]; nextQuestions: unknown[]; derivableCount: number };
 }
 
@@ -80,7 +103,7 @@ export function useAgentFill(
   }, [guidedMode]);
 
   const send = useCallback(
-    async (text: string, sections: FormSection[]) => {
+    async (text: string, sections: FormSection[], displayText?: string) => {
       if (!text.trim()) return;
       // Silent system sentinels (e.g. [[system:campaign_created]], fired
       // automatically after Create Campaign — see ChatPanel's continuation
@@ -88,8 +111,11 @@ export function useAgentFill(
       // show up as a fake "user" bubble in the transcript; the system
       // prompt already tells the model not to echo the literal text back,
       // this is the client-side half of that same contract.
+      // displayText lets a caller (e.g. file upload) show a short bubble
+      // ("Uploaded file X.pdf") while the model still receives the full
+      // parsed document text as the real turn content.
       if (!text.startsWith('[[system:')) {
-        addMessage(persona, projectKey, { id: nextId(), role: 'user', kind: 'text', text });
+        addMessage(persona, projectKey, { id: nextId(), role: 'user', kind: 'text', text: displayText ?? text });
       }
 
       const thinkingId = nextId();
@@ -98,7 +124,7 @@ export function useAgentFill(
       const sectionsPayload = sections.map((s) => ({
         id: s.id,
         name: s.name,
-        aliases: [],
+        aliases: SECTION_ALIASES[s.id] || [],
         fields: s.fields.map((f) => ({ id: f.id, n: f.label, phase: f.phase, owner: f.owner, type: f.type })),
       }));
 

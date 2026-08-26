@@ -4,7 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { api, type Comment } from '../api';
 import { REQUESTS } from '../data/requests';
 import { toPlainText } from '../plainText';
-import type { PersonaKey } from '../personas';
+import { isApproverPersona, type PersonaKey } from '../personas';
+import { useChatStore } from '../stores/useChatStore';
+import { useVisioStore, DEFAULT_VISIO_STATE } from '../stores/useVisioStore';
+
+let nbSeq = 0;
+const nbNextId = () => `msg-nb-${Date.now()}-${nbSeq++}`;
 
 const readKey = (persona: PersonaKey) => `accelerate-notifications-read:${persona}`;
 
@@ -68,6 +73,9 @@ export default function NotificationBell({ persona }: { persona: PersonaKey }) {
     queryFn: () => api.getNotifications(persona),
     refetchInterval: 20000,
   });
+  const addChatMessage = useChatStore((s) => s.addMessage);
+  const chatThreads = useChatStore((s) => s.threads);
+  const visioByCampaign = useVisioStore((s) => s.byCampaign);
 
   useEffect(() => setReadIds(getReadIds(persona)), [persona]);
 
@@ -98,10 +106,37 @@ export default function NotificationBell({ persona }: { persona: PersonaKey }) {
     localStorage.setItem(readKey(persona), JSON.stringify([...next]));
   }
 
+  // A Flow "ready for review" notification, opened by one of its
+  // approvers, drops an inline Approve / Suggest modifications prompt into
+  // that approver's own chat thread for this campaign — the click-through
+  // now leads straight into the decision instead of just landing on the
+  // page and leaving them to go find the Flow Design tab's static buttons.
   function handleOpen(n: Comment) {
     markRead(n.id);
     setOpen(false);
     navigate(`/requests/${n.tactplanId}`);
+    if (n.sectionId !== 'flow') return;
+    const visio = visioByCampaign[n.tactplanId] ?? DEFAULT_VISIO_STATE;
+    const thread = chatThreads[persona]?.[n.tactplanId] || [];
+    if (isApproverPersona(persona)) {
+      const mine = visio.decisions[persona];
+      if (visio.sent && mine && mine.status === 'pending') {
+        const alreadyPrompted = thread.some((m) => m.kind === 'visio_review' && !m.visioReview?.resolved);
+        if (!alreadyPrompted) {
+          addChatMessage(persona, n.tactplanId, { id: nbNextId(), role: 'bot', kind: 'visio_review', visioReview: { tactplanId: n.tactplanId } });
+        }
+      }
+    } else if (persona === 'solutionArchitect' && n.mentions?.includes('solutionArchitect') && n.authorPersona === 'oms') {
+      // The OMS metadata-sheet handoff — a draft already exists (ready)
+      // but hasn't been sent for approval yet; this is what kickstarts
+      // the SA's confirm/describe-changes/send-for-approval chat card.
+      if (visio.ready && !visio.sent) {
+        const alreadyPrompted = thread.some((m) => m.kind === 'visio_sa_review' && !m.visioSaReview?.sentForApproval);
+        if (!alreadyPrompted) {
+          addChatMessage(persona, n.tactplanId, { id: nbNextId(), role: 'bot', kind: 'visio_sa_review', visioSaReview: { tactplanId: n.tactplanId } });
+        }
+      }
+    }
   }
 
   return (
@@ -129,7 +164,15 @@ export default function NotificationBell({ persona }: { persona: PersonaKey }) {
                 {unread && <span className="notif-dot" />}
                 <div className="notif-item-body">
                   <div className="notif-item-title">{req ? req.name : n.tactplanId}</div>
-                  <div className="notif-item-text">{simplifyNotification(n.body)}</div>
+                  {/* title= gives a native hover tooltip with the FULL
+                      message — simplifyNotification() only shows the
+                      essence (drops the "Next: ..." paragraph, clamped to
+                      2 lines by CSS) because the dropdown has limited
+                      space, but nothing about the complete text should be
+                      lost, just deferred to hover. */}
+                  <div className="notif-item-text" title={toPlainText(n.body)}>
+                    {simplifyNotification(n.body)}
+                  </div>
                   <div className="notif-item-meta">{timeAgo(n.createdAt)}</div>
                 </div>
               </button>

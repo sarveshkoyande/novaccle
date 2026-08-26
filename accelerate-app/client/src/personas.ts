@@ -10,7 +10,7 @@ export interface Persona {
   scope: string;
 }
 
-export type PersonaKey = 'aor' | 'xm' | 'mds' | 'cep' | 'ops' | 'dca' | 'ops2' | 'ops3' | 'oms';
+export type PersonaKey = 'aor' | 'xm' | 'mds' | 'cep' | 'ops' | 'dca' | 'ops2' | 'ops3' | 'oms' | 'solutionArchitect';
 
 export const PERSONAS: Record<PersonaKey, Persona> = {
   aor: { name: 'Priya Sharma', role: 'AOR · Agency', color: '#E74A21', abbr: 'PS', scope: 'primary owner · 121 of 151 fields' },
@@ -19,8 +19,14 @@ export const PERSONAS: Record<PersonaKey, Persona> = {
   cep: { name: 'Tomás Okafor', role: 'CEP · Platform / DC', color: '#5B6B7A', abbr: 'TO', scope: '4 fields · MCI reporting' },
   ops: { name: 'Derek Lin', role: 'Campaign Ops', color: '#0A3D7A', abbr: 'DL', scope: 'orchestration · 6 build-time fields' },
   dca: { name: 'Priya Nair', role: 'Data Cloud Architect', color: '#1E8E5A', abbr: 'PN', scope: '6 fields · Data Cloud details' },
-  ops2: { name: 'Alex Kim', role: 'Campaign Ops · Approver', color: '#8B5CF6', abbr: 'AK', scope: 'Visio approver' },
-  ops3: { name: 'Sofia Reyes', role: 'Campaign Ops · Approver', color: '#1E8E5A', abbr: 'SR', scope: 'Visio approver' },
+  ops2: { name: 'Alex Kim', role: 'Campaign Ops · Approver', color: '#8B5CF6', abbr: 'AK', scope: 'Flow approver' },
+  ops3: { name: 'Sofia Reyes', role: 'Campaign Ops · Approver', color: '#1E8E5A', abbr: 'SR', scope: 'Flow approver' },
+  // Owns the Flow Design tab: answers the clarify questions, generates the
+  // diagram, and sends it for approval — this used to be Derek's (Campaign
+  // Ops) job in the original app; moved here per explicit direction so
+  // Campaign Ops stays orchestration-only and Flow authoring has its own
+  // dedicated owner.
+  solutionArchitect: { name: 'Jordan Blake', role: 'Solution Architect', color: '#9333EA', abbr: 'JB', scope: 'Flow author · Flow Design' },
   // Owns the enrollment-form detail fields (Source Type/Name, Franchise,
   // Program, Survey Q&A, Metadata, Campaign Source Code) — everything in
   // OMS - Enrollment Form Details EXCEPT the one trigger question ("Campaign
