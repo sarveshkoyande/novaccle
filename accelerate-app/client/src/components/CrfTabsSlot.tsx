@@ -31,8 +31,8 @@ export default function CrfTabsSlot({
   onToggleComments,
   showFlowDesign,
 }: {
-  viewedGate: 'preplan' | 'planning' | 'flow';
-  onSelectGate: (gate: 'preplan' | 'planning' | 'flow') => void;
+  viewedGate: 'preplan' | 'planning' | 'flow' | 'timeline';
+  onSelectGate: (gate: 'preplan' | 'planning' | 'flow' | 'timeline') => void;
   scopeMode: 'focus' | 'all';
   onToggleScope: () => void;
   commentCount: number;
@@ -58,6 +58,13 @@ export default function CrfTabsSlot({
               Flow Design
             </button>
           )}
+          {/* CDM's delivery-sequencing view — the same GanttTimeline the
+              standalone Calendar page uses, embedded per-campaign. Visible to
+              every persona (read-only informational, same as Flow Design),
+              not gated behind campaign readiness the way Flow Design is. */}
+          <button className={`crf-tab ${viewedGate === 'timeline' ? 'active' : ''}`} onClick={() => onSelectGate('timeline')}>
+            Timeline
+          </button>
         </div>
       </div>
       <button className={`crf-scope-toggle ${scopeMode === 'focus' ? 'on' : ''}`} onClick={onToggleScope} title="Show only sections that need your input">

@@ -10,7 +10,7 @@ export interface Persona {
   scope: string;
 }
 
-export type PersonaKey = 'aor' | 'xm' | 'mds' | 'cep' | 'ops' | 'dca' | 'ops2' | 'ops3' | 'oms' | 'solutionArchitect';
+export type PersonaKey = 'aor' | 'xm' | 'mds' | 'cep' | 'ops' | 'dca' | 'ops2' | 'ops3' | 'oms' | 'solutionArchitect' | 'cdm';
 
 export const PERSONAS: Record<PersonaKey, Persona> = {
   aor: { name: 'Priya Sharma', role: 'AOR · Agency', color: '#E74A21', abbr: 'PS', scope: 'primary owner · 121 of 151 fields' },
@@ -34,6 +34,12 @@ export const PERSONAS: Record<PersonaKey, Persona> = {
   // one who knows whether enrollment applies at all, OMS only needs to act
   // once the answer is Yes.
   oms: { name: 'Rahul Mehta', role: 'OMS · Enrollment Ops', color: '#0E7490', abbr: 'RM', scope: '15 fields · enrollment form details' },
+  // Owns the per-campaign Timeline tab (the same GanttTimeline the standalone
+  // Calendar page already uses, embedded here instead) — sequences the
+  // campaign's real build activities against a start date and tracks TAT,
+  // per direct request. Doesn't own any form fields; every persona can view
+  // this tab same as Flow Design, CDM is just who it's built for.
+  cdm: { name: 'Naveen Iyer', role: 'CDM · Delivery', color: '#DB2777', abbr: 'NI', scope: 'Timeline · delivery sequencing' },
 };
 
 export const VB_APPROVER_KEYS: PersonaKey[] = ['ops2', 'ops3'];

@@ -133,6 +133,65 @@ export const api = {
   deleteNudgeRule: (id: string) =>
     fetch(`/api/admin/nudge-rules/${id}`, { method: 'DELETE' }).then((r) => json<{ ok: true }>(r)),
 
+  // ---- Admin: Brand & Indication list ----
+  getBrandIndications: () => fetch('/api/admin/brand-indications').then((r) => json<{ rows: BrandIndicationRow[] }>(r)),
+
+  addBrandIndication: (data: { brand: string; indication: string; brandedUnbranded: string }) =>
+    fetch('/api/admin/brand-indications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then((r) => json<{ row: BrandIndicationRow }>(r)),
+
+  updateBrandIndication: (id: number, data: Partial<{ brand: string; indication: string; brandedUnbranded: string }>) =>
+    fetch(`/api/admin/brand-indications/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then((r) => json<{ row: BrandIndicationRow }>(r)),
+
+  deleteBrandIndication: (id: number) =>
+    fetch(`/api/admin/brand-indications/${id}`, { method: 'DELETE' }).then((r) => json<{ ok: true }>(r)),
+
+  // ---- Admin: Agencies + brand access ----
+  getAgencies: () => fetch('/api/admin/agencies').then((r) => json<{ agencies: Agency[] }>(r)),
+
+  addAgency: (name: string) =>
+    fetch('/api/admin/agencies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }).then((r) => json<{ agency: Agency }>(r)),
+
+  deleteAgency: (id: string) => fetch(`/api/admin/agencies/${id}`, { method: 'DELETE' }).then((r) => json<{ ok: true }>(r)),
+
+  // Replaces the agency's whole brand-access list in one call.
+  setAgencyBrands: (id: string, brands: string[]) =>
+    fetch(`/api/admin/agencies/${id}/brands`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brands }),
+    }).then((r) => json<{ agency: Agency }>(r)),
+
+  // ---- Admin: user directory (XM/CDM-to-brand mapping) ----
+  getAppUsers: () => fetch('/api/admin/users').then((r) => json<{ users: AppUser[] }>(r)),
+
+  addAppUser: (data: { name: string; email?: string; roleType: string; brand?: string }) =>
+    fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then((r) => json<{ user: AppUser }>(r)),
+
+  updateAppUser: (id: string, data: Partial<{ name: string; email: string; roleType: string; brand: string }>) =>
+    fetch(`/api/admin/users/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).then((r) => json<{ user: AppUser }>(r)),
+
+  deleteAppUser: (id: string) => fetch(`/api/admin/users/${id}`, { method: 'DELETE' }).then((r) => json<{ ok: true }>(r)),
+
   getComments: (tactplanId: string) =>
     fetch(`/api/comments/${encodeURIComponent(tactplanId)}`).then((r) => json<{ comments: Comment[] }>(r)),
 
@@ -179,4 +238,33 @@ export interface PlanMilestone {
   discoveryEta: string | null;
   cpfEta: string | null;
   crfEta: string | null;
+}
+
+export interface BrandIndicationRow {
+  id: number;
+  brand: string;
+  indication: string;
+  brandedUnbranded: string;
+}
+
+export interface AgencyBrandAccessRow {
+  id: string;
+  agencyId: string;
+  brand: string;
+}
+
+export interface Agency {
+  id: string;
+  name: string;
+  createdAt: string;
+  access: AgencyBrandAccessRow[];
+}
+
+export interface AppUser {
+  id: string;
+  name: string;
+  email: string | null;
+  roleType: string;
+  brand: string | null;
+  createdAt: string;
 }

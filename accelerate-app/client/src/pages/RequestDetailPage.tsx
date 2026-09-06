@@ -12,6 +12,8 @@ import CrfTabsSlot from '../components/CrfTabsSlot';
 import DetailsResizer from '../components/DetailsResizer';
 import CommentsDrawer from '../components/CommentsDrawer';
 import VisioBuilderPanel from '../components/VisioBuilderPanel';
+import GanttTimeline from '../components/GanttTimeline';
+import { buildGanttData } from '../data/ganttData';
 import { condMet, deriveCampaignConfig } from '../cond';
 import { evaluateNudgeRules, getFiredRuleIds, markRulesFired } from '../nudges';
 import { toPlainText } from '../plainText';
@@ -42,7 +44,29 @@ export default function RequestDetailPage() {
   // actually has editable content for this request instead of always
   // opening on Pre-planning, which would land a mid/late-phase request on
   // an empty-looking board.
-  const [viewedGateOverride, setViewedGateOverride] = useState<'preplan' | 'planning' | 'flow' | null>(null);
+  const [viewedGateOverride, setViewedGateOverride] = useState<'preplan' | 'planning' | 'flow' | 'timeline' | null>(null);
+  // Timeline tab — same GanttTimeline/PlanMilestone data the standalone
+  // Calendar page reads, just scoped down to this one campaign instead of
+  // every open one.
+  const milestonesQuery = useQuery({ queryKey: ['plan-milestones'], queryFn: api.getPlanMilestones });
+  const milestone = milestonesQuery.data?.milestones.find((m) => m.tactplanId === id);
+  const [timelineToasts, setTimelineToasts] = useState<{ id: number; msg: string }[]>([]);
+  const timelineToastSeq = useRef(0);
+  function showTimelineToast(msg: string) {
+    const tid = ++timelineToastSeq.current;
+    setTimelineToasts((t) => [...t, { id: tid, msg }]);
+    setTimeout(() => setTimelineToasts((t) => t.filter((x) => x.id !== tid)), 3000);
+  }
+  async function saveTimelineMilestone(field: 'discoveryEta' | 'cpfEta' | 'crfEta', value: string) {
+    if (!id) return;
+    try {
+      await api.updatePlanMilestone(id, { [field]: value || null });
+      await queryClient.invalidateQueries({ queryKey: ['plan-milestones'] });
+      showTimelineToast('✓ Saved.');
+    } catch {
+      showTimelineToast('Could not save ETA.');
+    }
+  }
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   // Flips true in the SAME effect run that seeds fieldValues (below), not
   // merely when entriesQuery.data first arrives — those aren't the same
@@ -339,9 +363,9 @@ export default function RequestDetailPage() {
   // — the original swaps to a whole different board view per gate; here,
   // with a single stacked panel, "switching gates" scrolls the matching
   // phase group into view and pops it open if it's currently collapsed.
-  function handleSelectGate(gate: 'preplan' | 'planning' | 'flow') {
+  function handleSelectGate(gate: 'preplan' | 'planning' | 'flow' | 'timeline') {
     setViewedGateOverride(gate);
-    if (gate === 'flow') return;
+    if (gate === 'flow' || gate === 'timeline') return;
     const targetPhase = gate === 'preplan' ? 'preplan' : 'plan';
     setTimeout(() => {
       const el = document.getElementById(`pg-${targetPhase}`);
@@ -524,6 +548,22 @@ export default function RequestDetailPage() {
         {viewedGate === 'flow' && id ? (
           <div className="vb-flow-wrap" style={{ padding: 16 }}>
             <VisioBuilderPanel tactplanId={id} currentPersona={currentPersona} />
+          </div>
+        ) : viewedGate === 'timeline' ? (
+          <div className="vb-flow-wrap" style={{ padding: 16 }}>
+            <GanttTimeline
+              data={buildGanttData(request)}
+              onToast={showTimelineToast}
+              milestone={milestone}
+              onSaveMilestone={saveTimelineMilestone}
+            />
+            <div className="toasts">
+              {timelineToasts.map((t) => (
+                <div className="toast" key={t.id}>
+                  {t.msg}
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
         <div className="sm-wrap" id="smWrap">

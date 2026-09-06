@@ -187,6 +187,150 @@ app.get('/api/brand-lookup', async (req, res) => {
 });
 
 // ===========================================================================
+// Admin: Brand & Indication list management — full CRUD on the same
+// BrandIndication rows the New Campaign modal's autofill already reads (see
+// /api/brands, /api/indications, /api/brand-lookup above). This is the
+// "brand list, and within each a list of indications" admin pane.
+// ===========================================================================
+app.get('/api/admin/brand-indications', async (req, res) => {
+  const rows = await prisma.brandIndication.findMany({ orderBy: [{ brand: 'asc' }, { indication: 'asc' }] });
+  res.json({ rows });
+});
+
+app.post('/api/admin/brand-indications', async (req, res) => {
+  const { brand, indication, brandedUnbranded } = req.body || {};
+  if (!brand || !indication || !brandedUnbranded) return res.status(400).json({ error: 'brand, indication and brandedUnbranded are all required.' });
+  try {
+    const row = await prisma.brandIndication.create({ data: { brand, indication, brandedUnbranded } });
+    res.json({ row });
+  } catch (err) {
+    res.status(400).json({ error: err.code === 'P2002' ? 'That brand/indication pair already exists.' : err.message });
+  }
+});
+
+app.put('/api/admin/brand-indications/:id', async (req, res) => {
+  const { brand, indication, brandedUnbranded } = req.body || {};
+  try {
+    const row = await prisma.brandIndication.update({
+      where: { id: Number(req.params.id) },
+      data: {
+        ...(brand !== undefined ? { brand } : {}),
+        ...(indication !== undefined ? { indication } : {}),
+        ...(brandedUnbranded !== undefined ? { brandedUnbranded } : {}),
+      },
+    });
+    res.json({ row });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/brand-indications/:id', async (req, res) => {
+  try {
+    await prisma.brandIndication.delete({ where: { id: Number(req.params.id) } });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// ===========================================================================
+// Admin: Agencies + agency-to-brand access (many-to-many — two agencies can
+// share a brand, one agency can hold several brands).
+// ===========================================================================
+app.get('/api/admin/agencies', async (req, res) => {
+  const agencies = await prisma.agency.findMany({ orderBy: { name: 'asc' }, include: { access: true } });
+  res.json({ agencies });
+});
+
+app.post('/api/admin/agencies', async (req, res) => {
+  const { name } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'name is required.' });
+  try {
+    const agency = await prisma.agency.create({ data: { name } });
+    res.json({ agency });
+  } catch (err) {
+    res.status(400).json({ error: err.code === 'P2002' ? 'An agency with that name already exists.' : err.message });
+  }
+});
+
+app.delete('/api/admin/agencies/:id', async (req, res) => {
+  try {
+    await prisma.agency.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// Replaces one agency's entire brand-access list in one call — simpler for
+// a checklist-style admin UI (toggle brands on/off) than exposing granular
+// add/remove-one-row endpoints for what's really "set this agency's access
+// list to exactly these brands."
+app.put('/api/admin/agencies/:id/brands', async (req, res) => {
+  const { brands } = req.body || {};
+  if (!Array.isArray(brands)) return res.status(400).json({ error: 'brands must be an array of brand names.' });
+  try {
+    await prisma.agencyBrandAccess.deleteMany({ where: { agencyId: req.params.id } });
+    if (brands.length) {
+      await prisma.agencyBrandAccess.createMany({ data: brands.map((brand) => ({ agencyId: req.params.id, brand })) });
+    }
+    const agency = await prisma.agency.findUnique({ where: { id: req.params.id }, include: { access: true } });
+    res.json({ agency });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ===========================================================================
+// Admin: user directory — the individuals behind the XM-to-brand /
+// CDM-to-brand mapping. Separate from the demo login personas
+// (client/personas.ts): this is real-people bookkeeping, not a login list.
+// ===========================================================================
+app.get('/api/admin/users', async (req, res) => {
+  const users = await prisma.appUser.findMany({ orderBy: [{ roleType: 'asc' }, { name: 'asc' }] });
+  res.json({ users });
+});
+
+app.post('/api/admin/users', async (req, res) => {
+  const { name, email, roleType, brand } = req.body || {};
+  if (!name || !roleType) return res.status(400).json({ error: 'name and roleType are required.' });
+  try {
+    const user = await prisma.appUser.create({ data: { name, email: email || null, roleType, brand: brand || null } });
+    res.json({ user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/admin/users/:id', async (req, res) => {
+  const { name, email, roleType, brand } = req.body || {};
+  try {
+    const user = await prisma.appUser.update({
+      where: { id: req.params.id },
+      data: {
+        ...(name !== undefined ? { name } : {}),
+        ...(email !== undefined ? { email: email || null } : {}),
+        ...(roleType !== undefined ? { roleType } : {}),
+        ...(brand !== undefined ? { brand: brand || null } : {}),
+      },
+    });
+    res.json({ user });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', async (req, res) => {
+  try {
+    await prisma.appUser.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(404).json({ error: err.message });
+  }
+});
+
+// ===========================================================================
 // Persisted form entries — every field value actually saved, tagged by its
 // stage (phase column: preplan/plan/exec) so the chat agent can ground
 // answers about already-entered data in a real query (get_entries tool
