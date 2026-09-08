@@ -31,8 +31,8 @@ export default function CrfTabsSlot({
   onToggleComments,
   showFlowDesign,
 }: {
-  viewedGate: 'preplan' | 'planning' | 'flow' | 'timeline';
-  onSelectGate: (gate: 'preplan' | 'planning' | 'flow' | 'timeline') => void;
+  viewedGate: 'preplan' | 'planning' | 'exec' | 'flow' | 'timeline';
+  onSelectGate: (gate: 'preplan' | 'planning' | 'exec' | 'flow' | 'timeline') => void;
   scopeMode: 'focus' | 'all';
   onToggleScope: () => void;
   commentCount: number;
@@ -47,17 +47,27 @@ export default function CrfTabsSlot({
     <div className="crf-tabs-slot">
       <div className="crf-view-tabs">
         <div className="stage-track">
+          {/* Labels renamed per direct request — Pre-planning/Planning/Flow
+              Design read as internal process-stage jargon; Intake/Journey/
+              Flow name what the user is actually doing on each tab. The
+              underlying gate keys (preplan/planning/flow) are unchanged, so
+              this is a display-only rename, not a data/routing change. */}
           <button className={`crf-tab ${viewedGate === 'preplan' ? 'active' : ''}`} onClick={() => onSelectGate('preplan')}>
-            Pre-planning
+            Intake
           </button>
           <button className={`crf-tab ${viewedGate === 'planning' ? 'active' : ''}`} onClick={() => onSelectGate('planning')}>
-            Planning
+            Journey
           </button>
           {showFlowDesign && (
             <button className={`crf-tab ${viewedGate === 'flow' ? 'active' : ''}`} onClick={() => onSelectGate('flow')}>
-              Flow Design
+              Flow
             </button>
           )}
+          {/* New tab — the exec-phase fields that used to be lumped into
+              Journey (Planning) now get their own destination. */}
+          <button className={`crf-tab ${viewedGate === 'exec' ? 'active' : ''}`} onClick={() => onSelectGate('exec')}>
+            Execution
+          </button>
           {/* CDM's delivery-sequencing view — the same GanttTimeline the
               standalone Calendar page uses, embedded per-campaign. Visible to
               every persona (read-only informational, same as Flow Design),

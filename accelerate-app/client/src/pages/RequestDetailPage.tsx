@@ -44,7 +44,7 @@ export default function RequestDetailPage() {
   // actually has editable content for this request instead of always
   // opening on Pre-planning, which would land a mid/late-phase request on
   // an empty-looking board.
-  const [viewedGateOverride, setViewedGateOverride] = useState<'preplan' | 'planning' | 'flow' | 'timeline' | null>(null);
+  const [viewedGateOverride, setViewedGateOverride] = useState<'preplan' | 'planning' | 'exec' | 'flow' | 'timeline' | null>(null);
   // Timeline tab — same GanttTimeline/PlanMilestone data the standalone
   // Calendar page reads, just scoped down to this one campaign instead of
   // every open one.
@@ -302,7 +302,7 @@ export default function RequestDetailPage() {
   // used for the detail panel's PhaseGroups below, so the section list's
   // counts move in lockstep with whatever gate is selected instead of
   // always reporting the same all-phases total regardless of tab.
-  const gatePhases = viewedGate === 'preplan' ? (['preplan'] as const) : (['plan', 'exec'] as const);
+  const gatePhases = viewedGate === 'preplan' ? (['preplan'] as const) : viewedGate === 'exec' ? (['exec'] as const) : (['plan'] as const);
 
   // This drives the row badge, "N need your input", and the Focus filter
   // itself — all three are framed as "what's on ME", so this has to be
@@ -363,10 +363,10 @@ export default function RequestDetailPage() {
   // — the original swaps to a whole different board view per gate; here,
   // with a single stacked panel, "switching gates" scrolls the matching
   // phase group into view and pops it open if it's currently collapsed.
-  function handleSelectGate(gate: 'preplan' | 'planning' | 'flow' | 'timeline') {
+  function handleSelectGate(gate: 'preplan' | 'planning' | 'exec' | 'flow' | 'timeline') {
     setViewedGateOverride(gate);
     if (gate === 'flow' || gate === 'timeline') return;
-    const targetPhase = gate === 'preplan' ? 'preplan' : 'plan';
+    const targetPhase = gate === 'preplan' ? 'preplan' : gate === 'exec' ? 'exec' : 'plan';
     setTimeout(() => {
       const el = document.getElementById(`pg-${targetPhase}`);
       if (!el) return;
@@ -689,13 +689,16 @@ export default function RequestDetailPage() {
                   <div className="sm-detail-body">
                     {/* Ported from the original's separate CPF vs Planning boards
                         (renderCrfViewTabs()/crfNavGoCpf()/setCrfView()) — the
-                        Pre-planning gate showed only pre-planning fields, the
-                        Planning gate showed planning+execution fields, as two
+                        Intake gate showed only pre-planning fields, the
+                        Journey gate showed planning+execution fields, as two
                         distinct destinations rather than one long scrolling
-                        list. Here that's the same stacked panel filtered by
-                        the active gate, so switching tabs visibly changes
-                        what's on screen instead of just scrolling to it. */}
-                    {PHASES.filter((phase) => (viewedGate === 'preplan' ? phase === 'preplan' : phase !== 'preplan')).map((phase) => {
+                        list. Now a third gate (Execution) splits that
+                        combined bucket further: Journey = plan phase only,
+                        Execution = exec phase only. Here that's the same
+                        stacked panel filtered by the active gate, so
+                        switching tabs visibly changes what's on screen
+                        instead of just scrolling to it. */}
+                    {PHASES.filter((phase) => (viewedGate === 'preplan' ? phase === 'preplan' : viewedGate === 'exec' ? phase === 'exec' : phase === 'plan')).map((phase) => {
                       const fields = selected.fields.filter((f) => f.phase === phase && condMet(f.cond, fieldValues, campaignConfig));
                       const editable = phase === currentPhase && !isSubmitted;
                       const when: 'future' | 'submitted' | 'past' | null = isSubmitted
