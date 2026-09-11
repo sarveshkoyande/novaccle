@@ -24,46 +24,22 @@ model BrandIndication {
   @@unique([brand, indication])
 }
 
-// An agency (e.g. "Ogilvy") that can run campaigns for one or more brands —
-// admin-managed, backing the Brands & Access admin tab. Not tied to the AOR
-// login persona (that's one demo login standing in for "whichever agency
-// user is logged in"); this is the real many-to-many access list: two
-// agencies can both have access to the same brand, and one agency can have
-// access to several brands.
-model Agency {
-  id        String              @id @default(cuid())
-  name      String              @unique
-  createdAt DateTime            @default(now())
-  access    AgencyBrandAccess[]
-}
-
-// Junction row: one agency's access to one brand. Brand is stored as the
-// plain brand name (matching BrandIndication.brand) rather than a foreign
-// key — BrandIndication has no separate normalized Brand id, it's keyed by
-// name today, so this follows the same convention instead of introducing a
-// second, inconsistent way to reference a brand.
-model AgencyBrandAccess {
-  id       String @id @default(cuid())
-  agencyId String
-  agency   Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
-  brand    String
-
-  @@unique([agencyId, brand])
-}
-
 // The admin-managed user directory (separate from the demo login personas
-// in client/personas.ts) — real named individuals used to maintain the
-// XM-to-brand / CDM-to-brand mapping. Per direct instruction, both roles are
-// mapped one user to exactly one brand, so that's a plain nullable column
-// here rather than a separate many-to-many junction table (which would only
-// be needed if a user could hold more than one brand).
+// in client/personas.ts) — every real stakeholder type, not just XM/CDM.
+// organization replaces the earlier separate Agency/AgencyBrandAccess
+// many-to-many models: per direct instruction, that was redundant with this
+// table (a user's own organization plus their one mapped brand already
+// says who has access to what — a second access-list model was accounting
+// for the same fact twice). brand stays a plain nullable column (not a
+// junction table) because the mapping is one user to at most one brand.
 model AppUser {
-  id        String   @id @default(cuid())
-  name      String
-  email     String?
-  roleType  String // "xm" | "cdm" — the two roles this mapping currently applies to
-  brand     String? // the one brand this user is mapped to; null = unassigned
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  name         String
+  email        String?
+  roleType     String // aor | xm | mds | cep | ops | dca | oms | solutionArchitect | cdm
+  organization String? // e.g. "Ogilvy", "Novartis" — free text, not a managed list
+  brand        String? // the one brand this user is mapped to; null = unassigned
+  createdAt    DateTime @default(now())
 }
 
 // Every field value actually entered in the requirement-gathering form,

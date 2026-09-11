@@ -113,11 +113,11 @@ export default function GanttTimeline({
             />
           </label>
           <label>
-            <b>CPF ETA:</b>{' '}
+            <b>Journey ETA:</b>{' '}
             <input type="date" defaultValue={milestone?.cpfEta || ''} onBlur={(e) => onSaveMilestone('cpfEta', e.target.value)} />
           </label>
           <label>
-            <b>CRF ETA:</b>{' '}
+            <b>Execution ETA:</b>{' '}
             <input type="date" defaultValue={milestone?.crfEta || ''} onBlur={(e) => onSaveMilestone('crfEta', e.target.value)} />
           </label>
         </div>
@@ -208,7 +208,7 @@ export default function GanttTimeline({
           </span>
           <span className="lg-i">
             <span className="lg-dot" style={{ background: '#7A5AB8' }} />
-            CPF
+            Campaign Planning
           </span>
           <span className="lg-i">
             <span className="lg-dot" style={{ background: 'var(--ok)' }} />
