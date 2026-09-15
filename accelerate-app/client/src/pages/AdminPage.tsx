@@ -23,22 +23,30 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="view on">
-      <div className="admin-tabs">
-        <button className={tab === 'forms' ? 'on' : ''} onClick={() => setTab('forms')}>Manage forms</button>
-        <button className={tab === 'sections' ? 'on' : ''} onClick={() => setTab('sections')}>Manage sections</button>
-        <button className={tab === 'fields' ? 'on' : ''} onClick={() => setTab('fields')}>Manage form fields</button>
-        <button className={tab === 'nudges' ? 'on' : ''} onClick={() => setTab('nudges')}>Manage nudges</button>
-        <button className={tab === 'users' ? 'on' : ''} onClick={() => setTab('users')}>Manage users</button>
-        <button className={tab === 'brands' ? 'on' : ''} onClick={() => setTab('brands')}>Brands &amp; Access</button>
-      </div>
+    <div className="stage">
+      <div className="view on">
+        <div className="hero ops-hero">
+          <div className="hero-l">
+            <h1>Admin</h1>
+            <p>Manage the form schema, nudge rules, users, and brand access that power every campaign.</p>
+          </div>
+        </div>
+        <div className="admin-tabs">
+          <button className={tab === 'forms' ? 'on' : ''} onClick={() => setTab('forms')}>Manage forms</button>
+          <button className={tab === 'sections' ? 'on' : ''} onClick={() => setTab('sections')}>Manage sections</button>
+          <button className={tab === 'fields' ? 'on' : ''} onClick={() => setTab('fields')}>Manage form fields</button>
+          <button className={tab === 'nudges' ? 'on' : ''} onClick={() => setTab('nudges')}>Manage nudges</button>
+          <button className={tab === 'users' ? 'on' : ''} onClick={() => setTab('users')}>Manage users</button>
+          <button className={tab === 'brands' ? 'on' : ''} onClick={() => setTab('brands')}>Manage brands</button>
+        </div>
 
-      {tab === 'forms' && <AdminFormsTab onManageSections={manageSections} />}
-      {tab === 'sections' && <AdminSectionsTab formId={formId} />}
-      {tab === 'fields' && <AdminFieldsTab formId={formId} />}
-      {tab === 'nudges' && <AdminNudgesTab />}
-      {tab === 'users' && <AdminUsersTab />}
-      {tab === 'brands' && <AdminBrandsTab />}
+        {tab === 'forms' && <AdminFormsTab onManageSections={manageSections} />}
+        {tab === 'sections' && <AdminSectionsTab formId={formId} />}
+        {tab === 'fields' && <AdminFieldsTab formId={formId} />}
+        {tab === 'nudges' && <AdminNudgesTab />}
+        {tab === 'users' && <AdminUsersTab />}
+        {tab === 'brands' && <AdminBrandsTab />}
+      </div>
     </div>
   );
 }

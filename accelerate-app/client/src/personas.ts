@@ -36,7 +36,7 @@ export const PERSONAS: Record<PersonaKey, Persona> = {
   oms: { name: 'Rahul Mehta', role: 'OMS · Enrollment Ops', color: '#0E7490', abbr: 'RM', scope: '15 fields · enrollment form details' },
   // Owns the per-campaign Timeline tab (the same GanttTimeline the standalone
   // Calendar page already uses, embedded here instead) — sequences the
-  // campaign's real build activities against a start date and tracks TAT,
+  // campaign's real build activities against a start date and tracks lead time,
   // per direct request. Doesn't own any form fields; every persona can view
   // this tab same as Flow Design, CDM is just who it's built for.
   cdm: { name: 'Naveen Iyer', role: 'CDM · Delivery', color: '#DB2777', abbr: 'NI', scope: 'Timeline · delivery sequencing' },

@@ -7,7 +7,7 @@ import type { GanttData } from '../data/ganttData';
 // text is the same demo content for every campaign, same as the original.
 const LOG = [
   { ic: 'ok', text: 'Discovery completed', time: '10:15 AM' },
-  { ic: 'ok', text: 'CPF started automatically', time: '10:15 AM' },
+  { ic: 'ok', text: 'Campaign Planning started automatically', time: '10:15 AM' },
   { ic: 'ok', text: 'Journey Build started in parallel', time: '10:16 AM' },
   { ic: 'ok', text: 'Asset creation tasks started', time: '10:16 AM' },
   { ic: 'warn', text: 'MLR forecasted delay', time: '10:17 AM' },

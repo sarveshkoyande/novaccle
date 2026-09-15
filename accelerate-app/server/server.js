@@ -235,57 +235,13 @@ app.delete('/api/admin/brand-indications/:id', async (req, res) => {
 });
 
 // ===========================================================================
-// Admin: Agencies + agency-to-brand access (many-to-many — two agencies can
-// share a brand, one agency can hold several brands).
-// ===========================================================================
-app.get('/api/admin/agencies', async (req, res) => {
-  const agencies = await prisma.agency.findMany({ orderBy: { name: 'asc' }, include: { access: true } });
-  res.json({ agencies });
-});
-
-app.post('/api/admin/agencies', async (req, res) => {
-  const { name } = req.body || {};
-  if (!name) return res.status(400).json({ error: 'name is required.' });
-  try {
-    const agency = await prisma.agency.create({ data: { name } });
-    res.json({ agency });
-  } catch (err) {
-    res.status(400).json({ error: err.code === 'P2002' ? 'An agency with that name already exists.' : err.message });
-  }
-});
-
-app.delete('/api/admin/agencies/:id', async (req, res) => {
-  try {
-    await prisma.agency.delete({ where: { id: req.params.id } });
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(404).json({ error: err.message });
-  }
-});
-
-// Replaces one agency's entire brand-access list in one call — simpler for
-// a checklist-style admin UI (toggle brands on/off) than exposing granular
-// add/remove-one-row endpoints for what's really "set this agency's access
-// list to exactly these brands."
-app.put('/api/admin/agencies/:id/brands', async (req, res) => {
-  const { brands } = req.body || {};
-  if (!Array.isArray(brands)) return res.status(400).json({ error: 'brands must be an array of brand names.' });
-  try {
-    await prisma.agencyBrandAccess.deleteMany({ where: { agencyId: req.params.id } });
-    if (brands.length) {
-      await prisma.agencyBrandAccess.createMany({ data: brands.map((brand) => ({ agencyId: req.params.id, brand })) });
-    }
-    const agency = await prisma.agency.findUnique({ where: { id: req.params.id }, include: { access: true } });
-    res.json({ agency });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
-
-// ===========================================================================
-// Admin: user directory — the individuals behind the XM-to-brand /
-// CDM-to-brand mapping. Separate from the demo login personas
-// (client/personas.ts): this is real-people bookkeeping, not a login list.
+// Admin: user directory — every real stakeholder type (not just XM/CDM),
+// each with their organization and, where relevant, the one brand they're
+// mapped to. Separate from the demo login personas (client/personas.ts):
+// this is real-people bookkeeping, not a login list. The earlier separate
+// Agency + agency-to-brand-access models were removed — organization plus
+// this same user's own brand mapping already said who has access to what;
+// a second access-list was accounting for that fact twice.
 // ===========================================================================
 app.get('/api/admin/users', async (req, res) => {
   const users = await prisma.appUser.findMany({ orderBy: [{ roleType: 'asc' }, { name: 'asc' }] });
@@ -293,10 +249,10 @@ app.get('/api/admin/users', async (req, res) => {
 });
 
 app.post('/api/admin/users', async (req, res) => {
-  const { name, email, roleType, brand } = req.body || {};
+  const { name, email, roleType, organization, brand } = req.body || {};
   if (!name || !roleType) return res.status(400).json({ error: 'name and roleType are required.' });
   try {
-    const user = await prisma.appUser.create({ data: { name, email: email || null, roleType, brand: brand || null } });
+    const user = await prisma.appUser.create({ data: { name, email: email || null, roleType, organization: organization || null, brand: brand || null } });
     res.json({ user });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -304,7 +260,7 @@ app.post('/api/admin/users', async (req, res) => {
 });
 
 app.put('/api/admin/users/:id', async (req, res) => {
-  const { name, email, roleType, brand } = req.body || {};
+  const { name, email, roleType, organization, brand } = req.body || {};
   try {
     const user = await prisma.appUser.update({
       where: { id: req.params.id },
@@ -312,6 +268,7 @@ app.put('/api/admin/users/:id', async (req, res) => {
         ...(name !== undefined ? { name } : {}),
         ...(email !== undefined ? { email: email || null } : {}),
         ...(roleType !== undefined ? { roleType } : {}),
+        ...(organization !== undefined ? { organization: organization || null } : {}),
         ...(brand !== undefined ? { brand: brand || null } : {}),
       },
     });
@@ -944,7 +901,7 @@ const BASE_SYSTEM_PROMPT = `You are the Novartis Accelerate assistant — a form
 - propose_fill(sectionId, assignments): stages field:value pairs for the user to confirm. This does NOT write anything to the form yet — it only proposes. For a normal-sized message, batch every assignment you can extract into ONE propose_fill call for that section — do not call it once per group/topic. BUT: if the message specifies more than 10 fields for one section (e.g. "fill the whole CMA sheet" with all ten groups), do NOT try to fit them all in one call and do NOT call propose_fill more than once in the same turn for that section. Instead: stage only the FIRST 10 fields (in the order the fields appear on the form) as a single propose_fill call, then end your turn — do not call propose_fill again this turn. Tell the user exactly which fields/groups you staged and that the rest are queued; once they confirm this batch and say "continue" (or similar), stage the next 10 from the same original message, and so on. This exists because attempting to cram 30-45+ fields into one call is unreliable — it produces partial/dropped assignments — and because staging everything at once with no pacing overwhelms the confirm-review step. 10 fields, one confirmed batch at a time. EXCEPTION — OMS enrollment sources (the numbered Source Type/Source Name/Suvery Q&A pairs trios, up to 6 sources = 18 fields): these are exempt from the 10-field cap. Stage every source you found from the metadata sheet in ONE single propose_fill call, however many that is (up to 18 fields for 6 sources) — never split them into a first batch plus a "continue for the rest" follow-up. They are one coherent unit (the whole sheet's worth of sources), not an arbitrary long list, and splitting them reads as broken pacing rather than careful review.
 - get_entries(sectionId?, phase?): looks up field values already saved to the form (real persisted data, not memory/history) — optionally filtered to one section and/or one stage (preplan/plan/exec). Use this whenever the user asks what's already been entered, confirmed, or set for something — never answer from conversation history or a guess when this tool can ground the answer in what's actually saved.
 - learn_skill(title, rule): permanently records a correction or preference about how you should behave, so it applies automatically on every future turn from now on — not just this session. Use this when the user is correcting your behavior, stating a standing preference, or clarifying a rule for how to handle something going forward ("always do X", "don't do Y", "when someone says Z, you should..."), as opposed to a one-off form-fill or a question. This is a judgment call you make from the message's intent — there is no fixed keyword list for it. "rule" should be the general, reusable instruction (not campaign-specific data); "title" is a short label for it.
-- navigate_stage(stage): moves the user to a different stage of the process (cpf/crf/build/deploy/monitor). Use this whenever the user asks to go to, move to, advance to, switch to, or proceed to a stage by name — this is a real UI navigation, not a form-fill, so don't call match_section or propose_fill for it.
+- navigate_stage(stage): moves the user to a different stage of the process (intake/journey/flow/execution/timeline — the same names as the CRF tab strip). Use this whenever the user asks to go to, move to, advance to, switch to, or proceed to a stage by name — this is a real UI navigation, not a form-fill, so don't call match_section or propose_fill for it.
 - get_missing_fields(sectionId?): returns the fields still needing input for the current user and phase — real data computed by the client (ownership, conditional visibility, cascades all included), optionally filtered to one section. Read-only.
 - record_quiz_answer(sectionId, field, value): records ONE field's answer immediately (no staging, no confirm step) during a guided quiz — see the Progress & Guided-Fill skill below. Only use this for an answer the user just gave to a question you asked about that exact field; for freeform text describing multiple values, use propose_fill instead.
 - open_campaign(tactplanId): navigates to a different campaign already in the portfolio. Only for an id/name that's actually in the portfolio list — see the New Campaign Intake skill below for a campaign that doesn't exist yet.
@@ -1130,11 +1087,11 @@ function buildToolDeclarations() {
     },
     {
       name: 'navigate_stage',
-      description: 'Move to a different stage of the requirement-gathering process. Use when the user asks to go to, move to, advance to, or switch to a stage ("let\'s go to CRF", "move to build", "back to CPF").',
+      description: 'Move to a different stage of the requirement-gathering process. Use when the user asks to go to, move to, advance to, or switch to a stage ("let\'s go to Execution", "move to Flow", "back to Intake").',
       input_schema: {
         type: 'object',
         properties: {
-          stage: { type: 'string', enum: ['cpf', 'crf', 'build', 'deploy', 'monitor'], description: 'cpf = CPF & Flow, crf = CRF & Asset Handoff, build = Build & Proofing, deploy = Deployment, monitor = Monitoring.' },
+          stage: { type: 'string', enum: ['intake', 'journey', 'flow', 'execution', 'timeline'], description: 'intake = Intake (pre-planning), journey = Journey (planning), flow = Flow Design, execution = Execution, timeline = the delivery Timeline/Gantt tab.' },
         },
         required: ['stage'],
       },
@@ -1340,7 +1297,7 @@ async function executeTool(name, args, ctx) {
     return { learned: true, id: skill.id, title, rule };
   }
   if (name === 'navigate_stage') {
-    const valid = ['cpf', 'crf', 'build', 'deploy', 'monitor'];
+    const valid = ['intake', 'journey', 'flow', 'execution', 'timeline'];
     if (!valid.includes(args.stage)) return { error: `Unknown stage "${args.stage}".` };
     return { navigated: true, stage: args.stage };
   }

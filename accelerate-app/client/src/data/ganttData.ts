@@ -2,7 +2,7 @@ import type { CampaignRequest } from './requests';
 
 // Ported from index.html's buildGanttData() — visual layout + realistic mock
 // data per the approved scope, not yet backed by real persisted
-// activity/date data (PlanMilestone only tracks Discovery/CPF/CRF ETAs
+// activity/date data (PlanMilestone only tracks Discovery/Journey/Execution ETAs
 // today). Kisqali (TP-88213) gets the exact hand-authored reference
 // numbers; every other campaign gets a plausible schedule derived from its
 // real ready%/phase so the page isn't just one hardcoded example.
@@ -74,7 +74,7 @@ export function buildGanttData(r: CampaignRequest): GanttData {
       todayWeek: 3,
       activities: [
         { label: 'Discovery', owner: 'R. Mehta', status: 'complete', startW: 0, endW: 2, cls: 'c-discovery' },
-        { label: 'CPF (Campaign Planning Form)', owner: 'A. Chen', status: 'inprogress', startW: 1, endW: 5, cls: 'c-cpf', tag: 'risk', pct: 78 },
+        { label: 'Campaign Planning', owner: 'A. Chen', status: 'inprogress', startW: 1, endW: 5, cls: 'c-cpf', tag: 'risk', pct: 78 },
         { label: 'Journey Build', owner: 'P. Shah', status: 'inprogress', startW: 3, endW: 8, cls: 'c-journey', tag: 'risk' },
         { label: 'Asset Creation (Email)', owner: 'S. Menon', status: 'inprogress', startW: 3, endW: 7, cls: 'c-assets' },
         { label: 'Asset Creation (SMS)', owner: 'S. Dsouza', status: 'inprogress', startW: 3, endW: 7, cls: 'c-assets' },
@@ -101,7 +101,7 @@ export function buildGanttData(r: CampaignRequest): GanttData {
     todayWeek,
     activities: [
       mk('Discovery', 'AOR', 0, 2, 'c-discovery', todayWeek),
-      mk('CPF (Campaign Planning Form)', 'AOR', 1, 4, 'c-cpf', todayWeek),
+      mk('Campaign Planning', 'AOR', 1, 4, 'c-cpf', todayWeek),
       mk('Journey Build', 'XM', 3, 5, 'c-journey', todayWeek),
       mk('Asset Creation (Email)', 'AOR', 3, 4, 'c-assets', todayWeek),
       mk('Asset Creation (SMS)', 'AOR', 3, 4, 'c-assets', todayWeek),

@@ -807,19 +807,36 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 .admin-drawer-actions{display:flex;gap:8px;margin-top:14px}
 .admin-drawer-check{flex-direction:row!important;align-items:center;gap:8px!important}
 .admin-hint{display:block;margin-top:4px;font-size:11px;line-height:1.5;color:var(--ink2);font-weight:400}
-/* Narrow single-column layout for the side edit panel (30vw, same slot the
-   Requirement agent chat normally occupies) — the 3-column drawer grid used
-   inline in the fields table is too cramped at that width. */
+/* Single-column layout for the edit modal — the 3-column drawer grid used
+   inline in the fields table reads as cramped at the modal's narrower,
+   more focused width. */
 .admin-drawer-grid-stacked{grid-template-columns:1fr}
 .admin-drawer-grid-stacked label.wide{grid-column:auto}
 
-/* ================== ADMIN EDIT PANEL (replaces the chat panel's slot) ================== */
-.admin-edit-panel{}
-.admin-edit-head{position:relative}
-.admin-edit-close{position:absolute;top:14px;right:16px;width:28px;height:28px;border-radius:0;background:rgba(255,255,255,.22);color:#fff;border:none;font-size:13px;cursor:pointer}
-.admin-edit-close:hover{background:rgba(255,255,255,.35)}
-.admin-edit-body{padding:18px}
-.admin-edit-body .admin-cond-values{flex-direction:column;align-items:flex-start;gap:6px}
+/* ================== ADMIN EDIT MODAL ==================
+   Used to borrow .chat-panel's fixed-right-sidebar geometry (the
+   Requirement agent chat's slot) — on a page with no chat panel of its own,
+   that read as a disconnected slab bolted onto the corner of the screen
+   rather than something that opened in response to the row you clicked.
+   Centered modal instead: a backdrop + a card that appears where your
+   attention already is. */
+.admin-modal-backdrop{
+  position:fixed;inset:0;z-index:200;background:rgba(22,22,22,.45);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  animation:fadeIn .15s ease;
+}
+.admin-modal{
+  display:flex;flex-direction:column;width:min(560px,100%);max-height:86vh;
+  background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 40px rgba(22,22,22,.22);
+  animation:detailIn .18s ease;
+}
+.admin-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.admin-modal-head h3{font-size:15px;font-weight:700;margin:0}
+.admin-modal-head p{font-size:12px;color:var(--ink3);margin:2px 0 0}
+.admin-modal-close{flex-shrink:0;width:28px;height:28px;display:grid;place-items:center;background:var(--surface2);border:1px solid var(--line2);color:var(--ink2);font-size:13px;cursor:pointer}
+.admin-modal-close:hover{background:var(--surface3);color:var(--ink)}
+.admin-modal-body{padding:18px 20px;overflow-y:auto}
+.admin-modal-body .admin-cond-values{flex-direction:column;align-items:flex-start;gap:6px}
 
 /* Visual condition builder — search key -> equals -> tick value(s) -> AND/OR */
 .admin-cond-builder{background:var(--surface);border:1px solid var(--line);border-radius:0;padding:10px}
@@ -1129,10 +1146,21 @@ body[data-resizing] #chatPanel,body[data-resizing] .stage{pointer-events:none}
 details.phase-group>summary.pg-head{cursor:pointer;list-style:revert}
 details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 
-.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;max-width:960px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:22px 28px;max-width:960px}
 .f{display:flex;flex-direction:column;gap:4px;min-width:0}
 .f.wide{grid-column:span 2}
 .f-lbl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink)}
+
+/* A settled value being read, not a form control being filled in — plain
+   label above a bold value, no input chrome. Per direct reference: a
+   disabled/greyed input box for something read-only reads as a broken
+   control, not a fact on record. Used for locked/submitted/not-your-field
+   values throughout the campaign detail view. */
+.f-readout{gap:6px}
+.f-readout-lbl{font-size:12px;font-weight:500;color:var(--ink3)}
+.f-readout-val{font-size:13.5px;font-weight:700;color:var(--ink);word-break:break-word}
+.f-readout.f-editable-readout{cursor:pointer}
+.f-readout.f-editable-readout:hover .f-readout-val{color:var(--nv-space-orange)}
 .f-src{font-size:11px;color:var(--ink3);margin-top:2px;font-weight:600}
 .f-remaining-dot{position:relative;width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .f-remaining-dot::before{content:'';position:absolute;inset:0;border-radius:50%;background:inherit;animation:dotPulse 1.6s ease-in-out infinite}
@@ -1148,6 +1176,15 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .inp[readonly],.sel[disabled],.ta[readonly]{background:var(--surface2);color:var(--ink2);border-color:var(--line2);border-bottom-color:var(--line2);cursor:default;border-style:dashed}
 .inp[readonly]:hover,.ta[readonly]:hover{border-color:var(--line2);border-bottom-color:var(--line2)}
 .inp[readonly]:focus,.ta[readonly]:focus{box-shadow:none;border-color:var(--line2);border-bottom-color:var(--line2)}
+
+/* Dropping out of the read-out display (click-to-edit on an already-
+   answered field) shouldn't land on the same full boxed control used for
+   filling in a blank one — that read as "stuck in a broken box" once you
+   clicked away. Just an underline, and only while actually focused; blurred,
+   it sits flush with the readouts around it again. */
+.f-inline-edit{border:none;border-bottom:1px solid transparent;background:transparent;padding:0 0 2px}
+.f-inline-edit:hover{border-color:transparent;border-bottom-color:var(--line)}
+.f-inline-edit:focus{border-color:transparent;border-bottom:1px solid var(--nv-space-orange);background:transparent}
 .f-src{font-size:11px;color:var(--ink3);margin-top:2px;display:flex;align-items:center;gap:5px;font-weight:600}
 .f-src.ai{color:var(--ai-dk)}
 .f-src.ai::before{content:'✦';color:var(--nv-space-orange)}
@@ -1752,6 +1789,97 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .vb-version-row{display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--line2)}
 .vb-version-row:last-child{border-bottom:none}
 .vb-version-note{flex:1;color:var(--ink3)}
+
+/* ================== TIMELINE TAB (Flow Sequence + Gantt) ==================
+   A real lead-time sequence over this app's own sections — replaces the earlier
+   reuse of the standalone Calendar page's GanttTimeline (a generic
+   prototype activity list with no Pause control). Square corners, 1px
+   borders, monochrome status language — same brand rules as the rest of
+   the CRF, Space Orange reserved for interaction/current-step only. */
+.tl-root{display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start}
+.tl-card{background:var(--surface);border:1px solid var(--line)}
+.tl-card+.tl-card{margin-top:20px}
+.tl-card-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+.tl-card-h h3{font-size:14px;font-weight:700;margin:0}
+.tl-count{font-size:12px;color:var(--ink3)}
+
+.tl-meta{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line);background:var(--surface2)}
+.tl-meta-item{padding:14px 20px;border-right:1px solid var(--line)}
+.tl-meta-item:last-child{border-right:none}
+.tl-meta-item label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);font-weight:700;margin-bottom:6px}
+.tl-meta-item input[type=date]{font-family:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+.tl-meta-item input[type=date]:disabled{background:var(--surface2);color:var(--ink3)}
+.tl-meta-val{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.tl-meta-val.accent{color:var(--nv-space-orange)}
+
+.tl-gantt{padding:18px 20px 8px}
+.tl-gantt-body{position:relative;padding-top:22px}
+.tl-gantt-today{position:absolute;top:4px;bottom:0;width:1px;background:var(--nv-space-orange);z-index:2}
+.tl-gantt-today-tag{position:absolute;top:-20px;left:0;transform:translateX(-50%);font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--nv-space-orange);white-space:nowrap}
+.tl-gantt-row{display:grid;grid-template-columns:220px 1fr;align-items:center;min-height:34px}
+.tl-gantt-label{font-size:12.5px;font-weight:600;padding-right:14px;display:flex;align-items:center;gap:8px}
+.tl-idx{width:18px;height:18px;border:1px solid var(--line);color:var(--ink3);font-size:10.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;font-variant-numeric:tabular-nums}
+.tl-gantt-track{position:relative;height:34px}
+.tl-gantt-track::before{content:"";position:absolute;inset:0;height:1px;top:50%;background:var(--line2)}
+.tl-gantt-bar{position:absolute;top:7px;height:20px;display:flex;align-items:center;padding:0 8px;font-size:10.5px;font-weight:700;color:var(--ink2);border:1px solid var(--line);background:var(--surface);white-space:nowrap;overflow:hidden}
+.tl-gantt-bar.tl-done{background:var(--surface2);border-color:var(--nv-warm-black);color:var(--ink)}
+.tl-gantt-bar.tl-active{background:#FFF3EE;border-color:var(--nv-space-orange);color:var(--nv-space-orange)}
+.tl-gantt-bar.tl-pending{background:var(--surface);border-color:var(--line);color:var(--ink3)}
+
+.tl-legend{display:flex;gap:18px;padding:0 20px 16px;font-size:11.5px;color:var(--ink3)}
+.tl-legend span{display:inline-flex;align-items:center;gap:6px}
+.tl-legend i{width:10px;height:10px;display:inline-block;border:1px solid var(--line)}
+.tl-legend i.tl-done{background:var(--surface2);border-color:var(--nv-warm-black)}
+.tl-legend i.tl-active{background:#FFF3EE;border-color:var(--nv-space-orange)}
+.tl-legend i.tl-pending{background:var(--surface);border-color:var(--line)}
+
+.tl-list{border-top:1px solid var(--line)}
+.tl-row{display:grid;grid-template-columns:30px 1.8fr 118px 190px 130px;align-items:center;column-gap:16px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.tl-row:last-child{border-bottom:none}
+.tl-row-idx{width:24px;height:24px;border:1px solid var(--line);color:var(--ink3);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center;background:var(--surface)}
+.tl-row.tl-done .tl-row-idx{border-color:var(--nv-warm-black);color:var(--ink)}
+.tl-row.tl-active .tl-row-idx{border-color:var(--nv-space-orange);color:var(--nv-space-orange);background:#FFF3EE}
+.tl-row-name{display:flex;flex-direction:column;gap:2px}
+.tl-row-name .n{font-size:13.5px;font-weight:600}
+.tl-row-name .owner{font-size:12px;color:var(--ink3)}
+.tl-tat{display:flex;align-items:baseline;gap:6px}
+.tl-tat input{width:48px;padding:5px 6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums}
+.tl-tat input:disabled{background:var(--surface2);color:var(--ink3)}
+.tl-tat span{font-size:11.5px;color:var(--ink3)}
+.tl-range{font-size:12.5px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.tl-range b{font-weight:600;color:var(--ink)}
+.tl-range b.due{color:var(--nv-space-orange)}
+.tl-range .arrow{color:var(--ink3);margin:0 4px}
+.tl-chip{font-size:11.5px;font-weight:600;padding:3px 9px;border:1px solid transparent;display:inline-flex;align-items:center;gap:6px;justify-self:start;white-space:nowrap}
+.tl-chip .dot{width:5px;height:5px;background:currentColor}
+.tl-chip-done{background:var(--surface2);color:var(--ink)}
+.tl-chip-active{background:#FFF3EE;color:var(--nv-space-orange);border-color:#FFD9C4}
+.tl-chip-pending{background:var(--surface2);color:var(--ink3);border-color:var(--line)}
+
+.tl-rail{display:flex;flex-direction:column}
+.tl-progress-wrap{padding:16px 20px;border-bottom:1px solid var(--line)}
+.tl-progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink3);margin-bottom:8px}
+.tl-progress-label b{color:var(--ink);font-variant-numeric:tabular-nums}
+.tl-progress-track{height:6px;background:var(--surface2);border:1px solid var(--line)}
+.tl-progress-fill{height:100%;background:var(--nv-space-orange)}
+.tl-summary-row{display:flex;align-items:baseline;justify-content:space-between;padding:11px 20px;border-bottom:1px solid var(--line);font-size:12.5px;color:var(--ink2)}
+.tl-summary-row:last-child{border-bottom:none}
+.tl-summary-row b{font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.tl-summary-row b.accent{color:var(--nv-space-orange)}
+.tl-status-banner{margin:16px 20px;padding:10px 12px;border:1px solid var(--line2);background:var(--surface2);font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.tl-status-banner .dot{width:6px;height:6px;background:var(--nv-warm-black);flex:none}
+.tl-status-banner.paused .dot{background:var(--nv-space-orange)}
+.tl-actions{padding:0 20px 16px}
+.tl-btn{width:100%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-family:inherit;font-size:13px;font-weight:600;padding:9px 14px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.tl-btn-pause{border-color:var(--nv-space-orange);color:var(--nv-space-orange);background:#FFF3EE}
+.tl-btn-resume{border-color:var(--nv-warm-black);color:var(--nv-warm-black)}
+.tl-btn:focus-visible{outline:2px solid var(--nv-space-orange);outline-offset:2px}
+.tl-activity-empty{padding:16px 20px;color:var(--ink3);font-size:12.5px}
+.tl-activity-row{display:flex;gap:12px;padding:11px 20px;font-size:12.5px;color:var(--ink2);border-bottom:1px solid var(--line)}
+.tl-activity-row:last-child{border-bottom:none}
+.tl-activity-row .t{color:var(--ink3);white-space:nowrap;font-size:11.5px;font-variant-numeric:tabular-nums;flex:none;width:44px}
+@media (max-width:900px){.tl-root{grid-template-columns:1fr}}
+
 .modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:16px}
 .modal-tabs{display:flex;gap:6px;background:var(--surface2);border-radius:0;padding:4px}
 .modal-tab{flex:1;padding:9px 10px;border-radius:0;font-size:13px;font-weight:700;color:var(--ink3);text-align:center}
