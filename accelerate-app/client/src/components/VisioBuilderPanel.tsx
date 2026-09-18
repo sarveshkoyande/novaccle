@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import { PERSONAS, VB_APPROVER_KEYS, isApproverPersona, type PersonaKey } from '../personas';
-import { useVisioStore, VB_CLARIFY_QUESTIONS, DEFAULT_VISIO_STATE } from '../stores/useVisioStore';
+import { useVisioStore, DEFAULT_VISIO_STATE } from '../stores/useVisioStore';
+import FlowPlannerPanel from './FlowPlannerPanel';
 
-// The form-pane half of Flow Design — purely a VIEW onto useVisioStore.
-// The clarify Q&A that used to live here now happens as chat cards in
-// ChatPanel (Solution Architect persona only, see useVisioClarifyChat) —
-// this panel just shows where that's at: waiting for inputs, generating,
-// or the resulting PDF + approval workflow + version history.
+// The form-pane half of Flow Design — purely a VIEW onto useVisioStore's
+// approval lifecycle around whatever FlowPlannerPanel generates (real,
+// SOP-driven generation straight from the campaign's own field data — no
+// scripted clarify Q&A gate in front of it anymore).
 function authorName(id: string): { name: string; color: string } {
   const p = PERSONAS[id as PersonaKey];
   return p ? { name: p.name, color: p.color } : { name: id, color: 'var(--ink3)' };
@@ -17,8 +17,6 @@ function authorName(id: string): { name: string; color: string } {
 export default function VisioBuilderPanel({ tactplanId, currentPersona }: { tactplanId: string; currentPersona: PersonaKey }) {
   const queryClient = useQueryClient();
   const state = useVisioStore((s) => s.byCampaign[tactplanId] ?? DEFAULT_VISIO_STATE);
-  const answerClarifyAction = useVisioStore((s) => s.answerClarify);
-  const startGeneratingAction = useVisioStore((s) => s.startGenerating);
   const generateVisioAction = useVisioStore((s) => s.generateVisio);
   const approveAction = useVisioStore((s) => s.approve);
   const requestChangesAction = useVisioStore((s) => s.requestChanges);
@@ -26,27 +24,16 @@ export default function VisioBuilderPanel({ tactplanId, currentPersona }: { tact
 
   const [showSuggestBox, setShowSuggestBox] = useState(false);
   const [suggestText, setSuggestText] = useState('');
-  const [pdfZoom, setPdfZoom] = useState<'fit' | number>('fit');
 
-  const { ready, generating, sent, decisions, versions, answers } = state;
-  const answeredCount = Object.keys(answers).length;
+  const { sent, decisions, versions } = state;
   const isApprover = isApproverPersona(currentPersona);
   const canAuthor = currentPersona === 'solutionArchitect';
 
-  // Answering here (instead of in chat) writes straight into the same
-  // useVisioStore state the chat clarify cards use — both surfaces read
-  // and write the identical (persisted, per-campaign) answers, so
-  // whichever one the Solution Architect happens to use, the other stays
-  // in sync automatically.
-  function answerClarify(qid: string, value: string, label: string) {
-    answerClarifyAction(tactplanId, qid, value, label);
-  }
-
-  async function generate() {
-    if (state.generating || state.ready) return;
-    startGeneratingAction(tactplanId);
-    await new Promise((r) => setTimeout(r, 2200));
-    generateVisioAction(tactplanId, 'solutionArchitect');
+  // Called by FlowPlannerPanel once it has a real generated diagram — moves
+  // the approval lifecycle forward the same way the old scripted "Generate
+  // Flow" button used to, minus the fake questions in front of it.
+  async function onDiagramGenerated() {
+    generateVisioAction(tactplanId, currentPersona);
     const names = VB_APPROVER_KEYS.map((k) => PERSONAS[k].name).join(' and ');
     await api.addComment({
       tactplanId,
@@ -105,96 +92,16 @@ export default function VisioBuilderPanel({ tactplanId, currentPersona }: { tact
     await queryClient.invalidateQueries({ queryKey: ['notifications'] });
   }
 
-  function pdfFrameSrc() {
-    const zoomParam = pdfZoom === 'fit' ? 'view=FitH' : `zoom=${pdfZoom}`;
-    return `/visio-cropped.pdf#toolbar=0&${zoomParam}`;
-  }
-  function zoomBy(delta: number) {
-    setPdfZoom((z) => (z === 'fit' ? 100 + delta : Math.max(25, Math.min(400, z + delta))));
-  }
-
-  if (!ready) {
-    const nextIdx = VB_CLARIFY_QUESTIONS.findIndex((q) => !(q.id in answers));
-    const allAnswered = nextIdx === -1;
-    return (
-      <div className="vb-root">
-        <div className="vb-empty-overlay" style={{ position: 'static', padding: '48px 16px' }}>
-          {generating ? (
-            <>
-              <span>Generating diagram…</span>
-              <span>The Flow is being put together from the Solution Architect's answers.</span>
-            </>
-          ) : canAuthor ? (
-            <>
-              <span>Answer these to generate the Flow ({answeredCount}/{VB_CLARIFY_QUESTIONS.length})</span>
-              <span>Same questions as in chat — answering here keeps both in sync.</span>
-              <div className="vb-cq-list">
-                {VB_CLARIFY_QUESTIONS.map((q) => {
-                  const answered = answers[q.id];
-                  const isNext = q.id === (allAnswered ? undefined : VB_CLARIFY_QUESTIONS[nextIdx].id);
-                  if (!answered && !isNext) return null;
-                  return (
-                    <div className="msg bot vb-cq" key={q.id}>
-                      <div className="vb-cq-q">{q.q}</div>
-                      <div className="vb-cq-opts">
-                        {q.options.map((o) => (
-                          <button
-                            key={o.value}
-                            className="vb-cq-opt"
-                            disabled={!!answered}
-                            style={answered && answered.value !== o.value ? { opacity: 0.5 } : undefined}
-                            onClick={() => answerClarify(q.id, o.value, o.label)}
-                          >
-                            <span className="vb-cq-opt-label">
-                              {answered?.value === o.value ? '✓ ' : ''}
-                              {o.label}
-                            </span>
-                            {o.recommended && !answered && <span className="vb-cq-rec">Recommended</span>}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {allAnswered && (
-                <button className="btn-primary" onClick={generate}>
-                  Generate Flow
-                </button>
-              )}
-            </>
-          ) : (
-            <>
-              <span>Waiting for inputs</span>
-              <span>
-                {`${PERSONAS.solutionArchitect.name} (Solution Architect) is answering clarifying questions (${answeredCount}/${VB_CLARIFY_QUESTIONS.length} so far) before the Flow can be generated.`}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="vb-root">
-      <div className="vb-toolbar">
-        <div className="vb-tool-group">
-          <button className="vb-tool" onClick={() => zoomBy(-10)}>
-            −
-          </button>
-          <span className="vb-zoom-pct">{pdfZoom === 'fit' ? 'Fit' : `${pdfZoom}%`}</span>
-          <button className="vb-tool" onClick={() => zoomBy(10)}>
-            +
-          </button>
+      <FlowPlannerPanel tactplanId={tactplanId} canAuthor={canAuthor} onGenerated={onDiagramGenerated} />
+
+      {!sent && !canAuthor && (
+        <div className="vb-empty-overlay" style={{ position: 'static', padding: '24px 16px' }}>
+          <span>Waiting on the Solution Architect</span>
+          <span>{`${PERSONAS.solutionArchitect.name} (Solution Architect) hasn't generated the Flow for this campaign yet.`}</span>
         </div>
-        <a className="vb-pdf-action" href="/visio-cropped.pdf" download>
-          Download
-        </a>
-      </div>
-      <div className="vb-pdf-wrap">
-        <iframe key={pdfZoom} className="vb-pdf-frame" src={pdfFrameSrc()} title="Flow diagram" />
-      </div>
+      )}
 
       <div className="vb-approval-panel">
         <div className="vb-approval-status">

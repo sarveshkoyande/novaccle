@@ -2018,6 +2018,40 @@ app.post('/api/visio-agent', async (req, res) => {
   }
 });
 
+// Flow Planner: generates the SOP Segmentation-region diagram (rows 1-9)
+// straight from a campaign's own flow-planner inputs, ported from the
+// campaign-accelerator-api reference project's app/flow + app/drawing +
+// app/visio modules. Stateless by design — inputs live client-side in
+// useFlowPlannerStore, same pattern as useVisioStore/useTimelineStore, so
+// this route is just a pure function over whatever the client sends.
+const flowPlanner = require('./segmentation');
+
+app.post('/api/flow-planner/generate', (req, res) => {
+  try {
+    const inputs = req.body || {};
+    const spec = flowPlanner.generate(inputs);
+    const svg = flowPlanner.svgFor(inputs);
+    res.json({ spec, svg });
+  } catch (err) {
+    console.error('[server] Flow Planner generate failed:', err);
+    res.status(500).json({ error: 'Flow Planner generation failed.', detail: String(err.message || err) });
+  }
+});
+
+app.post('/api/flow-planner/vsdx', async (req, res) => {
+  try {
+    const inputs = req.body || {};
+    const buffer = await flowPlanner.vsdxFor(inputs);
+    const filename = `${(inputs.campaignName || 'segmentation-flow').replace(/[^a-z0-9-]+/gi, '-')}.vsdx`;
+    res.setHeader('Content-Type', 'application/vnd.ms-visio.drawing');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+  } catch (err) {
+    console.error('[server] Flow Planner vsdx export failed:', err);
+    res.status(500).json({ error: 'Flow Planner .vsdx export failed.', detail: String(err.message || err) });
+  }
+});
+
 // Phase 0 pipe check for the new React client (accelerate-app/client) — used
 // by its bare-shell App.tsx to confirm the dev proxy / production build
 // actually reaches this server before any real UI is ported over.

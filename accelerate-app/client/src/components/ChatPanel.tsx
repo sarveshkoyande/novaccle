@@ -4,7 +4,7 @@ import { useChatStore, LANDING_PROJECT, type ChatMessage } from '../stores/useCh
 import { useSessionStore } from '../stores/useSessionStore';
 import { useAgentFill } from '../hooks/useAgentFill';
 import { PERSONAS, VB_APPROVER_KEYS } from '../personas';
-import { useVisioStore, VB_CLARIFY_QUESTIONS, DEFAULT_VISIO_STATE } from '../stores/useVisioStore';
+import { useVisioStore, DEFAULT_VISIO_STATE } from '../stores/useVisioStore';
 import { renderMarkdown } from '../markdown';
 import { pendingIntakeContinuations } from '../pendingIntake';
 import { api } from '../api';
@@ -12,16 +12,6 @@ import type { FormSection } from '../types';
 
 let cpSeq = 0;
 const cpNextId = () => `msg-${Date.now()}-${cpSeq++}`;
-
-// StrictMode double-invokes effects in dev — the visio-clarify-intro effect
-// below has no cleanup, so both invocations run before either one's
-// addMessage calls trigger a re-render the second invocation could see,
-// producing a genuine duplicate post. useVisioStore's own persisted
-// chatIntroPosted flag doesn't help here (same reason). A plain in-memory
-// Set, checked and filled synchronously before anything else in the
-// effect, closes the same class of race pendingIntakeContinuations
-// already exists to close.
-const visioIntroInFlight = new Set<string>();
 
 // How many of the most recent messages stay visible by default — the rest
 // collapse behind the "earlier messages" toggle below. Bumped up from 8,
@@ -169,21 +159,13 @@ export default function ChatPanel({
     send('[[system:campaign_created]]', sections);
   }, [tactplanId, sections, entriesLoaded, send]);
 
-  // Flow Design's clarify Q&A — fixed, scripted questions (not model-
-  // driven), posted straight into the Solution Architect's own chat thread
-  // rather than going through the agent. The form-pane canvas
-  // (VisioBuilderPanel) only ever displays the resulting state; this is
-  // where the actual answering happens now. chatIntroPosted (persisted in
-  // useVisioStore) guards against re-posting the intro paragraph every
-  // time this campaign is reopened — the still-unanswered question card
-  // from last time is already sitting in the persisted thread either way.
+  // The Flow tab's approval lifecycle — real generation now happens in
+  // FlowPlannerPanel (Flow Design tab), reading the campaign's own field
+  // data directly. This chat surface only reacts to state changes it
+  // produces (OMS handoff notifications, approve/request-changes threads).
   const visioState = useVisioStore((s) => (tactplanId ? s.byCampaign[tactplanId] ?? DEFAULT_VISIO_STATE : undefined));
-  const visioAnswerClarify = useVisioStore((s) => s.answerClarify);
-  const visioStartGenerating = useVisioStore((s) => s.startGenerating);
-  const visioGenerateVisio = useVisioStore((s) => s.generateVisio);
   const visioCreateDraftFromOms = useVisioStore((s) => s.createDraftFromOms);
   const visioSendForApproval = useVisioStore((s) => s.sendForApproval);
-  const visioMarkChatIntroPosted = useVisioStore((s) => s.markChatIntroPosted);
   const visioApprove = useVisioStore((s) => s.approve);
   const visioRequestChanges = useVisioStore((s) => s.requestChanges);
   const queryClient = useQueryClient();
@@ -194,66 +176,6 @@ export default function ChatPanel({
   // and arms this, so the very next plain message they send is routed to
   // the right handler instead of going to the agent.
   const [awaitingTypedInput, setAwaitingTypedInput] = useState<{ kind: 'visio_review' | 'visio_sa_review'; messageId: string } | null>(null);
-  useEffect(() => {
-    if (currentPersona !== 'solutionArchitect' || !tactplanId || !visioState) return;
-    if (visioState.ready || visioState.chatIntroPosted) return;
-    const step = VB_CLARIFY_QUESTIONS.findIndex((q) => !(q.id in visioState.answers));
-    if (step === -1) return;
-    const introKey = `${currentPersona}:${tactplanId}`;
-    if (visioIntroInFlight.has(introKey)) return;
-    visioIntroInFlight.add(introKey);
-    visioMarkChatIntroPosted(tactplanId);
-    addMessage(currentPersona, projectKey, {
-      id: cpNextId(),
-      role: 'bot',
-      kind: 'text',
-      text: "Before the Flow can be generated, a few things aren't in this campaign's documents and need your call — just the questions, straight from the source docs.",
-    });
-    const q = VB_CLARIFY_QUESTIONS[step];
-    addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'visio_clarify', visioClarify: { qid: q.id, question: q.q, options: q.options } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPersona, tactplanId, visioState?.ready, visioState?.chatIntroPosted]);
-
-  function handleVisioAnswer(m: ChatMessage, value: string, label: string) {
-    if (!tactplanId || !m.visioClarify) return;
-    const qid = m.visioClarify.qid;
-    visioAnswerClarify(tactplanId, qid, value, label);
-    updateMessage(currentPersona, projectKey, m.id, { visioClarify: { ...m.visioClarify, answered: { value, label } } });
-    const freshAnswers = (useVisioStore.getState().byCampaign[tactplanId] ?? DEFAULT_VISIO_STATE).answers;
-    const nextIdx = VB_CLARIFY_QUESTIONS.findIndex((q) => !(q.id in freshAnswers));
-    if (nextIdx === -1) {
-      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'text', text: 'All set — every open question is answered.' });
-      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'visio_generate', visioGenerate: {} });
-    } else {
-      const q = VB_CLARIFY_QUESTIONS[nextIdx];
-      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'visio_clarify', visioClarify: { qid: q.id, question: q.q, options: q.options } });
-    }
-  }
-
-  async function handleVisioGenerate(m: ChatMessage) {
-    if (!tactplanId || m.visioGenerate?.resolved) return;
-    updateMessage(currentPersona, projectKey, m.id, { visioGenerate: { resolved: true } });
-    addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'text', text: 'Generating diagram…' });
-    visioStartGenerating(tactplanId);
-    await new Promise((r) => setTimeout(r, 2200));
-    visioGenerateVisio(tactplanId, 'solutionArchitect');
-    const names = VB_APPROVER_KEYS.map((k) => PERSONAS[k].name).join(' and ');
-    await api.addComment({
-      tactplanId,
-      sectionId: 'flow',
-      authorPersona: currentPersona,
-      body: `The Flow for this campaign is ready for your review — sent for approval to ${names}.`,
-      mentions: VB_APPROVER_KEYS,
-      source: 'agent',
-    });
-    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    addMessage(currentPersona, projectKey, {
-      id: cpNextId(),
-      role: 'bot',
-      kind: 'text',
-      text: `Flow generated and sent to ${names} for approval. Every answer above is on record with who chose it — head to the Flow Design tab to track review status.`,
-    });
-  }
 
   // Fires the OMS -> Solution Architect handoff once the OMS enrollment
   // source proposal (Source Type/Source Name/Suvery Q&A pairs, extracted
@@ -622,23 +544,6 @@ export default function ChatPanel({
 
   return (
     <div className={`chat-panel ${variant === 'inline' ? 'chat-panel-inline' : ''}`} id={variant === 'panel' ? 'chatPanel' : undefined}>
-      {/* Width-animates open only in full-screen chat mode (see the
-          data-details/data-landing-layout "collapsed" rules) — same New
-          chat / History content as the header dropdown below, just laid
-          out ChatGPT-sidebar style once there's room for it, sliding in
-          rather than popping. */}
-      <div className="cp-sidebar" id="cpSidebar">
-        <button
-          className="cp-sidebar-new"
-          onClick={() => {
-            startNewChat(currentPersona, projectKey);
-            setScrollbackOpen(false);
-          }}
-        >
-          + New chat
-        </button>
-        <div className="cp-sidebar-list">{archiveRows}</div>
-      </div>
       <div className="cp-main">
         <div className="cp-head" id="cpHead">
           <div className="cp-head-actions">
@@ -771,40 +676,6 @@ export default function ChatPanel({
                     </button>
                   ))}
                 </div>
-              </div>
-            );
-          }
-          if (m.kind === 'visio_clarify' && m.visioClarify) {
-            const vc = m.visioClarify;
-            return (
-              <div className="msg bot vb-cq" key={m.id}>
-                <div className="vb-cq-q">{vc.question}</div>
-                <div className="vb-cq-opts">
-                  {vc.options.map((o) => (
-                    <button
-                      key={o.value}
-                      className="vb-cq-opt"
-                      disabled={!!vc.answered}
-                      style={vc.answered && vc.answered.value !== o.value ? { opacity: 0.5 } : undefined}
-                      onClick={() => handleVisioAnswer(m, o.value, o.label)}
-                    >
-                      <span className="vb-cq-opt-label">
-                        {vc.answered?.value === o.value ? '✓ ' : ''}
-                        {o.label}
-                      </span>
-                      {o.recommended && !vc.answered && <span className="vb-cq-rec">Recommended</span>}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          }
-          if (m.kind === 'visio_generate' && m.visioGenerate) {
-            return (
-              <div className="msg bot vb-cq-generate" key={m.id}>
-                <button className="btn-primary" disabled={m.visioGenerate.resolved} onClick={() => handleVisioGenerate(m)}>
-                  {m.visioGenerate.resolved ? 'Flow generating…' : 'Generate Flow'}
-                </button>
               </div>
             );
           }

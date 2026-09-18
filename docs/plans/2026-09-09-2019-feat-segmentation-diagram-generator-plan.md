@@ -10,6 +10,39 @@ execution: code
 
 # Segmentation Diagram Generator - Plan
 
+> **Superseded 2026-09-18.** The user supplied `campaign-accelerator-api.zip`, a
+> mature, already-working reference implementation of this exact feature
+> (`app/flow/*.py`, `app/drawing.py`, `app/visio.py`), sourced from the same
+> SOP. Per direct instruction, the shipped implementation **ports that
+> project's logic into Node** (not the from-scratch mxGraph/draw.io-XML
+> approach below) and uses a **new dedicated flow-planner field set**
+> (`useFlowPlannerStore.ts`) rather than extending `VB_CLARIFY_QUESTIONS`/
+> Intake fields (U5, below, not built as specified).
+>
+> What shipped instead, at `accelerate-app/server/segmentation/` (`sop.js`,
+> `model.js`, `segmentation.js`, `drawing.js`, `svg.js`, `vsdx.js`, `index.js`)
+> plus `POST /api/flow-planner/generate` and `POST /api/flow-planner/vsdx`,
+> `client/src/stores/useFlowPlannerStore.ts`, and
+> `client/src/components/FlowPlannerPanel.tsx` (replacing the static PDF in
+> `VisioBuilderPanel.tsx`):
+> - Inline **SVG** render (KTD3's mxGraph-viewer approach was dropped — the
+>   reference project already renders SVG server-side from the same
+>   position/colour model that drives the `.vsdx`, so no client graph library
+>   was needed).
+> - A real **`.vsdx`** download, built the same way this plan's KTD2 called
+>   for (direct OOXML zip via `jszip`, no draw.io/Electron/JVM) — this part of
+>   the original plan held.
+> - Scope held to the Segmentation region (rows 1-9 / R3, R4) — the Email
+>   Journey component is still out of scope, unchanged from this plan's
+>   boundary.
+> - The LLM-assisted segment-name/unbranded-fork recommendation logic in the
+>   reference project's `planner.py` was **not** ported (no model wired up for
+>   this yet); declared inputs are used as-is and fall through to `TBD`
+>   otherwise, same terminal behavior the SOP describes.
+>
+> The Implementation Units below (U1-U6) describe the plan as authored before
+> that discovery and are kept for record; they were not built as written.
+
 ## Goal Capsule
 
 - **Objective:** a Solution Architect opens the Flow Design tab and sees a real segmentation diagram for the current campaign, generated from its own data, instead of the static reference PDF everyone sees today.

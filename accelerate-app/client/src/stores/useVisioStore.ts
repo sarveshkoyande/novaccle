@@ -2,18 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { VB_APPROVER_KEYS } from '../personas';
 
-// Shared source of truth for the Flow Design / Visio Builder workflow —
-// the clarify Q&A now happens as chat cards (ChatPanel, solutionArchitect
-// persona only) while the form-pane canvas (VisioBuilderPanel) only ever
-// DISPLAYS the result (waiting -> generating -> PDF). Both need to react
-// to the same state the instant it changes, which plain per-component
-// localStorage reads (the first pass of this feature) can't do — this
-// store is what makes them reactive, same recipe as useChatStore/
-// useSessionStore.
-export interface ClarifyAnswer {
-  value: string;
-  label: string;
-}
+// Shared source of truth for the Flow Design / Visio Builder workflow — the
+// approval lifecycle (ready/sent/decisions/versions) around whatever
+// FlowPlannerPanel (real, SOP-driven generation from the campaign's own
+// field data) produces. The scripted "answer these fixed multiple-choice
+// questions" clarify flow that used to gate this (VB_CLARIFY_QUESTIONS,
+// answered in chat or in this panel) has been removed — it asked the same
+// four canned questions on every campaign regardless of its actual data,
+// which wasn't real segmentation logic, just a fixed script standing in for
+// it. FlowPlannerPanel now reads the campaign's real fields directly.
 export interface ApprovalDecision {
   status: 'pending' | 'approved' | 'changes_requested';
   comment: string;
@@ -25,16 +22,11 @@ export interface VersionEntry {
   change: string;
 }
 interface CampaignVisioState {
-  answers: Record<string, ClarifyAnswer>;
   ready: boolean;
   generating: boolean;
   sent: boolean;
   decisions: Record<string, ApprovalDecision>;
   versions: VersionEntry[];
-  // Has the chat-embedded clarify intro already been posted for this
-  // campaign this session? Prevents re-posting the intro/question every
-  // time the Solution Architect reopens the same campaign.
-  chatIntroPosted: boolean;
 }
 
 function freshDecisions(): Record<string, ApprovalDecision> {
@@ -46,7 +38,7 @@ function freshDecisions(): Record<string, ApprovalDecision> {
 }
 
 function emptyState(): CampaignVisioState {
-  return { answers: {}, ready: false, generating: false, sent: false, decisions: freshDecisions(), versions: [], chatIntroPosted: false };
+  return { ready: false, generating: false, sent: false, decisions: freshDecisions(), versions: [] };
 }
 
 // A single stable reference for "no state yet" — consumers select
@@ -64,16 +56,13 @@ function pushVersion(list: VersionEntry[], authorId: string, change: string): Ve
 
 interface VisioState {
   byCampaign: Record<string, CampaignVisioState>;
-  markChatIntroPosted: (tactplanId: string) => void;
-  answerClarify: (tactplanId: string, qid: string, value: string, label: string) => void;
   startGenerating: (tactplanId: string) => void;
   generateVisio: (tactplanId: string, authorId: string) => void;
   // OMS-sourced path: the enrollment/survey metadata sheet already carries
-  // enough detail (source type/name, Q&A pairs) that the clarify Q&A
-  // and Solution-Architect-authored generation are skipped — a draft
-  // exists immediately, but (unlike generateVisio) it does NOT auto-send
-  // for approval; the Solution Architect still reviews and explicitly
-  // sends it, since they didn't author it themselves.
+  // enough detail (source type/name, Q&A pairs) that a draft exists
+  // immediately — but (unlike generateVisio) it does NOT auto-send for
+  // approval; the Solution Architect still reviews and explicitly sends it,
+  // since they didn't author it themselves.
   createDraftFromOms: (tactplanId: string, authorId: string) => void;
   sendForApproval: (tactplanId: string, authorId: string) => void;
   approve: (tactplanId: string, approverKey: string) => void;
@@ -85,20 +74,12 @@ export const useVisioStore = create<VisioState>()(
   persist(
     (set) => ({
       byCampaign: {},
-      markChatIntroPosted: (tactplanId) =>
-        set((s) => ({ byCampaign: { ...s.byCampaign, [tactplanId]: { ...(s.byCampaign[tactplanId] || emptyState()), chatIntroPosted: true } } })),
-      answerClarify: (tactplanId, qid, value, label) =>
-        set((s) => {
-          const cur = s.byCampaign[tactplanId] || emptyState();
-          return { byCampaign: { ...s.byCampaign, [tactplanId]: { ...cur, answers: { ...cur.answers, [qid]: { value, label } } } } };
-        }),
       // Was never actually flipped to true anywhere before generateVisio
       // flipped it back to false — the left pane's "Generating diagram…"
       // overlay depends on this flag, so it just sat on "Waiting for
       // inputs" the whole time and only jumped straight to the finished PDF,
       // reading as the Generate action being stuck/unresponsive. Call this
-      // the moment Generate is clicked, from either surface (chat or the
-      // left pane), before the async delay.
+      // the moment Generate is clicked, before the async delay.
       startGenerating: (tactplanId) =>
         set((s) => {
           const cur = s.byCampaign[tactplanId] || emptyState();
@@ -113,9 +94,9 @@ export const useVisioStore = create<VisioState>()(
       generateVisio: (tactplanId, authorId) =>
         set((s) => {
           const cur = s.byCampaign[tactplanId] || emptyState();
-          if (cur.ready) return s;
-          let versions = pushVersion(cur.versions, authorId, 'Initial diagram generated from clarification answers.');
-          versions = pushVersion(versions, authorId, 'Sent for approval.');
+          const versions = cur.ready
+            ? pushVersion(cur.versions, authorId, 'Diagram regenerated.')
+            : pushVersion(pushVersion(cur.versions, authorId, 'Initial diagram generated from campaign data.'), authorId, 'Sent for approval.');
           return {
             byCampaign: {
               ...s.byCampaign,
@@ -163,37 +144,3 @@ export const useVisioStore = create<VisioState>()(
     { name: 'accelerate-visio', partialize: (s) => ({ byCampaign: s.byCampaign }) },
   ),
 );
-
-export const VB_CLARIFY_QUESTIONS: {
-  id: string;
-  q: string;
-  options: { value: string; label: string; recommended?: boolean }[];
-}[] = [
-  {
-    id: 'segment',
-    q: 'Which source should we use for the segment?',
-    options: [{ value: 'ZOL_SMAshing_my_limits_UB', label: 'ZOL_SMAshing_my_limits_UB', recommended: true }],
-  },
-  {
-    id: 'cutoff',
-    q: 'When does the audience for this send close?',
-    options: [
-      { value: '15 Aug 2026', label: '15 Aug 2026 — three days before the send', recommended: true },
-      { value: '18 Aug 2026', label: '18 Aug 2026 — the send date itself' },
-    ],
-  },
-  {
-    id: 'lastTouch',
-    q: 'Which send should be shown as the last touch?',
-    options: [
-      { value: '2026 Kick Off Email (FA-11630163_1001A)', label: '2026 Kick Off Email — FA-11630163_1001A', recommended: true },
-      { value: 'Welcome Email (FA-11409681_1001A)', label: 'Welcome Email — FA-11409681_1001A' },
-      { value: 'none', label: 'Do not show a last touch' },
-    ],
-  },
-  {
-    id: 'fulfilmentCode',
-    q: 'What is the fulfilment campaign code?',
-    options: [{ value: '20252054', label: 'Same as source code — 20252054', recommended: true }],
-  },
-];

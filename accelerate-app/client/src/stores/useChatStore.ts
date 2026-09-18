@@ -5,7 +5,7 @@ import type { PersonaKey } from '../personas';
 export interface ChatMessage {
   id: string;
   role: 'bot' | 'user';
-  kind: 'text' | 'proposal' | 'new_campaign_proposal' | 'choice' | 'visio_clarify' | 'visio_generate' | 'visio_review' | 'visio_sa_review';
+  kind: 'text' | 'proposal' | 'new_campaign_proposal' | 'choice' | 'visio_review' | 'visio_sa_review';
   text?: string;
   proposal?: { sectionId: string; sectionName: string; assignments: { fieldId: string; fieldLabel?: string; value: string }[]; resolved?: 'confirmed' | 'cancelled' };
   // Guided Mode — one question, optionally with clickable choices, instead
@@ -13,11 +13,6 @@ export interface ChatMessage {
   // Clicking a choice sends its label back as a normal user message, so
   // the model needs no special-casing to understand the answer.
   choice?: { question: string; options: string[]; answered?: string };
-  // Flow Design's clarify Q&A — a fixed, scripted sequence (not model-
-  // driven), so it's answered locally against useVisioStore rather than
-  // going through handleSendText/the agent SSE loop the way `choice` does.
-  visioClarify?: { qid: string; question: string; options: { value: string; label: string; recommended?: boolean }[]; answered?: { value: string; label: string } };
-  visioGenerate?: { resolved?: boolean };
   // Posted when an approver opens a Flow "ready for review" notification —
   // prompts Approve / Suggest modifications right in chat instead of
   // sending them hunting for the static buttons on the Flow Design tab.

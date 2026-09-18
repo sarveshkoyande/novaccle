@@ -1235,17 +1235,6 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 
 /* ================== CHATBOT (persistent right 30vw) ================== */
 .chat-panel{position:fixed;top:60px;right:0;bottom:0;width:340px;max-width:360px;background:var(--surface);border-left:1px solid var(--line);z-index:70;display:flex;flex-direction:row;box-shadow:none}
-/* ChatGPT-style sidebar — same New chat / History content as the header
-   dropdown, just width-animated open only once full-screen chat mode
-   actually has room for it (see the collapsed-state rules below). Width,
-   not display:none, is what's transitioned so it slides rather than pops. */
-.cp-sidebar{width:0;flex-shrink:0;overflow:hidden;display:flex;flex-direction:column;background:var(--surface);border-right:1px solid var(--line2);transition:width .28s var(--ease-out-soft,ease)}
-.cp-sidebar-new{flex-shrink:0;width:100%;padding:13px 18px;text-align:left;background:none;border:none;border-bottom:1px solid var(--line2);font-family:var(--font-medium);font-size:13px;font-weight:var(--fw-medium);letter-spacing:var(--tracking);color:var(--ink);white-space:nowrap;cursor:pointer;transition:color .15s ease}
-.cp-sidebar-new:hover{color:var(--nv-space-orange)}
-.cp-sidebar-list{flex:1;overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
-.cp-sidebar .cp-archive-row{white-space:normal;border-bottom:none;padding:10px 10px;transition:color .15s ease}
-.cp-sidebar .cp-archive-label{transition:color .15s ease}
-.cp-sidebar .cp-archive-row:hover .cp-archive-label{color:var(--nv-space-orange)}
 .cp-main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
 /* The landing page's reuse of the same ChatPanel component — fills its own
    .hm-agent grid column instead of floating fixed over the whole viewport,
@@ -1790,6 +1779,28 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
 .vb-version-row:last-child{border-bottom:none}
 .vb-version-note{flex:1;color:var(--ink3)}
 
+/* ================== FLOW PLANNER (segmentation diagram generator) ========
+   Real SOP-driven diagram, ported server-side from the reference
+   campaign-accelerator-api project — inline SVG + .vsdx download replacing
+   the old static visio-cropped.pdf reference image. ==================== */
+.fp-root{display:flex;flex-direction:column;gap:10px}
+.fp-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.fp-inputs{display:flex;flex-direction:column;gap:10px;border:1px solid var(--line2);background:var(--surface);padding:14px}
+.fp-row{display:flex;gap:10px;flex-wrap:wrap}
+.fp-row input,.fp-row select{flex:1;min-width:140px}
+.fp-field{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--ink3);flex:1;min-width:140px}
+.fp-field-wide{width:100%}
+.fp-field input,.fp-field select{height:32px;border:1px solid var(--line2);border-bottom:2px solid var(--line2);border-radius:0;padding:0 10px;font-size:12px;font-weight:400;color:var(--ink);background:var(--surface2)}
+.fp-field input:focus,.fp-field select:focus{outline:none;border-bottom-color:var(--nv-space-orange)}
+.fp-section-label{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.02em}
+.fp-sources{display:flex;flex-direction:column;gap:6px}
+.fp-unbranded{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line2);padding-top:10px}
+.fp-checkbox{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--ink2)}
+.fp-error{color:var(--nv-space-orange);font-size:12px;font-weight:700}
+.fp-canvas-wrap{border:1px solid var(--line2);background:var(--surface);min-height:200px;overflow:auto}
+.fp-svg{padding:10px}
+.fp-svg svg{max-width:100%;height:auto;display:block}
+
 /* ================== TIMELINE TAB (Flow Sequence + Gantt) ==================
    A real lead-time sequence over this app's own sections — replaces the earlier
    reuse of the standalone Calendar page's GanttTimeline (a generic
@@ -2066,17 +2077,11 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
      middle, and unlike max-width+margin every message inside is exactly
      that width instead of shrink-wrapping to its own text. */
   body[data-view="request"][data-details="collapsed"] .cp-body{padding-left:20vw;padding-right:20vw}
-  /* Full-screen chat is the one mode with room for a real sidebar — New
-     chat / History move out of the header (hidden here) and into
-     .cp-sidebar, which slides open via its own width transition. */
-  body[data-view="request"][data-details="collapsed"] .cp-sidebar{width:240px}
-  /* New chat / History move into .cp-sidebar in full-screen chat, so the
-     header bar has nothing left in it here — Guided Mode's toggle lives in
-     the composer now (.cp-guided-row), not the header, so unlike when this
-     rule was first written there's no reason left to keep the bar itself
-     around; hiding just .cp-head-actions left an empty 45px strip (just
-     the border-bottom) sitting above the messages for no reason. */
-  body[data-view="request"][data-details="collapsed"] .cp-head{display:none}
+  /* The left "New chat / History" pane (.cp-sidebar) that used to slide
+     open in full-screen chat has been removed — those controls stay in
+     the header instead (.cp-head), same as every other chat layout, so
+     .cp-sidebar is left at its default width:0 here and .cp-head stays
+     visible rather than being hidden in favor of the sidebar's copy. */
   /* Bot replies run the full width of the (already-restricted) column —
      user messages keep their own shrink-to-fit + right-aligned bubble
      instead of stretching to match, which is what "collapsed" used to force
@@ -2130,8 +2135,8 @@ details.phase-group>summary.pg-head::marker{color:var(--ink3);font-size:11px}
   body[data-landing-layout="collapsed"] .cp-body{padding-left:20vw;padding-right:20vw}
   body[data-landing-layout="collapsed"] .cp-input-card{padding-left:20vw;padding-right:20vw}
   body[data-landing-layout="collapsed"] .msg.bot{width:100%;max-width:100%}
-  body[data-landing-layout="collapsed"] .cp-sidebar{width:240px}
-  body[data-landing-layout="collapsed"] .cp-head{display:none}
+  /* Same removal as the request-detail full-screen mode above — no
+     .cp-sidebar pane here either; .cp-head keeps New chat / History. */
   body[data-landing-layout="formfull"] .hm-grid{grid-template-columns:0fr 1fr}
   /* Same fix as .hm-rail above — .hm-agent's own border-right still
      counted toward its minimum footprint even at min-width:0. */
