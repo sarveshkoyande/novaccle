@@ -2052,6 +2052,82 @@ app.post('/api/flow-planner/vsdx', async (req, res) => {
   }
 });
 
+// Chat-driven editing of the Flow Planner's own inputs (the fields
+// FlowPlannerPanel shows — audience, campaign identity, enrollment sources,
+// segments, the unbranded fork, suppression answers) — the Solution
+// Architect's plain-English edit ("set audience to HCP", "add a segment
+// called PsO Bio Naive") is turned into a patch on those fields via one
+// forced tool call, rather than a bare-keyword parser. This is a distinct
+// data model from the old canvas-based /api/visio-agent above (which edited
+// an mxGraph-style node/edge graph that no longer exists in this UI) — that
+// endpoint has no live caller left; this one is what the Flow tab's chat
+// edit commands actually reach now.
+function flowPlannerEditTool() {
+  return {
+    name: 'update_flow_planner_inputs',
+    description: "Apply the user's requested change(s) to the Flow Planner's segmentation inputs. Only include fields the user actually asked to change — omit everything else so it's left untouched.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        audience: { type: 'string', enum: ['DTC', 'HCP', ''], description: 'Leave out unless the user asked to change audience.' },
+        campaignName: { type: 'string' },
+        campaignCode: { type: 'string' },
+        campaignType: { type: 'string', description: 'e.g. Ad Hoc, Cadenced, Automation, Model based, Real-time' },
+        goal: { type: 'string' },
+        segments: { type: 'string', description: 'Comma-separated segment names. If the user asks to ADD a segment, include the full resulting list, not just the new one.' },
+        qna: { type: 'string', description: 'Survey / metadata sheet QnA text.' },
+        metadataSheet: { type: 'string' },
+        enrollmentSources: {
+          type: 'array',
+          description: 'The full resulting list of enrollment sources if the user asked to add/change/remove one — not just the changed entry.',
+          items: {
+            type: 'object',
+            properties: { name: { type: 'string' }, code: { type: 'string' }, qna: { type: 'string' } },
+            required: [],
+          },
+        },
+        unbrandedPresent: { type: 'boolean', description: 'Whether the campaign goal requires capture from an unbranded source.' },
+        unbrandedCampaignCode: { type: 'string' },
+        unbrandedLastTouchpointQuestion: { type: 'string' },
+        unbrandedAnswerCodes: { type: 'string', description: 'Comma-separated answer codes.' },
+        businessRules: { type: 'string', description: 'Additional MDS business-rules suppression answer.' },
+        specialtyInclusion: { type: 'string' },
+        specialtyExclusion: { type: 'string' },
+        summary: { type: 'string', description: 'One short, friendly sentence confirming what was changed, to show the user in chat. Required even if nothing was changed (explain why, e.g. the request was unclear or unrelated to the Flow inputs).' },
+      },
+      required: ['summary'],
+    },
+  };
+}
+
+app.post('/api/flow-planner/chat-edit', async (req, res) => {
+  const { text, currentInputs } = req.body || {};
+  if (!ai) return res.status(503).json({ error: 'ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not configured on the server.' });
+  if (!text) return res.status(400).json({ error: 'text is required.' });
+
+  const system = `You edit the inputs for a Novartis Accelerate campaign's Segmentation Flow diagram generator. ` +
+    `Current values (JSON): ${JSON.stringify(currentInputs || {})}. ` +
+    `Call update_flow_planner_inputs with only the fields the user's message asks to change.`;
+
+  try {
+    const response = await ai.messages.create({
+      model: MODEL,
+      max_tokens: 1024,
+      system,
+      messages: [{ role: 'user', content: text }],
+      tools: [flowPlannerEditTool()],
+      tool_choice: { type: 'tool', name: 'update_flow_planner_inputs' },
+    });
+    const block = response.content.find((b) => b.type === 'tool_use');
+    if (!block) return res.json({ patch: {}, summary: "Didn't catch a Flow-input change in that — try naming the field and the new value." });
+    const { summary, ...patch } = block.input || {};
+    res.json({ patch, summary: summary || 'Updated.' });
+  } catch (err) {
+    console.error('[server] Flow Planner chat-edit failed:', err);
+    res.status(500).json({ error: 'Flow Planner chat-edit failed.', detail: String(err.message || err) });
+  }
+});
+
 // Phase 0 pipe check for the new React client (accelerate-app/client) — used
 // by its bare-shell App.tsx to confirm the dev proxy / production build
 // actually reaches this server before any real UI is ported over.

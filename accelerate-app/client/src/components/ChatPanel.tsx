@@ -5,6 +5,7 @@ import { useSessionStore } from '../stores/useSessionStore';
 import { useAgentFill } from '../hooks/useAgentFill';
 import { PERSONAS, VB_APPROVER_KEYS } from '../personas';
 import { useVisioStore, DEFAULT_VISIO_STATE } from '../stores/useVisioStore';
+import { runFlowPlannerChatEdit } from '../stores/useFlowPlannerStore';
 import { renderMarkdown } from '../markdown';
 import { pendingIntakeContinuations } from '../pendingIntake';
 import { api } from '../api';
@@ -45,9 +46,16 @@ export default function ChatPanel({
   onNotifyStakeholders,
   entriesLoaded = true,
   variant = 'panel',
+  viewedGate,
 }: {
   sections: FormSection[];
   tactplanId: string | null;
+  // Which tab of the campaign detail page is showing — only 'flow' matters
+  // here: while it's active, the Solution Architect's plain messages are
+  // routed to the Flow Planner's own edit tool (see runFlowPlannerChatEdit)
+  // instead of the general form-filling agent. undefined everywhere else
+  // (landing page has no tabs at all).
+  viewedGate?: string;
   // Gates the [[system:campaign_created]] auto-continuation below — see
   // its own comment for the race this closes. Defaults to true so pages
   // with no entries to load (the landing page, where tactplanId is always
@@ -471,6 +479,26 @@ export default function ChatPanel({
       const target = thread.find((m) => m.id === pending.messageId);
       if (target && pending.kind === 'visio_review') handleVisioSuggest(target, text);
       else if (target && pending.kind === 'visio_sa_review') handleSaSubmitChangeNote(target, text);
+      return;
+    }
+    // Flow tab is a different editing surface entirely — its own tool
+    // against the Flow Planner's inputs (see runFlowPlannerChatEdit), not
+    // the general form-filling agent `send` below, which has no concept of
+    // audience/segments/enrollment sources at all.
+    if (viewedGate === 'flow' && currentPersona === 'solutionArchitect' && tactplanId) {
+      addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'user', kind: 'text', text });
+      runFlowPlannerChatEdit(tactplanId, text, currentPersona)
+        .then(({ summary }) => {
+          addMessage(currentPersona, projectKey, { id: cpNextId(), role: 'bot', kind: 'text', text: summary });
+        })
+        .catch((err: unknown) => {
+          addMessage(currentPersona, projectKey, {
+            id: cpNextId(),
+            role: 'bot',
+            kind: 'text',
+            text: `Couldn't apply that: ${err instanceof Error ? err.message : String(err)}`,
+          });
+        });
       return;
     }
     send(text, sections, displayText);

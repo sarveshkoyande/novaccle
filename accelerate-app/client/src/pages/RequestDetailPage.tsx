@@ -713,6 +713,7 @@ export default function RequestDetailPage() {
       <ChatPanel
         sections={sections}
         tactplanId={id || null}
+        viewedGate={viewedGate}
         onApplyProposal={handleApplyProposal}
         onOpenCampaign={(tactplanId) => navigate(`/requests/${tactplanId}`)}
         interviewData={interviewData}
