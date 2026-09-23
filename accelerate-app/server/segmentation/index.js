@@ -47,8 +47,35 @@ function applyOverrides(spec, overrides) {
   return { ...spec, nodes: spec.nodes.map(patch), steps: spec.steps.map(patch) };
 }
 
+// Removing a block ("delete B6") means both dropping the node AND
+// reconnecting whatever pointed at it straight to whatever it pointed at —
+// otherwise the diagram would still draw two dangling half-arrows where the
+// block used to be, or the two neighbours simply wouldn't touch at all. Each
+// deletion is applied one at a time (in order given), which is what lets
+// deleting several adjacent blocks in one request correctly bridge the gap
+// across all of them rather than only across the first.
+function applyDeletion(spec, nodeId) {
+  const incoming = spec.edges.filter((e) => e.to === nodeId);
+  const outgoing = spec.edges.filter((e) => e.from === nodeId);
+  const bridged = [];
+  for (const inEdge of incoming) {
+    for (const outEdge of outgoing) {
+      bridged.push({ from: inEdge.from, to: outEdge.to, ...(outEdge.label || inEdge.label ? { label: outEdge.label || inEdge.label } : {}) });
+    }
+  }
+  const edges = spec.edges.filter((e) => e.from !== nodeId && e.to !== nodeId).concat(bridged);
+  const keep = (n) => n.id !== nodeId;
+  return { ...spec, nodes: spec.nodes.filter(keep), steps: spec.steps.filter(keep), edges };
+}
+
+function applyDeletions(spec, nodeIds) {
+  if (!nodeIds || !nodeIds.length) return spec;
+  return nodeIds.reduce(applyDeletion, spec);
+}
+
 function generate(inputs) {
-  return applyOverrides(plan(inputs).toSpec(), inputs.nodeOverrides);
+  const withDeletions = applyDeletions(plan(inputs).toSpec(), inputs.deletedNodeIds);
+  return applyOverrides(withDeletions, inputs.nodeOverrides);
 }
 
 function svgFor(inputs, title) {

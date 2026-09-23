@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import { useFlowPlannerStore, DEFAULT_FLOW_PLANNER_INPUTS, toGenerateRequest, type FlowPlannerInputs } from '../stores/useFlowPlannerStore';
+import { useFlowPlannerStore, DEFAULT_FLOW_PLANNER_INPUTS, normalizeFlowPlannerInputs, toGenerateRequest, type FlowPlannerInputs } from '../stores/useFlowPlannerStore';
 import type { FormSection } from '../types';
 
 // The real segmentation-diagram generator for the Flow tab — ported server
@@ -89,7 +89,13 @@ async function readRealInputs(tactplanId: string): Promise<Partial<FlowPlannerIn
 }
 
 export default function FlowPlannerPanel({ tactplanId, canAuthor, onGenerated }: { tactplanId: string; canAuthor: boolean; onGenerated?: () => void }) {
-  const inputs = useFlowPlannerStore((s) => s.byCampaign[tactplanId] ?? DEFAULT_FLOW_PLANNER_INPUTS);
+  // Selector returns the raw stored entry (or undefined) so its reference
+  // only changes when the store itself actually updates it; normalizing
+  // happens in the memo below rather than inline in the selector, which
+  // would otherwise build a new merged object — and so a new reference —
+  // on every single store update, unrelated ones included.
+  const rawInputs = useFlowPlannerStore((s) => s.byCampaign[tactplanId]);
+  const inputs = useMemo(() => (rawInputs ? normalizeFlowPlannerInputs(rawInputs) : DEFAULT_FLOW_PLANNER_INPUTS), [rawInputs]);
   const result = useFlowPlannerStore((s) => s.results[tactplanId]);
   const setField = useFlowPlannerStore((s) => s.setField);
   const setSource = useFlowPlannerStore((s) => s.setSource);

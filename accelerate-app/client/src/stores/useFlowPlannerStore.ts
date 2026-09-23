@@ -42,6 +42,10 @@ export interface FlowPlannerInputs {
   // editing them by their diagram code (e.g. "B12") only works this way.
   // See server/segmentation/index.js's applyOverrides.
   nodeOverrides: Record<string, string>;
+  // Node ids removed from the diagram (e.g. "delete B6") — the generator
+  // drops these nodes and reconnects their neighbours directly. See
+  // server/segmentation/index.js's applyDeletion.
+  deletedNodeIds: string[];
 }
 
 function emptyInputs(): FlowPlannerInputs {
@@ -58,10 +62,23 @@ function emptyInputs(): FlowPlannerInputs {
     unbranded: { present: false, campaignCode: '', lastTouchpointQuestion: '', lastTouchpointMetadataId: '', answerCodes: '' },
     suppressionAnswers: {},
     nodeOverrides: {},
+    deletedNodeIds: [],
   };
 }
 
 export const DEFAULT_FLOW_PLANNER_INPUTS: FlowPlannerInputs = emptyInputs();
+
+// A campaign's stored inputs may predate a field added here later (e.g.
+// deletedNodeIds/nodeOverrides didn't exist until block-level edits were
+// added) — localStorage persistence just replays the old shape verbatim, it
+// doesn't run through emptyInputs() again. Reading `cur.deletedNodeIds`
+// straight off a pre-existing entry then throws on the first array method
+// call instead of just seeing an empty list. Every read of a stored entry
+// goes through this so an old campaign gets the new fields' defaults
+// without needing a migration step.
+export function normalizeFlowPlannerInputs(raw: Partial<FlowPlannerInputs> | undefined): FlowPlannerInputs {
+  return { ...emptyInputs(), ...raw };
+}
 
 interface GeneratedResult {
   svg: string;
@@ -90,30 +107,30 @@ export const useFlowPlannerStore = create<FlowPlannerState>()(
       results: {},
       setField: (tactplanId, field, value) =>
         set((s) => {
-          const cur = s.byCampaign[tactplanId] || emptyInputs();
+          const cur = normalizeFlowPlannerInputs(s.byCampaign[tactplanId]);
           return { byCampaign: { ...s.byCampaign, [tactplanId]: { ...cur, [field]: value } } };
         }),
       setSource: (tactplanId, index, patch) =>
         set((s) => {
-          const cur = s.byCampaign[tactplanId] || emptyInputs();
+          const cur = normalizeFlowPlannerInputs(s.byCampaign[tactplanId]);
           const sources = cur.enrollmentSources.map((src, i) => (i === index ? { ...src, ...patch } : src));
           return { byCampaign: { ...s.byCampaign, [tactplanId]: { ...cur, enrollmentSources: sources } } };
         }),
       addSource: (tactplanId) =>
         set((s) => {
-          const cur = s.byCampaign[tactplanId] || emptyInputs();
+          const cur = normalizeFlowPlannerInputs(s.byCampaign[tactplanId]);
           return { byCampaign: { ...s.byCampaign, [tactplanId]: { ...cur, enrollmentSources: [...cur.enrollmentSources, { name: '', code: '', qna: '' }] } } };
         }),
       setUnbranded: (tactplanId, patch) =>
         set((s) => {
-          const cur = s.byCampaign[tactplanId] || emptyInputs();
+          const cur = normalizeFlowPlannerInputs(s.byCampaign[tactplanId]);
           return { byCampaign: { ...s.byCampaign, [tactplanId]: { ...cur, unbranded: { ...cur.unbranded, ...patch } } } };
         }),
       setResult: (tactplanId, svg) =>
         set((s) => ({ results: { ...s.results, [tactplanId]: { svg, generatedAt: Date.now() } } })),
       applyRealInputs: (tactplanId, real) =>
         set((s) => {
-          const cur = s.byCampaign[tactplanId] || emptyInputs();
+          const cur = normalizeFlowPlannerInputs(s.byCampaign[tactplanId]);
           return { byCampaign: { ...s.byCampaign, [tactplanId]: { ...cur, ...real } } };
         }),
     }),
@@ -142,6 +159,7 @@ export function toGenerateRequest(inputs: FlowPlannerInputs) {
     },
     suppressionAnswers: inputs.suppressionAnswers,
     nodeOverrides: inputs.nodeOverrides,
+    deletedNodeIds: inputs.deletedNodeIds,
   };
 }
 
@@ -168,6 +186,7 @@ interface ChatEditPatch {
   specialtyExclusion?: string;
   nodeOverrideId?: string;
   nodeOverrideText?: string;
+  nodeDeleteId?: string;
 }
 
 function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<FlowPlannerInputs> {
@@ -203,6 +222,9 @@ function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<Fl
   if (patch.nodeOverrideId) {
     real.nodeOverrides = { ...cur.nodeOverrides, [patch.nodeOverrideId]: patch.nodeOverrideText ?? '' };
   }
+  if (patch.nodeDeleteId && !cur.deletedNodeIds.includes(patch.nodeDeleteId)) {
+    real.deletedNodeIds = [...cur.deletedNodeIds, patch.nodeDeleteId];
+  }
   return real;
 }
 
@@ -216,7 +238,7 @@ function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<Fl
  */
 export async function runFlowPlannerChatEdit(tactplanId: string, text: string, authorId: string): Promise<{ summary: string; applied: boolean }> {
   const store = useFlowPlannerStore.getState();
-  const cur = store.byCampaign[tactplanId] ?? DEFAULT_FLOW_PLANNER_INPUTS;
+  const cur = normalizeFlowPlannerInputs(store.byCampaign[tactplanId]);
   const res = await fetch('/api/flow-planner/chat-edit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

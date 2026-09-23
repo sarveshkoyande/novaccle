@@ -2101,6 +2101,7 @@ function flowPlannerEditTool() {
         // ...), which the system prompt below lists for the current design.
         blockCode: { type: 'string', description: 'The printed block code (e.g. "B12") the user referred to — set this whenever they mention a block by its code rather than by field name.' },
         blockText: { type: 'string', description: "The block's new text, when editing by blockCode." },
+        deleteBlockCode: { type: 'string', description: 'Set this INSTEAD of blockCode/blockText when the user asks to delete/remove a block. The block is removed and its neighbours on the diagram are connected directly to each other.' },
         summary: { type: 'string', description: 'One short, friendly sentence confirming what was changed, to show the user in chat. Required even if nothing was changed (explain why, e.g. the request was unclear, or the block code does not exist on the current diagram).' },
       },
       required: ['summary'],
@@ -2121,6 +2122,7 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
     `The CURRENT diagram's printed blocks, in order (code: label — current text):\n${blockList}\n\n` +
     `If the user names a field (audience, campaign name, segments, ...), set that field. ` +
     `If the user instead refers to a block by its printed code (e.g. "B12") or unambiguously by the block's own label/text above, set blockCode + blockText instead — most blocks have no other input to change. ` +
+    `If the user asks to delete/remove a block, set deleteBlockCode instead (not blockCode/blockText) — do not just describe the deletion in summary without setting it, the deletion only actually happens if you set this field. ` +
     `Call update_flow_planner_inputs with only what the user actually asked to change.`;
 
   try {
@@ -2134,12 +2136,17 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
     });
     const block = response.content.find((b) => b.type === 'tool_use');
     if (!block) return res.json({ patch: {}, summary: "Didn't catch a Flow-input change in that — try naming the field, or the block's code (e.g. \"B12\"), and the new value." });
-    const { summary, blockCode, blockText, ...patch } = block.input || {};
+    const { summary, blockCode, blockText, deleteBlockCode, ...patch } = block.input || {};
     if (blockCode) {
       const found = flowPlanner.blocks(currentInputs || {}).find((b) => b.code.toLowerCase() === String(blockCode).toLowerCase());
       if (!found) return res.json({ patch: {}, summary: `${blockCode} isn't a block on the current diagram — regenerate first if you just changed audience or segments, or check the code shown next to the block.` });
       patch.nodeOverrideId = found.id;
       patch.nodeOverrideText = blockText ?? '';
+    }
+    if (deleteBlockCode) {
+      const found = flowPlanner.blocks(currentInputs || {}).find((b) => b.code.toLowerCase() === String(deleteBlockCode).toLowerCase());
+      if (!found) return res.json({ patch: {}, summary: `${deleteBlockCode} isn't a block on the current diagram — regenerate first if you just changed audience or segments, or check the code shown next to the block.` });
+      patch.nodeDeleteId = found.id;
     }
     res.json({ patch, summary: summary || 'Updated.' });
   } catch (err) {
