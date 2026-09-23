@@ -163,6 +163,15 @@ function applyGraphOp(spec, op) {
       const patch = (n) => (n.id === op.id ? { ...n, status: STATUSES.has(op.status) ? op.status : null } : n);
       return { ...spec, nodes: spec.nodes.map(patch), steps: spec.steps.map(patch) };
     }
+    // Whether a block draws inline, continuing straight down the main
+    // vertical line, or off to the side of whatever it connects from —
+    // same idea as the Stop pills next to a suppression check, just not
+    // restricted to Stop-typed blocks. Only drawing.js's layout() actually
+    // cares about this flag; nothing else about the block changes.
+    case 'setBranch': {
+      const patch = (n) => (n.id === op.id ? { ...n, attrs: { ...n.attrs, branch: op.branch === 'side' ? 'side' : undefined } } : n);
+      return { ...spec, nodes: spec.nodes.map(patch), steps: spec.steps.map(patch) };
+    }
     default:
       return spec;
   }

@@ -108,9 +108,17 @@ function layout(nodes, edges) {
   const seg = nodes.filter((n) => (n.region || 'segmentation') === 'segmentation');
 
   const panes = seg.filter((n) => n.type === 'note');
-  const stops = seg.filter((n) => n.type === 'stop');
   const segments = seg.filter((n) => n.type === 'segment');
-  const spine = seg.filter((n) => !['note', 'stop', 'segment'].includes(n.type));
+  // A "side branch" sits off to the right of wherever it connects from,
+  // instead of continuing straight down the main vertical line — every
+  // suppression's Stop pill has always drawn this way, since a rejection
+  // isn't the campaign's main path. `attrs.branch === 'side'` puts any
+  // OTHER block there too (a chat-added "No" arm, a rejected-path note,
+  // ...) without needing its own node type the way Stop got one; it draws
+  // at its own real size (see `size()`) rather than a fixed pill.
+  const sideBranches = seg.filter((n) => n.type !== 'note' && n.type !== 'segment' && (n.type === 'stop' || (n.attrs && n.attrs.branch === 'side')));
+  const sideBranchIds = new Set(sideBranches.map((n) => n.id));
+  const spine = seg.filter((n) => !['note', 'segment'].includes(n.type) && !sideBranchIds.has(n.id));
 
   const spineX = MARGIN + PANE_W + MARGIN;
   let y = TOP;
@@ -121,9 +129,8 @@ function layout(nodes, edges) {
     pos[left.id] = [MARGIN, TOP, w, h];
   }
 
-  const stopSource = {};
-  const stopIds = new Set(stops.map((s) => s.id));
-  for (const edge of edges) if (stopIds.has(edge.to)) stopSource[edge.to] = edge.from;
+  const branchSource = {};
+  for (const edge of edges) if (sideBranchIds.has(edge.to)) branchSource[edge.to] = edge.from;
 
   for (const node of spine) {
     const [w, h] = size(node);
@@ -131,17 +138,21 @@ function layout(nodes, edges) {
     y += h + ROW_GAP;
   }
 
-  for (const stop of stops) {
-    const [w, h] = size(stop);
-    const src = stopSource[stop.id];
+  for (const branch of sideBranches) {
+    const [w, h] = size(branch);
+    const src = branchSource[branch.id];
     const sy = src && pos[src] ? pos[src][1] + (pos[src][3] - h) / 2 : TOP;
-    pos[stop.id] = [spineX + NW + STOP_DX, sy, w, h];
+    pos[branch.id] = [spineX + NW + STOP_DX, sy, w, h];
   }
 
+  // How far right the side-branch column actually reaches, so the
+  // enrollment-sources pane (drawn further right still) never overlaps a
+  // branch wider than the old fixed Stop-pill width used to guarantee.
+  const sideBranchW = sideBranches.length ? Math.max(...sideBranches.map((n) => size(n)[0])) : SW;
   const right = panes.find((p) => p.id === 'pane.right');
   if (right) {
     const [w, h] = size(right);
-    pos[right.id] = [spineX + NW + STOP_DX + SW + MARGIN, TOP, w, h];
+    pos[right.id] = [spineX + NW + STOP_DX + sideBranchW + MARGIN, TOP, w, h];
   }
 
   segments.forEach((node, i) => {

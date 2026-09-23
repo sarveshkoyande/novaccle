@@ -2111,12 +2111,15 @@ function flowPlannerEditTool() {
         addBlockStatus: { type: 'string', enum: ['live', 'new', 'hold', 'built_not_live'], description: 'Legend colour for the new block, only if the user asked for one.' },
         addBlockAfterCode: { type: 'string', description: 'An existing block\'s code (e.g. "B5") the new block connects downstream from. The new block takes over whatever that block used to connect to — this is how "add X after B5" or "insert X between B5 and B7" both work; for the latter also see addBlockBeforeCode.' },
         addBlockBeforeCode: { type: 'string', description: 'Use together with addBlockAfterCode to place the new block precisely between two SPECIFIC existing blocks that are already directly connected, rather than however addBlockAfterCode\'s block currently connects onward.' },
+        addBlockBranch: { type: 'string', enum: ['down', 'side'], description: 'Set to "side" when the new block is a branch off the main line rather than a continuation of it — a "No"/rejection arm, an alternate path, anything the user describes as branching off sideways. Draws it beside addBlockAfterCode\'s block instead of below it, the same way the diagram\'s existing Stop pills sit beside a suppression check. Defaults to "down".' },
 
-        // --- swap / recolour / raw connect ------------------------------
+        // --- swap / recolour / branch / raw connect ---------------------
         swapBlockCodeA: { type: 'string', description: 'Set together with swapBlockCodeB to swap what two existing blocks show (their text and shape trade places; their position and connections do not move).' },
         swapBlockCodeB: { type: 'string' },
         recolorBlockCode: { type: 'string', description: 'An existing block to recolour.' },
         recolorStatus: { type: 'string', enum: ['live', 'new', 'hold', 'built_not_live'], description: 'The legend colour to apply — these are the only four colours the diagram\'s own legend defines, so map the user\'s request to whichever is closest (e.g. green/done -> live, amber/new -> new, red/off -> hold, grey/inactive -> built_not_live) rather than inventing a colour.' },
+        setBranchBlockCode: { type: 'string', description: 'An EXISTING block to move to the side (branch) or back onto the main line — e.g. "make B6 branch off to the side" or "put B6 back on the main line".' },
+        setBranchDirection: { type: 'string', enum: ['down', 'side'], description: 'Required together with setBranchBlockCode.' },
         connectFromCode: { type: 'string', description: 'Set together with connectToCode to draw a new connection between two existing blocks that are not already connected, without moving or removing anything else.' },
         connectToCode: { type: 'string' },
         connectLabel: { type: 'string', description: 'Optional label on the new connection (e.g. "Yes").' },
@@ -2154,8 +2157,8 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
     `If the user names a field (audience, campaign name, segments, ...), set that field. ` +
     `If the user instead refers to a block by its printed code (e.g. "B12") or unambiguously by the block's own label/text above, set blockCode + blockText instead — most blocks have no other input to change. ` +
     `If the user asks to delete/remove a block, set deleteBlockCode instead (not blockCode/blockText). ` +
-    `If the user asks to add a new block, set addBlockLabel (+ addBlockDetail/addBlockDecision/addBlockType/addBlockStatus as given) and, whenever there's an obvious block it should connect downstream from, addBlockAfterCode (and addBlockBeforeCode if they named both ends of an existing connection to insert into). ` +
-    `If the user asks to swap two blocks, set swapBlockCodeA + swapBlockCodeB. To change a block's colour, set recolorBlockCode + recolorStatus. To connect or disconnect two blocks directly (no new block involved), use connectFromCode/connectToCode or disconnectFromCode/disconnectToCode. ` +
+    `If the user asks to add a new block, set addBlockLabel (+ addBlockDetail/addBlockDecision/addBlockType/addBlockStatus as given) and, whenever there's an obvious block it should connect downstream from, addBlockAfterCode (and addBlockBeforeCode if they named both ends of an existing connection to insert into). Set addBlockBranch to "side" when the user describes it as a branch, a "No"/rejection arm, or an alternate path off the side — leave it "down" for a block that continues the main line. ` +
+    `If the user asks to swap two blocks, set swapBlockCodeA + swapBlockCodeB. To change a block's colour, set recolorBlockCode + recolorStatus. To move an EXISTING block to the side or back onto the main line, set setBranchBlockCode + setBranchDirection. To connect or disconnect two blocks directly (no new block involved), use connectFromCode/connectToCode or disconnectFromCode/disconnectToCode. ` +
     `Do not just describe a structural change in summary without setting the matching field(s) above — nothing happens unless you set them. ` +
     `Call update_flow_planner_inputs with only what the user actually asked to change.`;
 
@@ -2172,8 +2175,8 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
     if (!toolBlock) return res.json({ patch: {}, summary: "Didn't catch a Flow-input change in that — try naming the field, or a block's code (e.g. \"B12\"), and what to do with it." });
     const {
       summary, blockCode, blockText, deleteBlockCode,
-      addBlockLabel, addBlockDetail, addBlockDecision, addBlockType, addBlockStatus, addBlockAfterCode, addBlockBeforeCode,
-      swapBlockCodeA, swapBlockCodeB, recolorBlockCode, recolorStatus,
+      addBlockLabel, addBlockDetail, addBlockDecision, addBlockType, addBlockStatus, addBlockAfterCode, addBlockBeforeCode, addBlockBranch,
+      swapBlockCodeA, swapBlockCodeB, recolorBlockCode, recolorStatus, setBranchBlockCode, setBranchDirection,
       connectFromCode, connectToCode, connectLabel, disconnectFromCode, disconnectToCode,
       ...patch
     } = toolBlock.input || {};
@@ -2193,20 +2196,34 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
     }
     if (addBlockLabel) {
       const newId = slugId(addBlockLabel);
+      const isSide = addBlockBranch === 'side';
       patch.customNodes = [{ id: newId, type: addBlockType || (addBlockDecision ? 'decision' : 'process'), label: addBlockLabel, detail: addBlockDetail || '', status: addBlockStatus || null }];
       const graphOps = [];
-      if (addBlockAfterCode && addBlockBeforeCode) {
+      if (addBlockAfterCode && addBlockBeforeCode && !isSide) {
         const from = findBlock(currentInputs, addBlockAfterCode);
         const to = findBlock(currentInputs, addBlockBeforeCode);
         if (!from) return unknown(addBlockAfterCode);
         if (!to) return unknown(addBlockBeforeCode);
         graphOps.push({ kind: 'insertBetween', fromId: from.id, toId: to.id, newNodeId: newId });
+      } else if (addBlockAfterCode && isSide) {
+        // A side branch adds to what its anchor connects to, rather than
+        // replacing it — "add a No arm off B5" should leave B5's own
+        // downstream connection exactly as it was.
+        const anchor = findBlock(currentInputs, addBlockAfterCode);
+        if (!anchor) return unknown(addBlockAfterCode);
+        graphOps.push({ kind: 'connect', fromId: anchor.id, toId: newId });
+        graphOps.push({ kind: 'setBranch', id: newId, branch: 'side' });
       } else if (addBlockAfterCode) {
         const anchor = findBlock(currentInputs, addBlockAfterCode);
         if (!anchor) return unknown(addBlockAfterCode);
         graphOps.push({ kind: 'insertAfter', afterId: anchor.id, newNodeId: newId });
       }
       if (graphOps.length) patch.graphOps = graphOps;
+    }
+    if (setBranchBlockCode && setBranchDirection) {
+      const found = findBlock(currentInputs, setBranchBlockCode);
+      if (!found) return unknown(setBranchBlockCode);
+      patch.graphOps = [...(patch.graphOps || []), { kind: 'setBranch', id: found.id, branch: setBranchDirection }];
     }
     if (swapBlockCodeA && swapBlockCodeB) {
       const a = findBlock(currentInputs, swapBlockCodeA);

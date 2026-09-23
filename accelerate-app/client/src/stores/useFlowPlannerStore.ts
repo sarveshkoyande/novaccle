@@ -70,7 +70,8 @@ export type GraphOp =
   | { kind: 'connect'; fromId: string; toId: string; label?: string }
   | { kind: 'disconnect'; fromId: string; toId: string }
   | { kind: 'swap'; idA: string; idB: string }
-  | { kind: 'setStatus'; id: string; status: string | null };
+  | { kind: 'setStatus'; id: string; status: string | null }
+  | { kind: 'setBranch'; id: string; branch: 'side' | 'down' };
 
 function emptyInputs(): FlowPlannerInputs {
   return {
