@@ -99,16 +99,27 @@ function tbdChip(x, y, w) {
   ];
 }
 
-function edgeSvg(pos, edge) {
-  const src = pos[edge.from], dst = pos[edge.to];
-  if (!src || !dst) return [];
-  let points = route(src, dst);
+// Every other placed block is a potential obstacle for this one edge — the
+// route itself decides whether it actually needs to detour around any of
+// them (see drawing.js's route()). Excluding src/dst themselves matters:
+// otherwise the very node the edge legitimately starts/ends AT would count
+// as blocking its own connector.
+function edgePoints(pos, edge) {
+  const src = pos[edge.from];
+  const dst = pos[edge.to];
+  if (!src || !dst) return null;
+  const obstacles = Object.entries(pos)
+    .filter(([id]) => id !== edge.from && id !== edge.to)
+    .map(([, rect]) => rect);
+  let points = route(src, dst, obstacles);
   let [lx1, ly1] = points[points.length - 2];
   let [lx2, ly2] = points[points.length - 1];
   if (Math.abs(lx2 - lx1) < 1) ly2 += ly2 > ly1 ? -2 : 2;
   else lx2 += lx2 > lx1 ? -2 : 2;
-  points = [...points.slice(0, -1), [lx2, ly2]];
+  return [...points.slice(0, -1), [lx2, ly2]];
+}
 
+function edgeSvg(points, edge) {
   const path = 'M' + points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' L');
   const out = [`<path d="${path}" fill="none" stroke="#B4AFA8" stroke-width="1.6" marker-end="url(#arr)"/>`];
   if (edge.label) {
@@ -127,7 +138,20 @@ function flowSvg(spec, title, codeMap) {
   // block is deleted. Falls back to positional numbering only when no
   // stable map is supplied at all.
   const handle = codeMap || codes(nodes);
+
+  // Routed BEFORE sizing the canvas: a collision-avoiding detour (see
+  // drawing.js's route()) can reach further right than any block itself
+  // does, and sizing the page from node positions alone would clip that
+  // detour clean off the edge of the drawing instead of showing it.
+  const edgeRoutes = edges.map((edge) => ({ edge, points: edgePoints(pos, edge) })).filter((r) => r.points);
+
   let [width, height] = extent(pos);
+  for (const { points } of edgeRoutes) {
+    for (const [x, y] of points) {
+      width = Math.max(width, x);
+      height = Math.max(height, y);
+    }
+  }
   width += MARGIN;
   height += MARGIN;
 
@@ -138,7 +162,7 @@ function flowSvg(spec, title, codeMap) {
     `<text x="${MARGIN}" y="40" font-size="17" font-weight="700" fill="#161616">${esc(title)}</text>`,
   ];
 
-  for (const edge of edges) out.push(...edgeSvg(pos, edge));
+  for (const { edge, points } of edgeRoutes) out.push(...edgeSvg(points, edge));
 
   for (const node of nodes) {
     const placed = pos[node.id];

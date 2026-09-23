@@ -164,7 +164,7 @@ function layout(nodes, edges) {
   return pos;
 }
 
-function route(src, dst) {
+function directRoute(src, dst) {
   const [sx, sy, sw, sh] = src;
   const [dx, dy, dw, dh] = dst;
   const overlap = sy < dy + dh && dy < sy + sh;
@@ -189,6 +189,69 @@ function route(src, dst) {
   }
   const mid = (start[1] + end[1]) / 2;
   return [start, [start[0], mid], [end[0], mid], end];
+}
+
+// Shrinking each rect by PAD before testing means a segment that only
+// touches a box's edge — which is what every route's own start/end point
+// does, since it's anchored ON the src/dst boundary — doesn't count as a
+// collision with that box, while still catching a line that genuinely
+// crosses through it.
+const OBSTACLE_PAD = 2;
+const DETOUR_GUTTER = 24;
+
+function segmentHitsRect(p1, p2, rect) {
+  const [rx, ry, rw, rh] = rect;
+  const x0 = Math.min(p1[0], p2[0]);
+  const x1 = Math.max(p1[0], p2[0]);
+  const y0 = Math.min(p1[1], p2[1]);
+  const y1 = Math.max(p1[1], p2[1]);
+  return x0 < rx + rw - OBSTACLE_PAD && x1 > rx + OBSTACLE_PAD && y0 < ry + rh - OBSTACLE_PAD && y1 > ry + OBSTACLE_PAD;
+}
+
+function pathBlocked(points, obstacles) {
+  for (let i = 0; i < points.length - 1; i++) {
+    for (const rect of obstacles) {
+      if (segmentHitsRect(points[i], points[i + 1], rect)) return true;
+    }
+  }
+  return false;
+}
+
+// The direct route (a straight L/Z bend between two boxes) has no idea what
+// else is on the page — a connection that skips past a deleted block, or
+// reconnects a side branch back into the main line, can end up drawing
+// straight through an unrelated block sitting in between, which is exactly
+// what makes it impossible to tell by eye whether an edit actually rewired
+// what it claims to. `obstacles` is every OTHER node's placed rectangle;
+// when the direct path would cross one, this reroutes out to a lane clear
+// of everything between the two ends — same idea as a subway map or a PCB
+// trace routing around a component instead of through it — rather than
+// trying to solve general-purpose pathfinding.
+function route(src, dst, obstacles) {
+  const direct = directRoute(src, dst);
+  if (!obstacles || !obstacles.length || !pathBlocked(direct, obstacles)) return direct;
+
+  const start = direct[0];
+  const end = direct[direct.length - 1];
+  const top = Math.min(start[1], end[1], src[1], dst[1]);
+  const bottom = Math.max(start[1], end[1], src[1] + src[3], dst[1] + dst[3]);
+
+  // The detour lane sits clear of every obstacle whose row range the route
+  // actually passes through — not just src and dst's own rows — so a skip
+  // edge over several blocks clears all of them, not just the two ends.
+  let clearX = Math.max(src[0] + src[2], dst[0] + dst[2], start[0], end[0]);
+  for (const rect of obstacles) {
+    const [ox, oy, ow, oh] = rect;
+    if (oy < bottom && oy + oh > top) clearX = Math.max(clearX, ox + ow);
+  }
+  clearX += DETOUR_GUTTER;
+
+  const detour = [start, [clearX, start[1]], [clearX, end[1]], end];
+  // A detour is only worth taking if it's actually clear — if something
+  // still blocks it (a dense cluster of side branches, say), showing the
+  // direct route is more honest than a "fixed" line that still crosses
+  // something, just somewhere else.
+  return pathBlocked(detour, obstacles) ? direct : detour;
 }
 
 function codes(nodes) {

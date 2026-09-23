@@ -164,8 +164,7 @@ function shapeXml(shapeId, node, x, y, w, h, pageHPx) {
   );
 }
 
-function connectorXml(shapeId, src, dst, label, pageHPx) {
-  const points = route(src, dst);
+function connectorXml(shapeId, points, label, pageHPx) {
   const page = points.map(([px, py]) => [px / PX_PER_INCH, (pageHPx - py) / PX_PER_INCH]);
   const [bxIn, byIn] = page[0], [exIn, eyIn] = page[page.length - 1];
   const run = exIn - bxIn, rise = eyIn - byIn;
@@ -306,7 +305,27 @@ async function flowVsdx(spec, title) {
   const [nodes, edges] = normalise(spec);
   const pos = layout(nodes, edges);
   const marginPx = PAGE_MARGIN_IN * PX_PER_INCH;
+
+  // Same collision-avoidance as the SVG renderer (see drawing.js's route())
+  // — computed up front so a detour that reaches further right than any
+  // block can still grow the page instead of landing off it.
+  const routes = edges.map((edge) => {
+    const src = pos[edge.from];
+    const dst = pos[edge.to];
+    if (!src || !dst) return null;
+    const obstacles = Object.entries(pos)
+      .filter(([id]) => id !== edge.from && id !== edge.to)
+      .map(([, rect]) => rect);
+    return { edge, points: route(src, dst, obstacles) };
+  }).filter(Boolean);
+
   let [pageW, pageH] = extent(pos);
+  for (const { points } of routes) {
+    for (const [x, y] of points) {
+      pageW = Math.max(pageW, x);
+      pageH = Math.max(pageH, y);
+    }
+  }
   pageW += marginPx;
   pageH += marginPx;
 
@@ -327,12 +346,10 @@ async function flowVsdx(spec, title) {
   }
 
   const connects = [];
-  for (const edge of edges) {
-    const src = pos[edge.from], dst = pos[edge.to];
-    if (!src || !dst) continue;
+  for (const { edge, points } of routes) {
     const cid = nextId;
     nextId += 1;
-    shapes.push(connectorXml(cid, src, dst, edge.label, pageH));
+    shapes.push(connectorXml(cid, points, edge.label, pageH));
     connects.push(`<Connect FromSheet="${cid}" FromCell="BeginX" FromPart="9" ToSheet="${shapeIds[edge.from]}" ToCell="PinX" ToPart="3"/>`);
     connects.push(`<Connect FromSheet="${cid}" FromCell="EndX" FromPart="12" ToSheet="${shapeIds[edge.to]}" ToCell="PinX" ToPart="3"/>`);
   }
