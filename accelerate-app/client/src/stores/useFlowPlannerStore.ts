@@ -264,6 +264,15 @@ function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<Fl
   return real;
 }
 
+// Two edits typed in quick succession (before the first one's regenerate
+// round-trip has finished) would otherwise both read the SAME starting
+// `cur`, apply their own patch on top of it independently, and race to
+// call setResult — whichever fetch happens to come back last wins,
+// silently discarding the other edit's change even though both showed a
+// success message in chat. Queued per campaign so each edit only starts
+// once the previous one (success or failure) has fully landed.
+const flowEditQueues = new Map<string, Promise<unknown>>();
+
 /**
  * Turns a plain-English edit request into a real patch on this campaign's
  * Flow Planner inputs, then regenerates the diagram from the merged result.
@@ -272,7 +281,14 @@ function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<Fl
  * /api/visio-agent, which edited an mxGraph node/edge graph this UI no
  * longer has.
  */
-export async function runFlowPlannerChatEdit(tactplanId: string, text: string, authorId: string): Promise<{ summary: string; applied: boolean }> {
+export function runFlowPlannerChatEdit(tactplanId: string, text: string, authorId: string): Promise<{ summary: string; applied: boolean }> {
+  const prior = (flowEditQueues.get(tactplanId) ?? Promise.resolve()).catch(() => {});
+  const result = prior.then(() => runFlowPlannerChatEditNow(tactplanId, text, authorId));
+  flowEditQueues.set(tactplanId, result.catch(() => {}));
+  return result;
+}
+
+async function runFlowPlannerChatEditNow(tactplanId: string, text: string, authorId: string): Promise<{ summary: string; applied: boolean }> {
   const store = useFlowPlannerStore.getState();
   const cur = normalizeFlowPlannerInputs(store.byCampaign[tactplanId]);
   const res = await fetch('/api/flow-planner/chat-edit', {
