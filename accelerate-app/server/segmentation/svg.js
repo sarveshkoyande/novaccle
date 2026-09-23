@@ -118,10 +118,15 @@ function edgeSvg(pos, edge) {
   return out;
 }
 
-function flowSvg(spec, title) {
+function flowSvg(spec, title, codeMap) {
   const [nodes, edges] = normalise(spec);
   const pos = layout(nodes, edges);
-  const handle = codes(nodes);
+  // Prefer the caller's stable, persisted codes (see drawing.js's
+  // stableCodes) — the diagram's own printed numbers must match whatever a
+  // chat edit resolves "B12" against, or the two would drift the moment a
+  // block is deleted. Falls back to positional numbering only when no
+  // stable map is supplied at all.
+  const handle = codeMap || codes(nodes);
   let [width, height] = extent(pos);
   width += MARGIN;
   height += MARGIN;

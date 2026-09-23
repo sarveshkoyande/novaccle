@@ -197,6 +197,38 @@ function codes(nodes) {
   return out;
 }
 
+// The printed codes (B1, B2, ...) used to be purely positional — recomputed
+// fresh from node order on every single generation. That meant deleting B6
+// silently renamed every later block one number down, so "B6" stopped
+// meaning the block a person had just been looking at and started meaning
+// whatever used to be B7 — a chat edit (or a person) referencing a code
+// from even one turn ago could silently land on the wrong block with no
+// error, because the code always resolves to SOME real block, just not the
+// one it used to.
+//
+// `assignments` is a node id -> code map persisted across edits (see
+// FlowPlannerInputs.codeAssignments). Once a node has been assigned a code
+// it keeps it for the rest of this diagram's life, however many other
+// blocks are added or removed around it — a genuinely new node (a fresh
+// chat-added block, or the SOP builder's own new node when audience/
+// segments change) gets the next number that has never been used, so
+// codes are only ever added, never reused or renumbered.
+function stableCodes(nodes, assignments) {
+  const out = { ...(assignments || {}) };
+  let maxUsed = 0;
+  for (const code of Object.values(out)) {
+    const n = parseInt(String(code).replace(/^B/, ''), 10);
+    if (!Number.isNaN(n) && n > maxUsed) maxUsed = n;
+  }
+  for (const node of nodes) {
+    if (!out[node.id]) {
+      maxUsed += 1;
+      out[node.id] = `B${maxUsed}`;
+    }
+  }
+  return out;
+}
+
 function extent(pos) {
   const vals = Object.values(pos);
   const width = vals.length ? Math.max(...vals.map(([x, , w]) => x + w)) : 600;
@@ -207,5 +239,5 @@ function extent(pos) {
 module.exports = {
   MARGIN, TOP, NW, NH, DW, DH, SW, SH, PANE_W, ROW_GAP, COL_W, STOP_DX,
   LABEL_CHARS, DETAIL_CHARS, DECISION_CHARS, LABEL_LINE_H, DETAIL_LINE_H,
-  normalise, colours, wrap, size, layout, route, codes, extent,
+  normalise, colours, wrap, size, layout, route, codes, stableCodes, extent,
 };

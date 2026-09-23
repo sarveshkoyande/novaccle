@@ -102,6 +102,7 @@ export default function FlowPlannerPanel({ tactplanId, canAuthor, onGenerated }:
   const addSource = useFlowPlannerStore((s) => s.addSource);
   const setUnbranded = useFlowPlannerStore((s) => s.setUnbranded);
   const setResult = useFlowPlannerStore((s) => s.setResult);
+  const setCodeAssignments = useFlowPlannerStore((s) => s.setCodeAssignments);
   const applyRealInputs = useFlowPlannerStore((s) => s.applyRealInputs);
 
   const [showInputs, setShowInputs] = useState(!result);
@@ -146,6 +147,7 @@ export default function FlowPlannerPanel({ tactplanId, canAuthor, onGenerated }:
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Generation failed');
       const data = await res.json();
       setResult(tactplanId, data.svg);
+      if (data.codeAssignments) setCodeAssignments(tactplanId, data.codeAssignments);
       setShowInputs(false);
       onGenerated?.();
     } catch (e) {

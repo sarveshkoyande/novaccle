@@ -54,6 +54,13 @@ export interface FlowPlannerInputs {
   // recolouring, or a raw connect/disconnect. Applied in order. See
   // server/segmentation/index.js's applyGraphOp for the op shapes.
   graphOps: GraphOp[];
+  // A block's printed code (B1, B2, ...), assigned once and kept for the
+  // life of the diagram rather than recomputed from node order on every
+  // generation — see server/segmentation/drawing.js's stableCodes. Without
+  // this, deleting one block silently renumbered every later one, so a code
+  // referenced in an earlier chat message could point at the wrong block by
+  // the time a later message used it. Node id -> printed code.
+  codeAssignments: Record<string, string>;
 }
 
 export interface CustomNode {
@@ -90,6 +97,7 @@ function emptyInputs(): FlowPlannerInputs {
     deletedNodeIds: [],
     customNodes: [],
     graphOps: [],
+    codeAssignments: {},
   };
 }
 
@@ -120,6 +128,9 @@ interface FlowPlannerState {
   addSource: (tactplanId: string) => void;
   setUnbranded: (tactplanId: string, patch: Partial<UnbrandedFork>) => void;
   setResult: (tactplanId: string, svg: string) => void;
+  /** Persists the code map a generate/chat-edit response returned — see
+   * FlowPlannerInputs.codeAssignments. */
+  setCodeAssignments: (tactplanId: string, codeAssignments: Record<string, string>) => void;
   /** Overlays values read straight from the campaign's real fields (see
    * FlowPlannerPanel's readRealInputs) onto the stored inputs — used both
    * for the automatic first-open sync and the manual "Sync from campaign
@@ -155,6 +166,11 @@ export const useFlowPlannerStore = create<FlowPlannerState>()(
         }),
       setResult: (tactplanId, svg) =>
         set((s) => ({ results: { ...s.results, [tactplanId]: { svg, generatedAt: Date.now() } } })),
+      setCodeAssignments: (tactplanId, codeAssignments) =>
+        set((s) => {
+          const cur = normalizeFlowPlannerInputs(s.byCampaign[tactplanId]);
+          return { byCampaign: { ...s.byCampaign, [tactplanId]: { ...cur, codeAssignments } } };
+        }),
       applyRealInputs: (tactplanId, real) =>
         set((s) => {
           const cur = normalizeFlowPlannerInputs(s.byCampaign[tactplanId]);
@@ -189,6 +205,7 @@ export function toGenerateRequest(inputs: FlowPlannerInputs) {
     deletedNodeIds: inputs.deletedNodeIds,
     customNodes: inputs.customNodes,
     graphOps: inputs.graphOps,
+    codeAssignments: inputs.codeAssignments,
   };
 }
 
@@ -301,8 +318,14 @@ async function runFlowPlannerChatEditNow(tactplanId: string, text: string, autho
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Flow edit failed (${res.status})`);
   }
-  const { patch, summary } = (await res.json()) as { patch: ChatEditPatch; summary: string };
+  const { patch, summary, codeAssignments } = (await res.json()) as { patch: ChatEditPatch; summary: string; codeAssignments?: Record<string, string> };
   const real = patchToInputs(patch || {}, cur);
+  // A brand-new block's code (see the server's codeAssignments above) has
+  // to be saved even when nothing ELSE about the patch changed the stored
+  // inputs — otherwise it would be reassigned a possibly different number
+  // the next time a block is added instead of keeping the one this
+  // response (and its own summary) already refers to.
+  if (codeAssignments) real.codeAssignments = codeAssignments;
   if (Object.keys(real).length === 0) return { summary, applied: false };
 
   store.applyRealInputs(tactplanId, real);
@@ -314,8 +337,9 @@ async function runFlowPlannerChatEditNow(tactplanId: string, text: string, autho
     body: JSON.stringify(toGenerateRequest(merged)),
   });
   if (genRes.ok) {
-    const { svg } = await genRes.json();
+    const { svg, codeAssignments: finalCodes } = await genRes.json();
     useFlowPlannerStore.getState().setResult(tactplanId, svg);
+    if (finalCodes) useFlowPlannerStore.getState().setCodeAssignments(tactplanId, finalCodes);
     // Only log a new version if a diagram was already generated once —
     // matches VisioBuilderPanel's onGenerated, which fires the FIRST time.
     const visio = useVisioStore.getState().byCampaign[tactplanId] ?? DEFAULT_VISIO_STATE;

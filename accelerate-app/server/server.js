@@ -2031,7 +2031,12 @@ app.post('/api/flow-planner/generate', (req, res) => {
     const inputs = req.body || {};
     const spec = flowPlanner.generate(inputs);
     const svg = flowPlanner.svgFor(inputs);
-    res.json({ spec, svg });
+    // Whatever code any brand-new block just received (see codeMapFor) has
+    // to be saved back onto the campaign's own inputs, or the next
+    // generation would assign that same node a different number — the
+    // caller persists this alongside the svg/spec.
+    const codeAssignments = flowPlanner.codeMapFor(inputs);
+    res.json({ spec, svg, codeAssignments });
   } catch (err) {
     console.error('[server] Flow Planner generate failed:', err);
     res.status(500).json({ error: 'Flow Planner generation failed.', detail: String(err.message || err) });
@@ -2252,7 +2257,20 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
       patch.graphOps = [...(patch.graphOps || []), { kind: 'disconnect', fromId: from.id, toId: to.id }];
     }
 
-    res.json({ patch, summary: summary || 'Updated.' });
+    // Any block this edit just added needs its code assigned NOW and
+    // handed back for the client to persist — otherwise it stays
+    // code-less until the next /generate call assigns it whatever number
+    // happens to be next AT THAT TIME, which is not necessarily the same
+    // number this response's own summary might reference.
+    const codeAssignments = patch.customNodes?.length
+      ? flowPlanner.codeMapFor({
+          ...currentInputs,
+          customNodes: [...(currentInputs?.customNodes || []), ...patch.customNodes],
+          graphOps: [...(currentInputs?.graphOps || []), ...(patch.graphOps || [])],
+        })
+      : undefined;
+
+    res.json({ patch, summary: summary || 'Updated.', ...(codeAssignments ? { codeAssignments } : {}) });
   } catch (err) {
     console.error('[server] Flow Planner chat-edit failed:', err);
     res.status(500).json({ error: 'Flow Planner chat-edit failed.', detail: String(err.message || err) });

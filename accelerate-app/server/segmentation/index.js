@@ -8,7 +8,7 @@ const segmentation = require('./segmentation');
 const { FlowDesign } = require('./model');
 const { flowSvg } = require('./svg');
 const { flowVsdx } = require('./vsdx');
-const { codes: codesFor } = require('./drawing');
+const { stableCodes } = require('./drawing');
 
 // The block shapes/colours a chat edit can actually produce — kept to the
 // vocabulary drawing.js already knows how to draw and colour (see its
@@ -26,17 +26,27 @@ function plan(inputs) {
   return design;
 }
 
-// A block on the printed diagram (B1, B2, ...) is a rendering-time artifact
-// — drawing.js assigns it from node order, not something the SOP rules or
-// the campaign's own fields carry. So "edit B12" only means something once
-// it's resolved against a SPECIFIC generation's node list; the mapping
-// shifts if audience/segments/the unbranded fork change which nodes exist
-// at all. `blocks()` is that resolution step, shared by both the chat-edit
-// endpoint (to explain what's on the current diagram) and the override
-// application below (to know which node id a saved override belongs to).
+// A block's printed code (B1, B2, ...) is assigned once and kept for the
+// life of the diagram (see drawing.js's stableCodes) — `inputs.
+// codeAssignments` is that persisted node-id -> code map, carried in
+// FlowPlannerInputs the same way nodeOverrides/deletedNodeIds are. This
+// derives it fresh against the CURRENT node list (covering any node that
+// hasn't been assigned a code yet) without mutating the caller's map — the
+// caller (the chat-edit endpoint, or the /generate route) is responsible
+// for persisting whatever this returns back onto the campaign's inputs, or
+// a code newly assigned in one response would be reassigned differently
+// the next time a block is added.
+function codeMapFor(inputs) {
+  const spec = generate(inputs);
+  return stableCodes(spec.nodes, inputs.codeAssignments);
+}
+
+// `blocks()` is the resolution step a chat edit uses both ways: to explain
+// what's currently on the diagram (block list in the system prompt) and to
+// look up which node id a referenced code like "B12" actually means.
 function blocks(inputs) {
   const spec = generate(inputs);
-  const codeById = codesFor(spec.nodes);
+  const codeById = stableCodes(spec.nodes, inputs.codeAssignments);
   return spec.nodes.map((n) => ({ code: codeById[n.id], id: n.id, label: n.label, detail: n.detail }));
 }
 
@@ -192,11 +202,13 @@ function generate(inputs) {
 }
 
 function svgFor(inputs, title) {
-  return flowSvg(generate(inputs), title || inputs.campaignName || 'Segmentation Flow');
+  const spec = generate(inputs);
+  const codeMap = stableCodes(spec.nodes, inputs.codeAssignments);
+  return flowSvg(spec, title || inputs.campaignName || 'Segmentation Flow', codeMap);
 }
 
 async function vsdxFor(inputs, title) {
   return flowVsdx(generate(inputs), title || inputs.campaignName || 'Segmentation Flow');
 }
 
-module.exports = { plan, generate, svgFor, vsdxFor, sop, blocks };
+module.exports = { plan, generate, svgFor, vsdxFor, sop, blocks, codeMapFor };
