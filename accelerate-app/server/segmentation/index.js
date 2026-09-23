@@ -10,6 +10,13 @@ const { flowSvg } = require('./svg');
 const { flowVsdx } = require('./vsdx');
 const { codes: codesFor } = require('./drawing');
 
+// The block shapes/colours a chat edit can actually produce — kept to the
+// vocabulary drawing.js already knows how to draw and colour (see its
+// PALETTE/STATUS maps), so a chat-added block never comes out as an
+// unstyled default box or an off-legend colour.
+const NODE_TYPES = new Set(['entry', 'datasource', 'process', 'decision', 'segment', 'stop', 'exit', 'note']);
+const STATUSES = new Set(['live', 'new', 'hold', 'built_not_live']);
+
 function plan(inputs) {
   const design = new FlowDesign({ sopVersion: sop.VERSION });
   if (!inputs.audience) {
@@ -73,9 +80,106 @@ function applyDeletions(spec, nodeIds) {
   return nodeIds.reduce(applyDeletion, spec);
 }
 
+// New blocks a chat edit added ("add a decision block asking X") — appended
+// to the node list as plain data, not run back through the SOP builder,
+// since they're the SA's own addition rather than anything the rules derive.
+function applyCustomNodes(spec, customNodes) {
+  if (!customNodes || !customNodes.length) return spec;
+  const made = customNodes.map((c) => ({
+    id: c.id,
+    type: NODE_TYPES.has(c.type) ? c.type : 'process',
+    label: c.label || c.id,
+    detail: c.detail || '',
+    region: 'segmentation',
+    lane: null,
+    attrs: {},
+    status: STATUSES.has(c.status) ? c.status : null,
+    tbd: [],
+    rationale: 'Added via chat edit.',
+    sop_ref: '',
+  }));
+  return { ...spec, nodes: [...spec.nodes, ...made], steps: [...spec.steps, ...made] };
+}
+
+// Moves a node to sit right after another in the node array — array order is
+// also draw order (see drawing.js's layout: it walks the spine top-to-bottom
+// in array order), so without this a block added via insertAfter/
+// insertBetween would draw at the very bottom of the page no matter which
+// existing block it's actually wired to, with its arrow running back up the
+// whole diagram to reach it.
+function moveAfter(spec, nodeId, anchorId) {
+  const reorder = (list) => {
+    const node = list.find((n) => n.id === nodeId);
+    if (!node) return list;
+    const without = list.filter((n) => n.id !== nodeId);
+    const anchorIdx = without.findIndex((n) => n.id === anchorId);
+    if (anchorIdx === -1) return list;
+    return [...without.slice(0, anchorIdx + 1), node, ...without.slice(anchorIdx + 1)];
+  };
+  return { ...spec, nodes: reorder(spec.nodes), steps: reorder(spec.steps) };
+}
+
+// The graph-editing primitives a chat edit composes to do everything beyond
+// a single block's own text: inserting a new block into the middle of an
+// existing connection, swapping what two blocks show, or adding/removing a
+// raw connection. Kept as small, composable ops (rather than one big
+// "restructure the diagram" tool call) so each one is simple to reason
+// about and to get right — a rewire is just "drop this edge, add these two".
+function applyGraphOp(spec, op) {
+  switch (op.kind) {
+    case 'insertBetween': {
+      const edges = spec.edges
+        .filter((e) => !(e.from === op.fromId && e.to === op.toId))
+        .concat([{ from: op.fromId, to: op.newNodeId }, { from: op.newNodeId, to: op.toId }]);
+      return moveAfter({ ...spec, edges }, op.newNodeId, op.fromId);
+    }
+    case 'insertAfter': {
+      // The new block inherits every downstream connection the anchor block
+      // had — "connect the new block downstream" means the old direct
+      // connection no longer exists at all, not that it exists alongside a
+      // new branch.
+      const outgoing = spec.edges.filter((e) => e.from === op.afterId);
+      const rest = spec.edges.filter((e) => e.from !== op.afterId);
+      const rewired = outgoing.map((e) => ({ ...e, from: op.newNodeId }));
+      const edges = [...rest, { from: op.afterId, to: op.newNodeId }, ...rewired];
+      return moveAfter({ ...spec, edges }, op.newNodeId, op.afterId);
+    }
+    case 'connect': {
+      const label = op.label ? { label: op.label } : {};
+      return { ...spec, edges: [...spec.edges, { from: op.fromId, to: op.toId, ...label }] };
+    }
+    case 'disconnect': {
+      return { ...spec, edges: spec.edges.filter((e) => !(e.from === op.fromId && e.to === op.toId)) };
+    }
+    case 'swap': {
+      const a = spec.nodes.find((n) => n.id === op.idA);
+      const b = spec.nodes.find((n) => n.id === op.idB);
+      if (!a || !b) return spec;
+      const content = (n) => ({ type: n.type, label: n.label, detail: n.detail, attrs: n.attrs, status: n.status, tbd: n.tbd, rationale: n.rationale, sop_ref: n.sop_ref });
+      const patch = (n) => (n.id === op.idA ? { ...n, ...content(b) } : n.id === op.idB ? { ...n, ...content(a) } : n);
+      return { ...spec, nodes: spec.nodes.map(patch), steps: spec.steps.map(patch) };
+    }
+    case 'setStatus': {
+      const patch = (n) => (n.id === op.id ? { ...n, status: STATUSES.has(op.status) ? op.status : null } : n);
+      return { ...spec, nodes: spec.nodes.map(patch), steps: spec.steps.map(patch) };
+    }
+    default:
+      return spec;
+  }
+}
+
+function applyGraphOps(spec, ops) {
+  if (!ops || !ops.length) return spec;
+  return ops.reduce(applyGraphOp, spec);
+}
+
 function generate(inputs) {
-  const withDeletions = applyDeletions(plan(inputs).toSpec(), inputs.deletedNodeIds);
-  return applyOverrides(withDeletions, inputs.nodeOverrides);
+  let spec = plan(inputs).toSpec();
+  spec = applyDeletions(spec, inputs.deletedNodeIds);
+  spec = applyCustomNodes(spec, inputs.customNodes);
+  spec = applyGraphOps(spec, inputs.graphOps);
+  spec = applyOverrides(spec, inputs.nodeOverrides);
+  return spec;
 }
 
 function svgFor(inputs, title) {

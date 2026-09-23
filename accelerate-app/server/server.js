@@ -2102,11 +2102,42 @@ function flowPlannerEditTool() {
         blockCode: { type: 'string', description: 'The printed block code (e.g. "B12") the user referred to — set this whenever they mention a block by its code rather than by field name.' },
         blockText: { type: 'string', description: "The block's new text, when editing by blockCode." },
         deleteBlockCode: { type: 'string', description: 'Set this INSTEAD of blockCode/blockText when the user asks to delete/remove a block. The block is removed and its neighbours on the diagram are connected directly to each other.' },
-        summary: { type: 'string', description: 'One short, friendly sentence confirming what was changed, to show the user in chat. Required even if nothing was changed (explain why, e.g. the request was unclear, or the block code does not exist on the current diagram).' },
+
+        // --- adding a new block --------------------------------------
+        addBlockLabel: { type: 'string', description: 'Set this to add a brand-new block to the diagram. Its short title, as it should appear on the block.' },
+        addBlockDetail: { type: 'string', description: 'The new block\'s body text, if the user gave one.' },
+        addBlockDecision: { type: 'boolean', description: 'True if the user described this as a yes/no check or decision (e.g. "ask whether X") — draws it as a diamond.' },
+        addBlockType: { type: 'string', enum: ['entry', 'datasource', 'process', 'decision', 'segment', 'stop', 'exit', 'note'], description: 'Explicit shape, if the user\'s wording implies one (e.g. "add a stop" or "add a data source") — overrides addBlockDecision.' },
+        addBlockStatus: { type: 'string', enum: ['live', 'new', 'hold', 'built_not_live'], description: 'Legend colour for the new block, only if the user asked for one.' },
+        addBlockAfterCode: { type: 'string', description: 'An existing block\'s code (e.g. "B5") the new block connects downstream from. The new block takes over whatever that block used to connect to — this is how "add X after B5" or "insert X between B5 and B7" both work; for the latter also see addBlockBeforeCode.' },
+        addBlockBeforeCode: { type: 'string', description: 'Use together with addBlockAfterCode to place the new block precisely between two SPECIFIC existing blocks that are already directly connected, rather than however addBlockAfterCode\'s block currently connects onward.' },
+
+        // --- swap / recolour / raw connect ------------------------------
+        swapBlockCodeA: { type: 'string', description: 'Set together with swapBlockCodeB to swap what two existing blocks show (their text and shape trade places; their position and connections do not move).' },
+        swapBlockCodeB: { type: 'string' },
+        recolorBlockCode: { type: 'string', description: 'An existing block to recolour.' },
+        recolorStatus: { type: 'string', enum: ['live', 'new', 'hold', 'built_not_live'], description: 'The legend colour to apply — these are the only four colours the diagram\'s own legend defines, so map the user\'s request to whichever is closest (e.g. green/done -> live, amber/new -> new, red/off -> hold, grey/inactive -> built_not_live) rather than inventing a colour.' },
+        connectFromCode: { type: 'string', description: 'Set together with connectToCode to draw a new connection between two existing blocks that are not already connected, without moving or removing anything else.' },
+        connectToCode: { type: 'string' },
+        connectLabel: { type: 'string', description: 'Optional label on the new connection (e.g. "Yes").' },
+        disconnectFromCode: { type: 'string', description: 'Set together with disconnectToCode to remove one specific existing connection, without deleting either block.' },
+        disconnectToCode: { type: 'string' },
+
+        summary: { type: 'string', description: 'One short, friendly sentence confirming what was changed, to show the user in chat. Required even if nothing was changed (explain why, e.g. the request was unclear, or a block code does not exist on the current diagram).' },
       },
       required: ['summary'],
     },
   };
+}
+
+function findBlock(currentInputs, code) {
+  if (!code) return null;
+  return flowPlanner.blocks(currentInputs || {}).find((b) => b.code.toLowerCase() === String(code).toLowerCase()) || null;
+}
+
+function slugId(label) {
+  const slug = String(label || 'block').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'block';
+  return `custom.${slug}.${Math.random().toString(36).slice(2, 7)}`;
 }
 
 app.post('/api/flow-planner/chat-edit', async (req, res) => {
@@ -2122,7 +2153,10 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
     `The CURRENT diagram's printed blocks, in order (code: label — current text):\n${blockList}\n\n` +
     `If the user names a field (audience, campaign name, segments, ...), set that field. ` +
     `If the user instead refers to a block by its printed code (e.g. "B12") or unambiguously by the block's own label/text above, set blockCode + blockText instead — most blocks have no other input to change. ` +
-    `If the user asks to delete/remove a block, set deleteBlockCode instead (not blockCode/blockText) — do not just describe the deletion in summary without setting it, the deletion only actually happens if you set this field. ` +
+    `If the user asks to delete/remove a block, set deleteBlockCode instead (not blockCode/blockText). ` +
+    `If the user asks to add a new block, set addBlockLabel (+ addBlockDetail/addBlockDecision/addBlockType/addBlockStatus as given) and, whenever there's an obvious block it should connect downstream from, addBlockAfterCode (and addBlockBeforeCode if they named both ends of an existing connection to insert into). ` +
+    `If the user asks to swap two blocks, set swapBlockCodeA + swapBlockCodeB. To change a block's colour, set recolorBlockCode + recolorStatus. To connect or disconnect two blocks directly (no new block involved), use connectFromCode/connectToCode or disconnectFromCode/disconnectToCode. ` +
+    `Do not just describe a structural change in summary without setting the matching field(s) above — nothing happens unless you set them. ` +
     `Call update_flow_planner_inputs with only what the user actually asked to change.`;
 
   try {
@@ -2134,20 +2168,73 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
       tools: [flowPlannerEditTool()],
       tool_choice: { type: 'tool', name: 'update_flow_planner_inputs' },
     });
-    const block = response.content.find((b) => b.type === 'tool_use');
-    if (!block) return res.json({ patch: {}, summary: "Didn't catch a Flow-input change in that — try naming the field, or the block's code (e.g. \"B12\"), and the new value." });
-    const { summary, blockCode, blockText, deleteBlockCode, ...patch } = block.input || {};
+    const toolBlock = response.content.find((b) => b.type === 'tool_use');
+    if (!toolBlock) return res.json({ patch: {}, summary: "Didn't catch a Flow-input change in that — try naming the field, or a block's code (e.g. \"B12\"), and what to do with it." });
+    const {
+      summary, blockCode, blockText, deleteBlockCode,
+      addBlockLabel, addBlockDetail, addBlockDecision, addBlockType, addBlockStatus, addBlockAfterCode, addBlockBeforeCode,
+      swapBlockCodeA, swapBlockCodeB, recolorBlockCode, recolorStatus,
+      connectFromCode, connectToCode, connectLabel, disconnectFromCode, disconnectToCode,
+      ...patch
+    } = toolBlock.input || {};
+
+    const unknown = (code) => res.json({ patch: {}, summary: `${code} isn't a block on the current diagram — regenerate first if you just changed audience or segments, or check the code shown next to the block.` });
+
     if (blockCode) {
-      const found = flowPlanner.blocks(currentInputs || {}).find((b) => b.code.toLowerCase() === String(blockCode).toLowerCase());
-      if (!found) return res.json({ patch: {}, summary: `${blockCode} isn't a block on the current diagram — regenerate first if you just changed audience or segments, or check the code shown next to the block.` });
+      const found = findBlock(currentInputs, blockCode);
+      if (!found) return unknown(blockCode);
       patch.nodeOverrideId = found.id;
       patch.nodeOverrideText = blockText ?? '';
     }
     if (deleteBlockCode) {
-      const found = flowPlanner.blocks(currentInputs || {}).find((b) => b.code.toLowerCase() === String(deleteBlockCode).toLowerCase());
-      if (!found) return res.json({ patch: {}, summary: `${deleteBlockCode} isn't a block on the current diagram — regenerate first if you just changed audience or segments, or check the code shown next to the block.` });
+      const found = findBlock(currentInputs, deleteBlockCode);
+      if (!found) return unknown(deleteBlockCode);
       patch.nodeDeleteId = found.id;
     }
+    if (addBlockLabel) {
+      const newId = slugId(addBlockLabel);
+      patch.customNodes = [{ id: newId, type: addBlockType || (addBlockDecision ? 'decision' : 'process'), label: addBlockLabel, detail: addBlockDetail || '', status: addBlockStatus || null }];
+      const graphOps = [];
+      if (addBlockAfterCode && addBlockBeforeCode) {
+        const from = findBlock(currentInputs, addBlockAfterCode);
+        const to = findBlock(currentInputs, addBlockBeforeCode);
+        if (!from) return unknown(addBlockAfterCode);
+        if (!to) return unknown(addBlockBeforeCode);
+        graphOps.push({ kind: 'insertBetween', fromId: from.id, toId: to.id, newNodeId: newId });
+      } else if (addBlockAfterCode) {
+        const anchor = findBlock(currentInputs, addBlockAfterCode);
+        if (!anchor) return unknown(addBlockAfterCode);
+        graphOps.push({ kind: 'insertAfter', afterId: anchor.id, newNodeId: newId });
+      }
+      if (graphOps.length) patch.graphOps = graphOps;
+    }
+    if (swapBlockCodeA && swapBlockCodeB) {
+      const a = findBlock(currentInputs, swapBlockCodeA);
+      const b = findBlock(currentInputs, swapBlockCodeB);
+      if (!a) return unknown(swapBlockCodeA);
+      if (!b) return unknown(swapBlockCodeB);
+      patch.graphOps = [...(patch.graphOps || []), { kind: 'swap', idA: a.id, idB: b.id }];
+    }
+    if (recolorBlockCode) {
+      const found = findBlock(currentInputs, recolorBlockCode);
+      if (!found) return unknown(recolorBlockCode);
+      patch.graphOps = [...(patch.graphOps || []), { kind: 'setStatus', id: found.id, status: recolorStatus }];
+    }
+    if (connectFromCode && connectToCode) {
+      const from = findBlock(currentInputs, connectFromCode);
+      const to = findBlock(currentInputs, connectToCode);
+      if (!from) return unknown(connectFromCode);
+      if (!to) return unknown(connectToCode);
+      patch.graphOps = [...(patch.graphOps || []), { kind: 'connect', fromId: from.id, toId: to.id, label: connectLabel }];
+    }
+    if (disconnectFromCode && disconnectToCode) {
+      const from = findBlock(currentInputs, disconnectFromCode);
+      const to = findBlock(currentInputs, disconnectToCode);
+      if (!from) return unknown(disconnectFromCode);
+      if (!to) return unknown(disconnectToCode);
+      patch.graphOps = [...(patch.graphOps || []), { kind: 'disconnect', fromId: from.id, toId: to.id }];
+    }
+
     res.json({ patch, summary: summary || 'Updated.' });
   } catch (err) {
     console.error('[server] Flow Planner chat-edit failed:', err);

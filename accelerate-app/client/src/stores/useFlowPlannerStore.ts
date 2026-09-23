@@ -46,7 +46,31 @@ export interface FlowPlannerInputs {
   // drops these nodes and reconnects their neighbours directly. See
   // server/segmentation/index.js's applyDeletion.
   deletedNodeIds: string[];
+  // Brand-new blocks added via chat ("add a decision block asking X") —
+  // appended to the generated node list as-is. See applyCustomNodes.
+  customNodes: CustomNode[];
+  // Structural edits beyond a single block's own text/existence: inserting
+  // a new block into an existing connection, swapping two blocks' content,
+  // recolouring, or a raw connect/disconnect. Applied in order. See
+  // server/segmentation/index.js's applyGraphOp for the op shapes.
+  graphOps: GraphOp[];
 }
+
+export interface CustomNode {
+  id: string;
+  type: string;
+  label: string;
+  detail: string;
+  status: string | null;
+}
+
+export type GraphOp =
+  | { kind: 'insertBetween'; fromId: string; toId: string; newNodeId: string }
+  | { kind: 'insertAfter'; afterId: string; newNodeId: string }
+  | { kind: 'connect'; fromId: string; toId: string; label?: string }
+  | { kind: 'disconnect'; fromId: string; toId: string }
+  | { kind: 'swap'; idA: string; idB: string }
+  | { kind: 'setStatus'; id: string; status: string | null };
 
 function emptyInputs(): FlowPlannerInputs {
   return {
@@ -63,6 +87,8 @@ function emptyInputs(): FlowPlannerInputs {
     suppressionAnswers: {},
     nodeOverrides: {},
     deletedNodeIds: [],
+    customNodes: [],
+    graphOps: [],
   };
 }
 
@@ -160,6 +186,8 @@ export function toGenerateRequest(inputs: FlowPlannerInputs) {
     suppressionAnswers: inputs.suppressionAnswers,
     nodeOverrides: inputs.nodeOverrides,
     deletedNodeIds: inputs.deletedNodeIds,
+    customNodes: inputs.customNodes,
+    graphOps: inputs.graphOps,
   };
 }
 
@@ -187,6 +215,8 @@ interface ChatEditPatch {
   nodeOverrideId?: string;
   nodeOverrideText?: string;
   nodeDeleteId?: string;
+  customNodes?: CustomNode[];
+  graphOps?: GraphOp[];
 }
 
 function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<FlowPlannerInputs> {
@@ -224,6 +254,12 @@ function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<Fl
   }
   if (patch.nodeDeleteId && !cur.deletedNodeIds.includes(patch.nodeDeleteId)) {
     real.deletedNodeIds = [...cur.deletedNodeIds, patch.nodeDeleteId];
+  }
+  if (patch.customNodes?.length) {
+    real.customNodes = [...cur.customNodes, ...patch.customNodes];
+  }
+  if (patch.graphOps?.length) {
+    real.graphOps = [...cur.graphOps, ...patch.graphOps];
   }
   return real;
 }
