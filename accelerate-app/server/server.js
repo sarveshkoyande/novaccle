@@ -2093,7 +2093,15 @@ function flowPlannerEditTool() {
         businessRules: { type: 'string', description: 'Additional MDS business-rules suppression answer.' },
         specialtyInclusion: { type: 'string' },
         specialtyExclusion: { type: 'string' },
-        summary: { type: 'string', description: 'One short, friendly sentence confirming what was changed, to show the user in chat. Required even if nothing was changed (explain why, e.g. the request was unclear or unrelated to the Flow inputs).' },
+        // Most printed blocks (suppression checks, Dedupe, the QnA blocks)
+        // have no underlying input field at all — a check like "Age 18+?" is
+        // fixed SOP boilerplate, not derived from anything the campaign
+        // record states. Editing THOSE only works by overriding the block
+        // directly, addressed by the code printed on the diagram (B1, B2,
+        // ...), which the system prompt below lists for the current design.
+        blockCode: { type: 'string', description: 'The printed block code (e.g. "B12") the user referred to — set this whenever they mention a block by its code rather than by field name.' },
+        blockText: { type: 'string', description: "The block's new text, when editing by blockCode." },
+        summary: { type: 'string', description: 'One short, friendly sentence confirming what was changed, to show the user in chat. Required even if nothing was changed (explain why, e.g. the request was unclear, or the block code does not exist on the current diagram).' },
       },
       required: ['summary'],
     },
@@ -2105,9 +2113,15 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
   if (!ai) return res.status(503).json({ error: 'ANTHROPIC_FOUNDRY_API_KEY / ANTHROPIC_FOUNDRY_RESOURCE not configured on the server.' });
   if (!text) return res.status(400).json({ error: 'text is required.' });
 
+  const blockList = flowPlanner.blocks(currentInputs || {})
+    .map((b) => `${b.code}: ${b.label}${b.detail ? ` — ${b.detail}` : ''}`)
+    .join('\n');
   const system = `You edit the inputs for a Novartis Accelerate campaign's Segmentation Flow diagram generator. ` +
-    `Current values (JSON): ${JSON.stringify(currentInputs || {})}. ` +
-    `Call update_flow_planner_inputs with only the fields the user's message asks to change.`;
+    `Current input values (JSON): ${JSON.stringify(currentInputs || {})}. ` +
+    `The CURRENT diagram's printed blocks, in order (code: label — current text):\n${blockList}\n\n` +
+    `If the user names a field (audience, campaign name, segments, ...), set that field. ` +
+    `If the user instead refers to a block by its printed code (e.g. "B12") or unambiguously by the block's own label/text above, set blockCode + blockText instead — most blocks have no other input to change. ` +
+    `Call update_flow_planner_inputs with only what the user actually asked to change.`;
 
   try {
     const response = await ai.messages.create({
@@ -2119,8 +2133,14 @@ app.post('/api/flow-planner/chat-edit', async (req, res) => {
       tool_choice: { type: 'tool', name: 'update_flow_planner_inputs' },
     });
     const block = response.content.find((b) => b.type === 'tool_use');
-    if (!block) return res.json({ patch: {}, summary: "Didn't catch a Flow-input change in that — try naming the field and the new value." });
-    const { summary, ...patch } = block.input || {};
+    if (!block) return res.json({ patch: {}, summary: "Didn't catch a Flow-input change in that — try naming the field, or the block's code (e.g. \"B12\"), and the new value." });
+    const { summary, blockCode, blockText, ...patch } = block.input || {};
+    if (blockCode) {
+      const found = flowPlanner.blocks(currentInputs || {}).find((b) => b.code.toLowerCase() === String(blockCode).toLowerCase());
+      if (!found) return res.json({ patch: {}, summary: `${blockCode} isn't a block on the current diagram — regenerate first if you just changed audience or segments, or check the code shown next to the block.` });
+      patch.nodeOverrideId = found.id;
+      patch.nodeOverrideText = blockText ?? '';
+    }
     res.json({ patch, summary: summary || 'Updated.' });
   } catch (err) {
     console.error('[server] Flow Planner chat-edit failed:', err);

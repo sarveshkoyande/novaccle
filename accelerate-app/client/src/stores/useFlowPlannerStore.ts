@@ -36,6 +36,12 @@ export interface FlowPlannerInputs {
   segments: string; // comma-separated in the UI, split on generate
   unbranded: UnbrandedFork;
   suppressionAnswers: Record<string, string>; // keyed by field_ref's field id (optOut, specialtyInclusion, specialtyExclusion, businessRules)
+  // Direct text overrides for a printed block (node id -> replacement
+  // detail text) — most blocks (suppression checks, Dedupe, the QnA
+  // blocks) are fixed SOP boilerplate with no other input to change, so
+  // editing them by their diagram code (e.g. "B12") only works this way.
+  // See server/segmentation/index.js's applyOverrides.
+  nodeOverrides: Record<string, string>;
 }
 
 function emptyInputs(): FlowPlannerInputs {
@@ -51,6 +57,7 @@ function emptyInputs(): FlowPlannerInputs {
     segments: '',
     unbranded: { present: false, campaignCode: '', lastTouchpointQuestion: '', lastTouchpointMetadataId: '', answerCodes: '' },
     suppressionAnswers: {},
+    nodeOverrides: {},
   };
 }
 
@@ -134,6 +141,7 @@ export function toGenerateRequest(inputs: FlowPlannerInputs) {
       answerCodes: inputs.unbranded.answerCodes.split(',').map((s) => s.trim()).filter(Boolean),
     },
     suppressionAnswers: inputs.suppressionAnswers,
+    nodeOverrides: inputs.nodeOverrides,
   };
 }
 
@@ -158,6 +166,8 @@ interface ChatEditPatch {
   businessRules?: string;
   specialtyInclusion?: string;
   specialtyExclusion?: string;
+  nodeOverrideId?: string;
+  nodeOverrideText?: string;
 }
 
 function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<FlowPlannerInputs> {
@@ -189,6 +199,9 @@ function patchToInputs(patch: ChatEditPatch, cur: FlowPlannerInputs): Partial<Fl
       ...(patch.specialtyInclusion !== undefined ? { specialtyInclusion: patch.specialtyInclusion } : {}),
       ...(patch.specialtyExclusion !== undefined ? { specialtyExclusion: patch.specialtyExclusion } : {}),
     };
+  }
+  if (patch.nodeOverrideId) {
+    real.nodeOverrides = { ...cur.nodeOverrides, [patch.nodeOverrideId]: patch.nodeOverrideText ?? '' };
   }
   return real;
 }
